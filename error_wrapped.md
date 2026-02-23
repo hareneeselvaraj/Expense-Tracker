@@ -1,0 +1,32 @@
+[2026-02-23T15:42:02.8463554+05:30] BUDGET ALERT ENEWLINERROR for userId=bc4c63cb-a94d-4be8-823a-b52a0eb42cNEWLINE1a, categoryId=0b1677d3-6bd5-48af-b0ca-ae71f7376a4NEWLINEb
+System.NotSupportedException: SQLite cannot apply NEWLINEaggregate operator 'Sum' on expressions of type 'dNEWLINEecimal'. Convert the values to a supported type, oNEWLINEr use LINQ to Objects to aggregate the results on NEWLINEthe client side.
+   at Microsoft.EntityFrameworkCore.Sqlite.Query.INEWLINEnternal.SqliteQueryableAggregateMethodTranslator.TNEWLINEranslate(MethodInfo method, EnumerableExpression sNEWLINEource, IReadOnlyList`1 arguments, IDiagnosticsLoggNEWLINEer`1 logger)
+   at Microsoft.EntityFrameworkCore.Query.RelationNEWLINEalAggregateMethodCallTranslatorProvider.<>c__DisplNEWLINEayClass6_0.<Translate>b__0(IAggregateMethodCallTraNEWLINEnslator t)
+   at System.Linq.Enumerable.SelectEnumerableIteraNEWLINEtor`2.MoveNext()
+   at System.Linq.Enumerable.TryGetFirst[TSource](NEWLINEIEnumerable`1 source, Func`2 predicate, Boolean& fNEWLINEound)
+   at System.Linq.Enumerable.FirstOrDefault[TSourcNEWLINEe](IEnumerable`1 source, Func`2 predicate)
+   at Microsoft.EntityFrameworkCore.Query.RelationNEWLINEalAggregateMethodCallTranslatorProvider.Translate(NEWLINEIModel model, MethodInfo method, EnumerableExpressNEWLINEion source, IReadOnlyList`1 arguments, IDiagnosticNEWLINEsLogger`1 logger)
+   at Microsoft.EntityFrameworkCore.Query.RelationNEWLINEalSqlTranslatingExpressionVisitor.TranslateAggregaNEWLINEteMethod(EnumerableExpression enumerableExpressionNEWLINE, MethodInfo method, List`1 scalarArguments)
+   at Microsoft.EntityFrameworkCore.Query.RelationNEWLINEalSqlTranslatingExpressionVisitor.TryTranslateAggrNEWLINEegateMethodCall(MethodCallExpression methodCallExpNEWLINEression, SqlExpression& translation)
+   at Microsoft.EntityFrameworkCore.Query.RelationNEWLINEalSqlTranslatingExpressionVisitor.VisitMethodCall(NEWLINEMethodCallExpression methodCallExpression)
+   at Microsoft.EntityFrameworkCore.Sqlite.Query.INEWLINEnternal.SqliteSqlTranslatingExpressionVisitor.VisiNEWLINEtMethodCall(MethodCallExpression methodCallExpressNEWLINEion)
+   at Microsoft.EntityFrameworkCore.Query.RelationNEWLINEalSqlTranslatingExpressionVisitor.TranslateInternaNEWLINEl(Expression expression, Boolean applyDefaultTypeMNEWLINEapping)
+   at Microsoft.EntityFrameworkCore.Query.RelationNEWLINEalSqlTranslatingExpressionVisitor.Translate(ExpresNEWLINEsion expression, Boolean applyDefaultTypeMapping)NEWLINE
+   at Microsoft.EntityFrameworkCore.Query.RelationNEWLINEalQueryableMethodTranslatingExpressionVisitor.TranNEWLINEslateAggregateWithSelector(ShapedQueryExpression sNEWLINEource, LambdaExpression selectorLambda, Func`2 metNEWLINEhodGenerator, Boolean throwWhenEmpty, Type resultTNEWLINEype)
+   at Microsoft.EntityFrameworkCore.Query.RelationNEWLINEalQueryableMethodTranslatingExpressionVisitor.TranNEWLINEslateSum(ShapedQueryExpression source, LambdaExpreNEWLINEssion selector, Type resultType)
+   at Microsoft.EntityFrameworkCore.Query.QueryablNEWLINEeMethodTranslatingExpressionVisitor.VisitMethodCalNEWLINEl(MethodCallExpression methodCallExpression)
+   at Microsoft.EntityFrameworkCore.Query.RelationNEWLINEalQueryableMethodTranslatingExpressionVisitor.VisiNEWLINEtMethodCall(MethodCallExpression methodCallExpressNEWLINEion)
+   at Microsoft.EntityFrameworkCore.Query.QueryablNEWLINEeMethodTranslatingExpressionVisitor.Translate(ExprNEWLINEession expression)
+   at Microsoft.EntityFrameworkCore.Query.RelationNEWLINEalQueryableMethodTranslatingExpressionVisitor.TranNEWLINEslate(Expression expression)
+   at Microsoft.EntityFrameworkCore.Query.QueryComNEWLINEpilationContext.CreateQueryExecutor[TResult](ExpreNEWLINEssion query)
+   at Microsoft.EntityFrameworkCore.Storage.DatabaNEWLINEse.CompileQuery[TResult](Expression query, BooleanNEWLINE async)
+   at Microsoft.EntityFrameworkCore.Query.InternalNEWLINE.QueryCompiler.CompileQueryCore[TResult](IDatabaseNEWLINE database, Expression query, IModel model, BooleanNEWLINE async)
+   at Microsoft.EntityFrameworkCore.Query.InternalNEWLINE.QueryCompiler.<>c__DisplayClass12_0`1.<ExecuteAsyNEWLINEnc>b__0()
+   at Microsoft.EntityFrameworkCore.Query.InternalNEWLINE.CompiledQueryCache.GetOrAddQuery[TResult](Object NEWLINEcacheKey, Func`1 compiler)
+   at Microsoft.EntityFrameworkCore.Query.InternalNEWLINE.QueryCompiler.ExecuteAsync[TResult](Expression quNEWLINEery, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.InternalNEWLINE.EntityQueryProvider.ExecuteAsync[TResult](ExpressNEWLINEion expression, CancellationToken cancellationTokeNEWLINEn)
+   at Microsoft.EntityFrameworkCore.EntityFrameworNEWLINEkQueryableExtensions.ExecuteAsync[TSource,TResult]NEWLINE(MethodInfo operatorMethodInfo, IQueryable`1 sourcNEWLINEe, Expression expression, CancellationToken cancelNEWLINElationToken)
+   at Microsoft.EntityFrameworkCore.EntityFrameworNEWLINEkQueryableExtensions.ExecuteAsync[TSource,TResult]NEWLINE(MethodInfo operatorMethodInfo, IQueryable`1 sourcNEWLINEe, LambdaExpression expression, CancellationToken NEWLINEcancellationToken)
+   at Microsoft.EntityFrameworkCore.EntityFrameworNEWLINEkQueryableExtensions.SumAsync[TSource](IQueryable`NEWLINE1 source, Expression`1 selector, CancellationTokenNEWLINE cancellationToken)
+   at ExpenseTracker.Services.Implementations.TranNEWLINEsactionService.CheckBudgetAndNotifyAsync(Guid userNEWLINEId, Guid categoryId, DateTime transactionDate) in NEWLINEC:\Users\HareneeS\Desktop\Expense_Tracker\ExpenseTNEWLINEracker\Services\Implementations\TransactionServiceNEWLINE.cs:line 243
+

@@ -1,0 +1,23 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+appsettings.Development.json
+
+# Node
+node_modules/
+dist/
+
+# IDE
+.vs/
+.vscode/
+*.swp
+
+# Logs
+*.log
+budget_trace.log
+
+# OS
+Thumbs.db
+.DS_Store
