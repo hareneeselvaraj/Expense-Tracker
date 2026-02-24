@@ -50,17 +50,38 @@ public class DashboardService : IDashboardService
         var currentBalance = accounts.Sum(a => a.Balance);
 
         // ── Monthly Summary ──
-        var monthlySummary = nonTransferTx
+        // Group investment-table entries by month (fallback to current month if no date)
+        var now = DateTime.UtcNow;
+        var investmentsByMonth = investments
+            .GroupBy(i => new {
+                Year = (i.DateInvested ?? now).Year,
+                Month = (i.DateInvested ?? now).Month
+            })
+            .ToDictionary(g => g.Key, g => g.Sum(i => i.InvestedAmount));
+
+        var txMonthlyGroups = nonTransferTx
             .GroupBy(t => new { t.Date.Year, t.Date.Month })
-            .Select(g =>
+            .ToList();
+
+        // Collect all unique months from both sources
+        var allMonths = txMonthlyGroups
+            .Select(g => g.Key)
+            .Union(investmentsByMonth.Keys)
+            .Distinct()
+            .ToList();
+
+        var monthlySummary = allMonths.Select(key =>
             {
-                var income = g.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount);
-                var expense = g.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount);
-                var investment = g.Where(t => t.Type == TransactionType.Investment).Sum(t => t.Amount);
+                var txGroup = txMonthlyGroups.FirstOrDefault(g => g.Key.Year == key.Year && g.Key.Month == key.Month);
+                var income = txGroup?.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount) ?? 0;
+                var expense = txGroup?.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount) ?? 0;
+                var txInvestment = txGroup?.Where(t => t.Type == TransactionType.Investment).Sum(t => t.Amount) ?? 0;
+                investmentsByMonth.TryGetValue(key, out var portfolioInvestment);
+                var investment = txInvestment + portfolioInvestment;
                 return new MonthlySummaryDto
                 {
-                    Year = g.Key.Year,
-                    Month = g.Key.Month,
+                    Year = key.Year,
+                    Month = key.Month,
                     Income = income,
                     Expense = expense,
                     Investment = investment,

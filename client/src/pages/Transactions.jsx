@@ -1,8 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import api from '../services/api';
-import { FiPlus, FiTrash2, FiEdit2 } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiEdit2, FiDownload, FiFileText, FiGrid } from 'react-icons/fi';
 import { useToast } from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
+import DownloadCenter from '../components/DownloadCenter';
+import { downloadPDF, downloadExcel } from '../utils/downloadUtils';
+
+const MONTHS = [
+    { value: '', label: 'All Months' },
+    { value: '1', label: 'Jan' }, { value: '2', label: 'Feb' },
+    { value: '3', label: 'Mar' }, { value: '4', label: 'Apr' },
+    { value: '5', label: 'May' }, { value: '6', label: 'Jun' },
+    { value: '7', label: 'Jul' }, { value: '8', label: 'Aug' },
+    { value: '9', label: 'Sep' }, { value: '10', label: 'Oct' },
+    { value: '11', label: 'Nov' }, { value: '12', label: 'Dec' },
+];
 
 export default function Transactions() {
     const [transactions, setTransactions] = useState([]);
@@ -13,6 +25,9 @@ export default function Transactions() {
     const [editing, setEditing] = useState(null);
     const [loading, setLoading] = useState(true);
     const [deleteTarget, setDeleteTarget] = useState(null);
+    const [dlOpen, setDlOpen] = useState(false);
+    const [filterMonth, setFilterMonth] = useState('');
+    const [filterYear, setFilterYear] = useState('');
     const toast = useToast();
     const [form, setForm] = useState({
         accountId: '', categoryId: '', amount: '', type: 'Expense',
@@ -33,6 +48,20 @@ export default function Transactions() {
     };
 
     useEffect(() => { loadData(); }, []);
+
+    // Derive available years
+    const years = useMemo(() => {
+        const y = [...new Set(transactions.map(t => new Date(t.date).getFullYear()))].sort((a, b) => b - a);
+        return y;
+    }, [transactions]);
+
+    // Filtered transactions
+    const filtered = useMemo(() => {
+        let list = [...transactions];
+        if (filterYear) list = list.filter(t => new Date(t.date).getFullYear() === parseInt(filterYear));
+        if (filterMonth) list = list.filter(t => new Date(t.date).getMonth() + 1 === parseInt(filterMonth));
+        return list;
+    }, [transactions, filterMonth, filterYear]);
 
     const resetForm = () => {
         setForm({ accountId: '', categoryId: '', amount: '', type: 'Expense', onlineOffline: 'Offline', bankMode: '', description: '', date: '', isMonitor: false, isAutoDebit: false, transferAccountId: '', tagId: '' });
@@ -90,6 +119,29 @@ export default function Transactions() {
         setDeleteTarget(null);
     };
 
+    const getDateRangeLabel = () => {
+        const parts = [];
+        if (filterMonth) {
+            const m = MONTHS.find(m => m.value === filterMonth);
+            if (m) parts.push(m.label);
+        }
+        if (filterYear) parts.push(filterYear);
+        return parts.length > 0 ? parts.join(' ') : 'All Time';
+    };
+
+    const handleQuickPDF = () => {
+        downloadPDF(filtered, {
+            title: 'Transaction Report',
+            dateRange: getDateRangeLabel(),
+        });
+    };
+
+    const handleQuickExcel = () => {
+        downloadExcel(filtered, {
+            title: `Transaction Report — ${getDateRangeLabel()}`,
+        });
+    };
+
     if (loading) return <div className="page-loader">Loading…</div>;
 
     return (
@@ -102,11 +154,47 @@ export default function Transactions() {
                 onCancel={() => setDeleteTarget(null)}
             />
 
+            <DownloadCenter
+                open={dlOpen}
+                onClose={() => setDlOpen(false)}
+                transactions={transactions}
+                tags={tags}
+                categories={categories}
+            />
+
+            {/* Header */}
             <div className="page-header">
                 <h1 className="page-title">Transactions</h1>
-                <button className="btn btn-primary" onClick={() => { resetForm(); setShowForm(!showForm); }}>
-                    <FiPlus /> New
-                </button>
+                <div className="tx-header-actions">
+                    <button className="btn btn-primary" onClick={() => { resetForm(); setShowForm(!showForm); }}>
+                        <FiPlus /> New
+                    </button>
+                </div>
+            </div>
+
+            {/* Toolbar — filters + downloads */}
+            <div className="tx-toolbar">
+                <div className="tx-filters">
+                    <select className="tx-select" value={filterMonth} onChange={e => setFilterMonth(e.target.value)}>
+                        {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                    </select>
+                    <select className="tx-select" value={filterYear} onChange={e => setFilterYear(e.target.value)}>
+                        <option value="">All Years</option>
+                        {years.map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                    <span className="tx-count">{filtered.length} transactions</span>
+                </div>
+                <div className="tx-downloads">
+                    <button className="tx-dl-btn" onClick={handleQuickPDF} title="Download PDF">
+                        <FiFileText /> PDF
+                    </button>
+                    <button className="tx-dl-btn" onClick={handleQuickExcel} title="Download Excel">
+                        <FiGrid /> Excel
+                    </button>
+                    <button className="tx-dl-btn tx-dl-center" onClick={() => setDlOpen(true)} title="Download Center">
+                        <FiDownload /> Downloads
+                    </button>
+                </div>
             </div>
 
             {showForm && (
@@ -203,10 +291,10 @@ export default function Transactions() {
                         </tr>
                     </thead>
                     <tbody>
-                        {transactions.length === 0 ? (
-                            <tr><td colSpan="10" className="text-center">No transactions yet</td></tr>
+                        {filtered.length === 0 ? (
+                            <tr><td colSpan="10" className="text-center">No transactions found</td></tr>
                         ) : (
-                            transactions.map((tx) => (
+                            filtered.map((tx) => (
                                 <tr key={tx.id}>
                                     <td>{new Date(tx.date).toLocaleDateString('en-IN')}</td>
                                     <td>{tx.description || '—'}</td>

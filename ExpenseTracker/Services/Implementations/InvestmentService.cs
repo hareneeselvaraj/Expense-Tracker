@@ -20,8 +20,14 @@ public class InvestmentService : IInvestmentService
         {
             UserId = userId,
             Name = dto.Name,
+            AssetType = dto.AssetType,
+            Quantity = dto.Quantity,
+            BuyPrice = dto.BuyPrice,
             InvestedAmount = dto.InvestedAmount,
-            CurrentValue = dto.CurrentValue
+            CurrentValue = dto.CurrentValue,
+            Platform = dto.Platform,
+            Notes = dto.Notes,
+            DateInvested = dto.DateInvested
         };
 
         await _investmentRepo.AddAsync(investment);
@@ -47,8 +53,14 @@ public class InvestmentService : IInvestmentService
         if (investment == null || investment.UserId != userId) return null;
 
         if (dto.Name != null) investment.Name = dto.Name;
+        if (dto.AssetType != null) investment.AssetType = dto.AssetType;
+        if (dto.Quantity.HasValue) investment.Quantity = dto.Quantity.Value;
+        if (dto.BuyPrice.HasValue) investment.BuyPrice = dto.BuyPrice.Value;
         if (dto.InvestedAmount.HasValue) investment.InvestedAmount = dto.InvestedAmount.Value;
         if (dto.CurrentValue.HasValue) investment.CurrentValue = dto.CurrentValue.Value;
+        if (dto.Platform != null) investment.Platform = dto.Platform;
+        if (dto.Notes != null) investment.Notes = dto.Notes;
+        if (dto.DateInvested.HasValue) investment.DateInvested = dto.DateInvested.Value;
 
         await _investmentRepo.UpdateAsync(investment);
         return MapToDto(investment);
@@ -63,15 +75,18 @@ public class InvestmentService : IInvestmentService
         return true;
     }
 
-    /// <summary>
-    /// ROI = ((CurrentValue - InvestedAmount) / InvestedAmount) * 100
-    /// </summary>
     private static InvestmentResponseDto MapToDto(Investment i) => new()
     {
         Id = i.Id,
         Name = i.Name,
+        AssetType = i.AssetType,
+        Quantity = i.Quantity,
+        BuyPrice = i.BuyPrice,
         InvestedAmount = i.InvestedAmount,
         CurrentValue = i.CurrentValue,
+        Platform = i.Platform,
+        Notes = i.Notes,
+        DateInvested = i.DateInvested,
         ROI = i.ROI
     };
 }

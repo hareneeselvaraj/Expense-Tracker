@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiHome, FiCreditCard, FiDollarSign, FiPieChart, FiTrendingUp, FiLogOut, FiGrid, FiTag } from 'react-icons/fi';
+import { FiHome, FiCreditCard, FiDollarSign, FiPieChart, FiTrendingUp, FiLogOut, FiGrid, FiTag, FiCpu } from 'react-icons/fi';
+import ThemeToggle from './ThemeToggle';
 
 export default function Sidebar() {
     const { user, logout } = useAuth();
@@ -19,6 +20,7 @@ export default function Sidebar() {
         { to: '/tags', icon: <FiTag />, label: 'Tags' },
         { to: '/budgets', icon: <FiPieChart />, label: 'Budgets' },
         { to: '/investments', icon: <FiTrendingUp />, label: 'Investments' },
+        { to: '/ai-insights', icon: <FiCpu />, label: 'AI Insights' },
     ];
 
     return (
@@ -40,6 +42,7 @@ export default function Sidebar() {
                 ))}
             </nav>
             <div className="sidebar-footer">
+                <ThemeToggle />
                 <div className="user-info">
                     <div className="user-avatar">{user?.name?.[0]?.toUpperCase() || 'U'}</div>
                     <span className="user-name">{user?.name || 'User'}</span>
