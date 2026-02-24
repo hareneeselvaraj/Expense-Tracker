@@ -43,7 +43,7 @@ namespace ExpenseTracker.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Accounts");
+                    b.ToTable("Accounts", (string)null);
                 });
 
             modelBuilder.Entity("ExpenseTracker.Models.Budget", b =>
@@ -76,7 +76,7 @@ namespace ExpenseTracker.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Budgets");
+                    b.ToTable("Budgets", (string)null);
                 });
 
             modelBuilder.Entity("ExpenseTracker.Models.Category", b =>
@@ -102,7 +102,7 @@ namespace ExpenseTracker.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Categories");
+                    b.ToTable("Categories", (string)null);
                 });
 
             modelBuilder.Entity("ExpenseTracker.Models.Investment", b =>
@@ -111,18 +111,8 @@ namespace ExpenseTracker.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("AssetType")
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal?>("BuyPrice")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<decimal>("CurrentValue")
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime?>("DateInvested")
-                        .HasColumnType("TEXT");
 
                     b.Property<decimal>("InvestedAmount")
                         .HasColumnType("decimal(18,2)");
@@ -132,17 +122,6 @@ namespace ExpenseTracker.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Notes")
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Platform")
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal?>("Quantity")
-                        .HasColumnType("decimal(18,4)");
-
                     b.Property<Guid>("UserId")
                         .HasColumnType("TEXT");
 
@@ -150,7 +129,7 @@ namespace ExpenseTracker.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Investments");
+                    b.ToTable("Investments", (string)null);
                 });
 
             modelBuilder.Entity("ExpenseTracker.Models.Tag", b =>
@@ -171,7 +150,7 @@ namespace ExpenseTracker.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Tags");
+                    b.ToTable("Tags", (string)null);
                 });
 
             modelBuilder.Entity("ExpenseTracker.Models.Transaction", b =>
@@ -237,7 +216,7 @@ namespace ExpenseTracker.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Transactions");
+                    b.ToTable("Transactions", (string)null);
                 });
 
             modelBuilder.Entity("ExpenseTracker.Models.User", b =>
@@ -268,7 +247,7 @@ namespace ExpenseTracker.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("ExpenseTracker.Models.Account", b =>

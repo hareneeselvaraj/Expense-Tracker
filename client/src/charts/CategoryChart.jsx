@@ -5,17 +5,17 @@ import { useTheme } from '../context/ThemeContext';
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const COLORS_DARK = [
-    'rgba(130, 140, 220, 0.55)', 'rgba(210, 115, 115, 0.55)', 'rgba(110, 191, 164, 0.55)',
-    'rgba(210, 170, 100, 0.55)', 'rgba(200, 130, 170, 0.55)', 'rgba(150, 130, 200, 0.55)',
-    'rgba(120, 185, 180, 0.55)', 'rgba(200, 150, 110, 0.55)', 'rgba(130, 180, 210, 0.55)',
-    'rgba(170, 190, 110, 0.55)',
+    'rgba(235, 110, 130, 0.65)', 'rgba(110, 191, 164, 0.6)', 'rgba(170, 130, 210, 0.6)',
+    'rgba(140, 150, 170, 0.55)', 'rgba(240, 170, 80, 0.6)', 'rgba(80, 200, 190, 0.6)',
+    'rgba(200, 130, 170, 0.55)', 'rgba(150, 180, 110, 0.55)', 'rgba(130, 180, 210, 0.55)',
+    'rgba(210, 150, 110, 0.55)',
 ];
 
 const COLORS_LIGHT = [
-    'rgba(99, 102, 241, 0.45)', 'rgba(220, 38, 38, 0.4)', 'rgba(5, 150, 105, 0.4)',
-    'rgba(217, 119, 6, 0.4)', 'rgba(219, 39, 119, 0.4)', 'rgba(124, 58, 237, 0.4)',
-    'rgba(6, 182, 212, 0.4)', 'rgba(234, 88, 12, 0.4)', 'rgba(37, 99, 235, 0.4)',
-    'rgba(132, 204, 22, 0.4)',
+    'rgba(235, 87, 110, 0.7)', 'rgba(16, 185, 129, 0.6)', 'rgba(139, 92, 246, 0.55)',
+    'rgba(148, 163, 184, 0.6)', 'rgba(245, 158, 11, 0.65)', 'rgba(6, 182, 212, 0.55)',
+    'rgba(236, 72, 153, 0.55)', 'rgba(132, 204, 22, 0.55)', 'rgba(37, 99, 235, 0.55)',
+    'rgba(234, 88, 12, 0.55)',
 ];
 
 export default function CategoryChart({ data }) {
@@ -50,7 +50,7 @@ export default function CategoryChart({ data }) {
     };
 
     return (
-        <div className="chart-container-sm" style={{ height: '180px' }}>
+        <div className="chart-container-sm" style={{ height: '240px' }}>
             <Doughnut data={chartData} options={options} />
         </div>
     );

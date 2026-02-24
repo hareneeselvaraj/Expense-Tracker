@@ -11,6 +11,7 @@ import Transactions from './pages/Transactions';
 import Accounts from './pages/Accounts';
 import Budgets from './pages/Budgets';
 import Investments from './pages/Investments';
+import Portfolio from './pages/Portfolio';
 import Categories from './pages/Categories';
 import Tags from './pages/Tags';
 import AIInsights from './pages/AIInsights';
@@ -32,6 +33,7 @@ export default function App() {
                                 <Route path="/tags" element={<Tags />} />
                                 <Route path="/budgets" element={<Budgets />} />
                                 <Route path="/investments" element={<Investments />} />
+                                <Route path="/portfolio" element={<Portfolio />} />
                                 <Route path="/ai-insights" element={<AIInsights />} />
                             </Route>
                         </Routes>

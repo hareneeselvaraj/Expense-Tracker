@@ -196,6 +196,48 @@ a:hover {
   flex-shrink: 0;
 }
 
+/* ── Sidebar Sub-menu ── */
+.nav-parent {
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  font-family: 'Inter', sans-serif;
+  justify-content: flex-start;
+}
+
+.nav-chevron {
+  margin-left: auto;
+  font-size: 0.85rem;
+  transition: transform 0.25s ease;
+}
+
+.nav-chevron-open {
+  transform: rotate(180deg);
+}
+
+.nav-submenu {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.25s ease;
+  opacity: 0;
+}
+
+.nav-submenu-open {
+  max-height: 120px;
+  opacity: 1;
+}
+
+.nav-sub-link {
+  padding-left: 46px !important;
+  font-size: 0.82rem !important;
+}
+
+.nav-sub-link svg {
+  font-size: 0.95rem;
+}
+
 .sidebar-footer {
   padding: 16px 16px 22px;
   border-top: 1px solid var(--border);
@@ -633,6 +675,58 @@ a:hover {
   margin-bottom: 24px;
 }
 
+/* ── 2×2 Dashboard primary chart grid ── */
+.dash-charts-2x2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.dash-chart-card {
+  background: var(--bg-card);
+  border: 1px solid rgba(30, 37, 54, 0.35);
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: var(--transition);
+}
+
+.dash-chart-card:hover {
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
+  border-color: rgba(42, 49, 72, 0.45);
+}
+
+.dash-chart-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+  letter-spacing: 0.1px;
+}
+
+[data-theme="light"] .dash-chart-card {
+  background: #fff;
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .dash-chart-card:hover {
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .dash-chart-title {
+  color: #1e293b;
+}
+
+@media (max-width: 768px) {
+  .dash-charts-2x2 {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
 .chart-card {
   background: var(--bg-card);
   border: 1px solid rgba(30, 37, 54, 0.4);
@@ -951,6 +1045,163 @@ tr:hover td {
 .badge-investment {
   background: rgba(245, 158, 11, 0.12);
   color: var(--amber);
+}
+
+/* ══════════════════════ CATEGORIES PAGE ══════════════════════ */
+.cat-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 28px;
+}
+
+.cat-page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.cat-page-subtitle {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.cat-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.82rem;
+  padding: 9px 18px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+/* ── Inline add form ── */
+.cat-form-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.cat-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.cat-form .form-group {
+  flex: 1;
+  min-width: 160px;
+}
+
+.cat-form-actions {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 2px;
+}
+
+/* ── Grouped sections ── */
+.cat-section {
+  margin-bottom: 28px;
+}
+
+.cat-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+}
+
+.cat-chips-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* ── Individual chip ── */
+.cat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: var(--transition);
+  position: relative;
+  cursor: default;
+}
+
+.cat-chip:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.cat-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cat-chip-label {
+  white-space: nowrap;
+}
+
+/* ── hover delete button ── */
+.cat-chip-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.2s ease, color 0.2s ease;
+  margin-left: -2px;
+}
+
+.cat-chip:hover .cat-chip-delete {
+  opacity: 1;
+}
+
+.cat-chip-delete:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+/* ── Light theme overrides ── */
+[data-theme="light"] .cat-chip {
+  background: #fff;
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .cat-chip:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .cat-form-card {
+  background: #fff;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .cat-section-title {
+  color: #1e293b;
 }
 
 /* ══════════════════════ DATA CARDS ══════════════════════ */
@@ -2394,6 +2645,121 @@ tr:hover td {
   color: var(--text-muted);
 }
 
+/* Tab count badge */
+.inv-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  border-radius: 10px;
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--primary);
+  margin-left: 2px;
+}
+
+.inv-tab-active .inv-tab-count {
+  background: var(--primary);
+  color: #fff;
+}
+
+.inv-tab-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* Progress bar (Deposits) */
+.inv-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 100px;
+}
+
+.inv-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.inv-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #818cf8);
+  border-radius: 8px;
+  transition: width 0.4s ease;
+}
+
+.inv-progress-text {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Status badges */
+.inv-status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.inv-status-active {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.inv-status-matured {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+}
+
+/* "Estimated" label (PPF maturity) */
+.inv-estimated-label {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: 0.58rem;
+  font-weight: 600;
+  border-radius: 4px;
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  vertical-align: middle;
+}
+
+/* Notes cell */
+.inv-notes-cell {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+/* Empty state */
+.inv-empty {
+  text-align: center;
+  padding: 48px 20px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
 /* ══════════════════════ INVESTMENT ANALYSIS (AI INSIGHTS) ══════════════════════ */
 .ai-inv-analysis {
   animation: fadeIn 0.3s ease;
@@ -2674,4 +3040,170 @@ tr:hover td {
 [data-theme="light"] .ai-inv-alloc-card {
   border-color: var(--border);
   box-shadow: var(--shadow-sm);
+}
+
+/* ══════════════════════ DYNAMIC INVESTMENT FORM ══════════════════════ */
+.inv-form-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+  animation: fadeIn 0.3s ease;
+}
+
+.inv-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.inv-form-header h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Dynamic field groups with smooth transition */
+.inv-field-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  transition: max-height 0.35s ease, opacity 0.25s ease, margin 0.3s ease;
+  overflow: hidden;
+}
+
+.inv-field-visible {
+  max-height: 200px;
+  opacity: 1;
+  margin-bottom: 0;
+}
+
+.inv-field-hidden {
+  max-height: 0;
+  opacity: 0;
+  margin: 0;
+  pointer-events: none;
+}
+
+/* Auto-calculated read-only fields */
+.inv-auto-calc {
+  background: rgba(99, 102, 241, 0.04) !important;
+  border-color: rgba(99, 102, 241, 0.2) !important;
+  color: var(--primary) !important;
+  font-weight: 600;
+  cursor: default;
+}
+
+.inv-auto-calc:focus {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1) !important;
+}
+
+.inv-auto-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: #6366f1;
+  background: rgba(99, 102, 241, 0.08);
+  padding: 1px 6px;
+  border-radius: 6px;
+  margin-left: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  vertical-align: middle;
+}
+
+.inv-auto-badge svg {
+  font-size: 0.55rem;
+}
+
+/* Frequency toggle (PPF Monthly/Yearly) */
+.inv-freq-toggle {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.inv-freq-btn {
+  padding: 8px 20px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.inv-freq-btn:hover {
+  background: var(--bg-card-hover);
+}
+
+.inv-freq-active {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+  font-weight: 600;
+}
+
+/* Validation error */
+.inv-field-error {
+  font-size: 0.68rem;
+  color: #ef4444;
+  margin-top: 2px;
+  display: block;
+}
+
+/* Required asterisk */
+.req {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+/* Light theme tweaks */
+[data-theme="light"] .inv-form-card {
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .inv-auto-calc {
+  background: rgba(99, 102, 241, 0.03) !important;
+}
+
+/* ── RD Status Badges ── */
+.inv-status-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 12px;
+  letter-spacing: 0.02em;
+  text-transform: capitalize;
+}
+
+.inv-status-active {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+}
+
+.inv-status-completed {
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366f1;
+}
+
+/* Maturity hint under value */
+.inv-maturity-hint {
+  display: block;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 1px;
 }
