@@ -1,0 +1,13 @@
+bin/
+obj/
+.vs/
+*.db
+*.user
+*.log
+*.txt
+*.md
+*.py
+*.csx
+node_modules/
+client/
+ExpenseTracker.Tests/
