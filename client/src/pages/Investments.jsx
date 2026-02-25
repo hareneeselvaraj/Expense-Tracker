@@ -9,7 +9,7 @@ import ConfirmModal from '../components/ConfirmModal';
 const CATEGORY_TYPES = {
     Market: ['Stock', 'Mutual Fund', 'ETF', 'NPS', 'Crypto'],
     Deposit: ['FD', 'RD', 'PPF', 'SSY'],
-    Physical: ['Gold', 'Silver', 'Land', 'Real Estate'],
+    Physical: ['Gold', 'Silver'],
 };
 
 const ALL_TYPES = [...CATEGORY_TYPES.Market, ...CATEGORY_TYPES.Deposit, ...CATEGORY_TYPES.Physical];
@@ -25,6 +25,7 @@ function isDeposit(t) { return CATEGORY_TYPES.Deposit.includes(t); }
 function isRD(t) { return t === 'RD'; }
 function isPPF(t) { return t === 'PPF'; }
 function isFixedIncome(t) { return isDeposit(t); }
+function isPhysicalMetal(t) { return t === 'Gold' || t === 'Silver'; }
 
 function fmt(v) {
     return `₹${(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -179,7 +180,7 @@ function InvestmentForm({ editing, onClose, onSaved, investments, defaultCategor
         const payload = {
             name: data.name,
             assetType: resolvedType || undefined,
-            quantity: isMarket(resolvedType) && data.quantity ? parseFloat(data.quantity) : undefined,
+            quantity: (isMarket(resolvedType) || isPhysicalMetal(resolvedType)) && data.quantity ? parseFloat(data.quantity) : undefined,
             buyPrice: isMarket(resolvedType) && data.buyPrice ? parseFloat(data.buyPrice) : undefined,
             investedAmount: parseFloat(data.investedAmount),
             currentValue: parseFloat(data.currentValue),
@@ -212,6 +213,7 @@ function InvestmentForm({ editing, onClose, onSaved, investments, defaultCategor
     const showFrequency = isPPF(assetType);
     const investedReadOnly = isMarket(assetType) || isRD(assetType);
     const currentReadOnly = isFixedIncome(assetType);
+    const showGrams = isPhysicalMetal(assetType);
 
     return (
         <div className="form-card inv-form-card">
@@ -235,19 +237,34 @@ function InvestmentForm({ editing, onClose, onSaved, investments, defaultCategor
                     {errors.assetType && <span className="inv-field-error">{errors.assetType.message}</span>}
                 </div>
 
-                {/* Stock/MF/ETF fields */}
-                <div className={`inv-field-group ${showQty ? 'inv-field-visible' : 'inv-field-hidden'}`}>
+                {/* Gold/Silver: Weight in Grams */}
+                {showGrams && (
                     <div className="form-group">
-                        <label>Quantity (Units) <span className="req">*</span></label>
-                        <input type="number" step="0.0001" {...register('quantity', showQty ? { required: 'Quantity is required' } : {})} placeholder="Units" />
+                        <label>Weight (Grams) <span className="req">*</span></label>
+                        <input type="number" step="0.01"
+                            {...register('quantity', { required: 'Weight in grams is required' })}
+                            placeholder="e.g. 10, 50, 100" />
                         {errors.quantity && <span className="inv-field-error">{errors.quantity.message}</span>}
                     </div>
-                    <div className="form-group">
-                        <label>Buy Price / Unit <span className="req">*</span></label>
-                        <input type="number" step="0.01" {...register('buyPrice', showQty ? { required: 'Buy price is required' } : {})} placeholder="₹ per unit" />
-                        {errors.buyPrice && <span className="inv-field-error">{errors.buyPrice.message}</span>}
+                )}
+
+                {/* Stock/MF/ETF: Quantity + Buy Price — side by side */}
+                {showQty && (
+                    <div className="inv-field-group inv-field-visible">
+                        <div className="form-group">
+                            <label>Quantity (Units) <span className="req">*</span></label>
+                            <input type="number" step="0.0001"
+                                {...register('quantity', { required: 'Quantity is required' })}
+                                placeholder="Units" />
+                            {errors.quantity && <span className="inv-field-error">{errors.quantity.message}</span>}
+                        </div>
+                        <div className="form-group">
+                            <label>Buy Price / Unit <span className="req">*</span></label>
+                            <input type="number" step="0.01" {...register('buyPrice', { required: 'Buy price is required' })} placeholder="₹ per unit" />
+                            {errors.buyPrice && <span className="inv-field-error">{errors.buyPrice.message}</span>}
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* RD Monthly Amount */}
                 <div className={`inv-field-group ${showMonthly ? 'inv-field-visible' : 'inv-field-hidden'}`}>
@@ -464,7 +481,7 @@ function DepositsTable({ items, onEdit, onDelete }) {
 
 // ── PHYSICAL ASSETS TABLE ──
 function PhysicalTable({ items, onEdit, onDelete }) {
-    if (items.length === 0) return <div className="inv-empty">No physical assets yet — add gold, silver, land or real estate!</div>;
+    if (items.length === 0) return <div className="inv-empty">No physical assets yet — add gold or silver!</div>;
     return (
         <div className="inv-table-card">
             <div className="table-wrapper">
@@ -472,6 +489,7 @@ function PhysicalTable({ items, onEdit, onDelete }) {
                     <thead>
                         <tr>
                             <th>Asset Name</th><th>Type</th>
+                            <th className="text-right">Grams</th>
                             <th className="text-right">Purchase Value</th>
                             <th className="text-right">Current Value</th>
                             <th className="text-right">ROI (%)</th>
@@ -490,6 +508,7 @@ function PhysicalTable({ items, onEdit, onDelete }) {
                                         </div>
                                     </td>
                                     <td><span className="inv-type-badge">{inv.assetType}</span></td>
+                                    <td className="text-right">{inv.quantity ? `${inv.quantity}g` : '—'}</td>
                                     <td className="text-right">{fmt(inv.investedAmount)}</td>
                                     <td className="text-right">{fmt(inv.currentValue)}</td>
                                     <td className={`text-right ${isPos ? 'text-green' : 'text-red'}`}>{isPos ? '+' : ''}{inv.roi?.toFixed(2)}%</td>
@@ -563,7 +582,7 @@ export default function Investments() {
     const tabInfo = {
         Market: { icon: '📈', label: 'Market Investments', desc: 'Stocks, Mutual Funds, ETFs, NPS, Crypto — value driven by market price.' },
         Deposit: { icon: '🏦', label: 'Deposits & Schemes', desc: 'FD, RD, PPF, SSY — time-based, contribution-driven investments.' },
-        Physical: { icon: '🏠', label: 'Physical Assets', desc: 'Gold, Silver, Land, Real Estate — manually valued assets.' },
+        Physical: { icon: '🏠', label: 'Physical Assets', desc: 'Gold, Silver — manually valued assets.' },
     };
 
     if (loading) return <div className="page-loader">Loading investments…</div>;

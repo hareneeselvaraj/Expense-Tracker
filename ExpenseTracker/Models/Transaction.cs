@@ -42,6 +42,8 @@ public class Transaction
 
     public Guid? TransferAccountId { get; set; }
 
+    public Guid? InvestmentId { get; set; }
+
     // Navigation
     [ForeignKey(nameof(UserId))]
     public User User { get; set; } = null!;
@@ -57,4 +59,7 @@ public class Transaction
 
     [ForeignKey(nameof(TagId))]
     public Tag? Tag { get; set; }
+
+    [ForeignKey(nameof(InvestmentId))]
+    public Investment? Investment { get; set; }
 }

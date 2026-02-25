@@ -3082,10 +3082,7 @@ tr:hover td {
 }
 
 .inv-field-hidden {
-  max-height: 0;
-  opacity: 0;
-  margin: 0;
-  pointer-events: none;
+  display: none;
 }
 
 /* Auto-calculated read-only fields */
@@ -3206,4 +3203,582 @@ tr:hover td {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-top: 1px;
+}
+
+/* ══════════════════════ MILEAGE TRACKER ══════════════════════ */
+
+.mil-page h1 {
+  display: flex;
+  align-items: center;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+/* ── Summary Cards ── */
+.mil-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.mil-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.mil-stat-card:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+}
+
+.mil-stat-icon {
+  font-size: 1.2rem;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.mil-stat-label {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-weight: 600;
+}
+
+.mil-stat-value {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 1px;
+}
+
+/* ── Alerts ── */
+.mil-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.mil-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  animation: fadeIn 0.3s ease;
+}
+
+.mil-alert-warning {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: #b45309;
+}
+
+.mil-alert-danger {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #dc2626;
+}
+
+.mil-alert-info {
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  color: #6366f1;
+}
+
+[data-theme="dark"] .mil-alert-warning {
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .mil-alert-danger {
+  color: #f87171;
+}
+
+[data-theme="dark"] .mil-alert-info {
+  color: #a5b4fc;
+}
+
+.mil-alert-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.mil-alert-vehicle {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── Content Grid ── */
+.mil-content-grid {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 900px) {
+  .mil-content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Panel (shared) ── */
+.mil-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.mil-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.mil-panel-header h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.mil-empty {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 24px 10px;
+}
+
+/* ── Vehicle List ── */
+.mil-vehicle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mil-vehicle-chip {
+  padding: 6px 14px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: left;
+  font-family: 'Inter', sans-serif;
+}
+
+.mil-vehicle-chip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.mil-vehicle-chip.active {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.mil-vehicle-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.mil-vehicle-card:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.mil-vehicle-card.active {
+  background: rgba(99, 102, 241, 0.06);
+  border-color: var(--primary);
+}
+
+.mil-vehicle-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.mil-vehicle-emoji {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.mil-vehicle-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mil-vehicle-info strong {
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mil-vehicle-sub {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.mil-vehicle-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.mil-vehicle-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* ── Chart Panel ── */
+.mil-chart-panel {
+  min-height: 260px;
+}
+
+.mil-chart-wrap {
+  height: 200px;
+}
+
+/* ── Fuel Entry Table ── */
+.mil-entries-panel {
+  margin-bottom: 20px;
+}
+
+.mil-table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+}
+
+.mil-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.mil-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.mil-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.mil-table tbody tr:hover {
+  background: rgba(99, 102, 241, 0.03);
+}
+
+.mil-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.mil-mileage-cell {
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.mil-actions-cell {
+  display: flex;
+  gap: 4px;
+}
+
+/* ── Per-Vehicle Summary Grid ── */
+.mil-vehicle-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.mil-vsummary-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.mil-vsummary-card:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+}
+
+.mil-vsummary-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.mil-vsummary-header strong {
+  font-size: 0.85rem;
+}
+
+.mil-vsummary-type {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--primary);
+  background: rgba(99, 102, 241, 0.08);
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin-left: auto;
+}
+
+.mil-vsummary-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.mil-vsummary-stats>div {
+  display: flex;
+  flex-direction: column;
+}
+
+.mil-vsummary-stats span {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: 600;
+}
+
+.mil-vsummary-stats strong {
+  font-size: 0.82rem;
+  color: var(--text);
+  margin-top: 1px;
+}
+
+/* ── Modal ── */
+.mil-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.mil-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px;
+  width: 90%;
+  max-width: 480px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: fadeIn 0.3s ease;
+}
+
+.mil-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.mil-modal-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* ── Form ── */
+.mil-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mil-form-row label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 6px;
+}
+
+.mil-form-row input,
+.mil-form-row select {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 0.8rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: var(--transition);
+  box-sizing: border-box;
+}
+
+.mil-form-row input:focus,
+.mil-form-row select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.mil-form-row-2col {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.mil-form-computed {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 8px 12px;
+  background: rgba(99, 102, 241, 0.04);
+  border-radius: 10px;
+  text-align: center;
+}
+
+.mil-form-computed strong {
+  color: var(--primary);
+}
+
+.mil-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* ── Shared icon button styles ── */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.78rem;
+  transition: var(--transition);
+}
+
+.btn-icon:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.btn-icon-danger:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.btn-sm {
+  padding: 5px 12px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 7px 16px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border-radius: 10px;
+  font-family: 'Inter', sans-serif;
+  transition: var(--transition);
+}
+
+.btn-outline:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* ── Light theme tweaks ── */
+[data-theme="light"] .mil-stat-card,
+[data-theme="light"] .mil-panel,
+[data-theme="light"] .mil-vsummary-card,
+[data-theme="light"] .mil-modal {
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Page Loader ── */
+.page-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  color: var(--text-muted);
+  font-size: 0.9rem;
 }

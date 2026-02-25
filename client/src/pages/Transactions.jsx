@@ -21,6 +21,7 @@ export default function Transactions() {
     const [accounts, setAccounts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [tags, setTags] = useState([]);
+    const [investments, setInvestments] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [editing, setEditing] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -32,18 +33,19 @@ export default function Transactions() {
     const [form, setForm] = useState({
         accountId: '', categoryId: '', amount: '', type: 'Expense',
         onlineOffline: 'Offline', bankMode: '', description: '', date: '',
-        isMonitor: false, isAutoDebit: false, transferAccountId: '', tagId: '',
+        isMonitor: false, isAutoDebit: false, transferAccountId: '', tagId: '', investmentId: '',
     });
 
     const loadData = async () => {
         try {
-            const [txRes, accRes, catRes, tagRes] = await Promise.all([
-                api.get('/transaction'), api.get('/account'), api.get('/category'), api.get('/tag'),
+            const [txRes, accRes, catRes, tagRes, invRes] = await Promise.all([
+                api.get('/transaction'), api.get('/account'), api.get('/category'), api.get('/tag'), api.get('/investment'),
             ]);
             setTransactions(txRes.data);
             setAccounts(accRes.data);
             setCategories(catRes.data);
             setTags(tagRes.data);
+            setInvestments(invRes.data);
         } catch { /* ignore */ } finally { setLoading(false); }
     };
 
@@ -64,7 +66,7 @@ export default function Transactions() {
     }, [transactions, filterMonth, filterYear]);
 
     const resetForm = () => {
-        setForm({ accountId: '', categoryId: '', amount: '', type: 'Expense', onlineOffline: 'Offline', bankMode: '', description: '', date: '', isMonitor: false, isAutoDebit: false, transferAccountId: '', tagId: '' });
+        setForm({ accountId: '', categoryId: '', amount: '', type: 'Expense', onlineOffline: 'Offline', bankMode: '', description: '', date: '', isMonitor: false, isAutoDebit: false, transferAccountId: '', tagId: '', investmentId: '' });
         setEditing(null);
         setShowForm(false);
     };
@@ -78,6 +80,7 @@ export default function Transactions() {
             bankMode: form.onlineOffline === 'Online' ? (form.bankMode || 'NetBanking') : undefined,
             transferAccountId: form.type === 'Transfer' ? form.transferAccountId : undefined,
             tagId: form.tagId || undefined,
+            investmentId: (form.type === 'Investment' && form.investmentId) ? form.investmentId : undefined,
         };
         try {
             if (editing) {
@@ -101,7 +104,7 @@ export default function Transactions() {
             bankMode: tx.bankMode || '', description: tx.description || '',
             date: tx.date?.split('T')[0] || '', isMonitor: tx.isMonitor,
             isAutoDebit: tx.isAutoDebit, transferAccountId: tx.transferAccountId || '',
-            tagId: tx.tagId || '',
+            tagId: tx.tagId || '', investmentId: tx.investmentId || '',
         });
         setEditing(tx.id);
         setShowForm(true);
@@ -226,6 +229,7 @@ export default function Transactions() {
                                 <option value="Expense">Expense</option>
                                 <option value="Transfer">Transfer</option>
                                 <option value="Investment">Investment</option>
+                                <option value="Withdraw">Withdraw</option>
                             </select>
                         </div>
                         <div className="form-group">
@@ -252,6 +256,15 @@ export default function Transactions() {
                                 <select value={form.transferAccountId} onChange={(e) => setForm({ ...form, transferAccountId: e.target.value })} required>
                                     <option value="">Select Account</option>
                                     {accounts.filter((a) => a.id !== form.accountId).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                </select>
+                            </div>
+                        )}
+                        {(form.type === 'Investment' || (form.type === 'Expense' && form.isAutoDebit)) && (
+                            <div className="form-group">
+                                <label>Link to Investment</label>
+                                <select value={form.investmentId} onChange={(e) => setForm({ ...form, investmentId: e.target.value })}>
+                                    <option value="">None</option>
+                                    {investments.map((inv) => <option key={inv.id} value={inv.id}>{inv.name} ({inv.assetType})</option>)}
                                 </select>
                             </div>
                         )}

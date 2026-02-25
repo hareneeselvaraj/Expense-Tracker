@@ -36,3 +36,14 @@ public interface IUserRepository : IRepository<User>
 {
     Task<User?> GetByEmailAsync(string email);
 }
+
+public interface IVehicleRepository : IRepository<Vehicle>
+{
+    Task<IEnumerable<Vehicle>> GetByUserIdAsync(Guid userId);
+}
+
+public interface IFuelEntryRepository : IRepository<FuelEntry>
+{
+    Task<IEnumerable<FuelEntry>> GetByUserIdAsync(Guid userId);
+    Task<IEnumerable<FuelEntry>> GetByVehicleIdAsync(Guid vehicleId);
+}

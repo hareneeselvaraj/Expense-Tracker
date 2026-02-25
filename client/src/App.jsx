@@ -15,6 +15,7 @@ import Portfolio from './pages/Portfolio';
 import Categories from './pages/Categories';
 import Tags from './pages/Tags';
 import AIInsights from './pages/AIInsights';
+import MileageTracker from './pages/MileageTracker';
 
 export default function App() {
     return (
@@ -34,6 +35,7 @@ export default function App() {
                                 <Route path="/budgets" element={<Budgets />} />
                                 <Route path="/investments" element={<Investments />} />
                                 <Route path="/portfolio" element={<Portfolio />} />
+                                <Route path="/mileage" element={<MileageTracker />} />
                                 <Route path="/ai-insights" element={<AIInsights />} />
                             </Route>
                         </Routes>

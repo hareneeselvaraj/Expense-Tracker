@@ -14,6 +14,8 @@ public class AppDbContext : DbContext
     public DbSet<Transaction> Transactions => Set<Transaction>();
     public DbSet<Budget> Budgets => Set<Budget>();
     public DbSet<Investment> Investments => Set<Investment>();
+    public DbSet<Vehicle> Vehicles => Set<Vehicle>();
+    public DbSet<FuelEntry> FuelEntries => Set<FuelEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -123,6 +125,29 @@ public class AppDbContext : DbContext
             e.HasOne(i => i.User)
              .WithMany(u => u.Investments)
              .HasForeignKey(i => i.UserId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── Vehicle ──
+        modelBuilder.Entity<Vehicle>(e =>
+        {
+            e.HasOne(v => v.User)
+             .WithMany(u => u.Vehicles)
+             .HasForeignKey(v => v.UserId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── FuelEntry ──
+        modelBuilder.Entity<FuelEntry>(e =>
+        {
+            e.HasOne(f => f.User)
+             .WithMany(u => u.FuelEntries)
+             .HasForeignKey(f => f.UserId)
+             .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(f => f.Vehicle)
+             .WithMany(v => v.FuelEntries)
+             .HasForeignKey(f => f.VehicleId)
              .OnDelete(DeleteBehavior.Cascade);
         });
     }

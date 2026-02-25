@@ -34,6 +34,8 @@ public class CreateTransactionDto
     public Guid? TransferAccountId { get; set; }
 
     public Guid? TagId { get; set; }
+
+    public Guid? InvestmentId { get; set; }
 }
 
 public class UpdateTransactionDto
@@ -52,6 +54,7 @@ public class UpdateTransactionDto
     public bool? IsAutoDebit { get; set; }
     public Guid? TransferAccountId { get; set; }
     public Guid? TagId { get; set; }
+    public Guid? InvestmentId { get; set; }
 }
 
 public class TransactionResponseDto
@@ -73,4 +76,6 @@ public class TransactionResponseDto
     public string? TransferAccountName { get; set; }
     public Guid? TagId { get; set; }
     public string? TagName { get; set; }
+    public Guid? InvestmentId { get; set; }
+    public string? InvestmentName { get; set; }
 }

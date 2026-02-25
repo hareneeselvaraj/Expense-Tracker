@@ -1,7 +1,7 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { FiHome, FiCreditCard, FiDollarSign, FiPieChart, FiTrendingUp, FiLogOut, FiGrid, FiTag, FiCpu, FiChevronDown, FiBarChart2, FiList } from 'react-icons/fi';
+import { FiHome, FiCreditCard, FiDollarSign, FiPieChart, FiTrendingUp, FiLogOut, FiGrid, FiTag, FiCpu, FiChevronDown, FiBarChart2, FiList, FiTruck } from 'react-icons/fi';
 import ThemeToggle from './ThemeToggle';
 
 export default function Sidebar() {
@@ -71,6 +71,14 @@ export default function Sidebar() {
                         </NavLink>
                     ))}
                 </div>
+
+                <NavLink
+                    to="/mileage"
+                    className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                >
+                    <FiTruck />
+                    <span>Mileage Tracker</span>
+                </NavLink>
 
                 <NavLink
                     to="/ai-insights"

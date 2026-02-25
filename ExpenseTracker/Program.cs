@@ -52,6 +52,8 @@ builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddScoped<IBudgetRepository, BudgetRepository>();
 builder.Services.AddScoped<IInvestmentRepository, InvestmentRepository>();
+builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
+builder.Services.AddScoped<IFuelEntryRepository, FuelEntryRepository>();
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -63,6 +65,7 @@ builder.Services.AddScoped<IInvestmentService, InvestmentService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<ITagService, TagService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IMileageService, MileageService>();
 
 // ───────────────────── Controllers + Swagger ─────────────────────
 builder.Services.AddControllers()
@@ -170,6 +173,84 @@ using (var scope = app.Services.CreateScope())
             cmd2.CommandText = sql;
             await cmd2.ExecuteNonQueryAsync();
             Console.WriteLine($"  ✓ Added column: {col}");
+        }
+    }
+
+    // ── Add missing columns to Transactions table ──
+    var txCols = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    using (var cmdTx = conn.CreateCommand())
+    {
+        cmdTx.CommandText = "PRAGMA table_info(Transactions);";
+        using var readerTx = await cmdTx.ExecuteReaderAsync();
+        while (await readerTx.ReadAsync())
+            txCols.Add(readerTx.GetString(1));
+    }
+
+    var requiredTxColumns = new Dictionary<string, string>
+    {
+        ["InvestmentId"] = "ALTER TABLE Transactions ADD COLUMN InvestmentId TEXT NULL",
+    };
+
+    foreach (var (col, sql) in requiredTxColumns)
+    {
+        if (!txCols.Contains(col))
+        {
+            using var cmd3 = conn.CreateCommand();
+            cmd3.CommandText = sql;
+            await cmd3.ExecuteNonQueryAsync();
+            Console.WriteLine($"  ✓ Added column to Transactions: {col}");
+        }
+    }
+
+    // ── Create Vehicles table if it doesn't exist ──
+    using (var cmdCheck = conn.CreateCommand())
+    {
+        cmdCheck.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='Vehicles';";
+        var exists = await cmdCheck.ExecuteScalarAsync();
+        if (exists == null)
+        {
+            using var cmdCreate = conn.CreateCommand();
+            cmdCreate.CommandText = @"
+                CREATE TABLE Vehicles (
+                    Id TEXT PRIMARY KEY,
+                    UserId TEXT NOT NULL,
+                    Name TEXT NOT NULL,
+                    VehicleType TEXT NOT NULL DEFAULT 'Car',
+                    FuelType TEXT NOT NULL DEFAULT 'Petrol',
+                    RegistrationNumber TEXT NULL,
+                    ServiceIntervalKm INTEGER NULL,
+                    CreatedAt TEXT NOT NULL,
+                    FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE
+                );";
+            await cmdCreate.ExecuteNonQueryAsync();
+            Console.WriteLine("  ✓ Created Vehicles table");
+        }
+    }
+
+    // ── Create FuelEntries table if it doesn't exist ──
+    using (var cmdCheck2 = conn.CreateCommand())
+    {
+        cmdCheck2.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='FuelEntries';";
+        var exists2 = await cmdCheck2.ExecuteScalarAsync();
+        if (exists2 == null)
+        {
+            using var cmdCreate2 = conn.CreateCommand();
+            cmdCreate2.CommandText = @"
+                CREATE TABLE FuelEntries (
+                    Id TEXT PRIMARY KEY,
+                    UserId TEXT NOT NULL,
+                    VehicleId TEXT NOT NULL,
+                    Date TEXT NOT NULL,
+                    OdometerReading REAL NOT NULL,
+                    FuelQuantity REAL NOT NULL,
+                    FuelCost REAL NOT NULL,
+                    PricePerLiter REAL NULL,
+                    Notes TEXT NULL,
+                    FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE,
+                    FOREIGN KEY (VehicleId) REFERENCES Vehicles(Id) ON DELETE CASCADE
+                );";
+            await cmdCreate2.ExecuteNonQueryAsync();
+            Console.WriteLine("  ✓ Created FuelEntries table");
         }
     }
 
