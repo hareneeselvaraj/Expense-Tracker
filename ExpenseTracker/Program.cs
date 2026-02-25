@@ -13,10 +13,11 @@ using ExpenseTracker.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // ───────────────────── Database ─────────────────────
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+// Create SQLite DB inside Railway container directory
+var dbPath = Path.Combine(AppContext.BaseDirectory, "expense.db");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(connectionString));
+    options.UseSqlite($"Data Source={dbPath}"));
 
 
 // ───────────────────── JWT Authentication ─────────────────────
@@ -325,6 +326,8 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-
+// ───── Railway Dynamic Port Binding ─────
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+app.Urls.Add($"http://0.0.0.0:{port}");
 app.Run();
 
