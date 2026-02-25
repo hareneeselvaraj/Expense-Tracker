@@ -1,20 +1,15 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../services/api';
-import { FiPlus, FiTrash2, FiEdit2, FiDownload, FiFileText, FiGrid } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiEdit2, FiDownload, FiFileText, FiGrid, FiChevronLeft, FiChevronRight, FiCalendar, FiList, FiUpload } from 'react-icons/fi';
+import StatementUpload from './StatementUpload';
 import { useToast } from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
 import DownloadCenter from '../components/DownloadCenter';
 import { downloadPDF, downloadExcel } from '../utils/downloadUtils';
-
-const MONTHS = [
-    { value: '', label: 'All Months' },
-    { value: '1', label: 'Jan' }, { value: '2', label: 'Feb' },
-    { value: '3', label: 'Mar' }, { value: '4', label: 'Apr' },
-    { value: '5', label: 'May' }, { value: '6', label: 'Jun' },
-    { value: '7', label: 'Jul' }, { value: '8', label: 'Aug' },
-    { value: '9', label: 'Sep' }, { value: '10', label: 'Oct' },
-    { value: '11', label: 'Nov' }, { value: '12', label: 'Dec' },
-];
+import CalendarMonthView from '../components/calendar/CalendarMonthView';
+import CalendarWeekView from '../components/calendar/CalendarWeekView';
+import CalendarDayView from '../components/calendar/CalendarDayView';
+import { groupByDate, computeSummary, getWeekRange, MONTH_NAMES, formatDateRange } from '../components/calendar/calendarUtils';
 
 export default function Transactions() {
     const [transactions, setTransactions] = useState([]);
@@ -27,44 +22,105 @@ export default function Transactions() {
     const [loading, setLoading] = useState(true);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [dlOpen, setDlOpen] = useState(false);
-    const [filterMonth, setFilterMonth] = useState('');
-    const [filterYear, setFilterYear] = useState('');
+    const [showUpload, setShowUpload] = useState(false);
     const toast = useToast();
+
+    // Calendar state
+    const [viewMode, setViewMode] = useState('monthly'); // daily | weekly | monthly
+    const now = new Date();
+    const [calYear, setCalYear] = useState(now.getFullYear());
+    const [calMonth, setCalMonth] = useState(now.getMonth());
+    const [selectedDate, setSelectedDate] = useState(now);
+    const [weekStart, setWeekStart] = useState(() => {
+        const ws = getWeekRange(now).start;
+        return ws;
+    });
+
     const [form, setForm] = useState({
         accountId: '', categoryId: '', amount: '', type: 'Expense',
         onlineOffline: 'Offline', bankMode: '', description: '', date: '',
         isMonitor: false, isAutoDebit: false, transferAccountId: '', tagId: '', investmentId: '',
     });
 
-    const loadData = async () => {
+    // ── Fetch data for visible range ──
+    const fetchTransactions = useCallback(async () => {
+        let start, end;
+        if (viewMode === 'monthly') {
+            start = new Date(calYear, calMonth, 1);
+            end = new Date(calYear, calMonth + 1, 0);
+        } else if (viewMode === 'weekly') {
+            const range = getWeekRange(weekStart);
+            start = range.start;
+            end = range.end;
+        } else {
+            // Daily — fetch whole month around selected date for smooth nav
+            start = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+            end = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
+        }
+        const startStr = start.toISOString().slice(0, 10);
+        const endStr = end.toISOString().slice(0, 10);
         try {
-            const [txRes, accRes, catRes, tagRes, invRes] = await Promise.all([
-                api.get('/transaction'), api.get('/account'), api.get('/category'), api.get('/tag'), api.get('/investment'),
+            const res = await api.get(`/transaction?startDate=${startStr}&endDate=${endStr}`);
+            setTransactions(res.data);
+        } catch { /* ignore */ }
+    }, [viewMode, calYear, calMonth, weekStart, selectedDate]);
+
+    const loadMeta = async () => {
+        try {
+            const [accRes, catRes, tagRes, invRes] = await Promise.all([
+                api.get('/account'), api.get('/category'), api.get('/tag'), api.get('/investment'),
             ]);
-            setTransactions(txRes.data);
             setAccounts(accRes.data);
             setCategories(catRes.data);
             setTags(tagRes.data);
             setInvestments(invRes.data);
-        } catch { /* ignore */ } finally { setLoading(false); }
+        } catch { /* ignore */ }
     };
 
-    useEffect(() => { loadData(); }, []);
+    useEffect(() => { loadMeta().then(() => setLoading(false)); }, []);
+    useEffect(() => { fetchTransactions(); }, [fetchTransactions]);
 
-    // Derive available years
-    const years = useMemo(() => {
-        const y = [...new Set(transactions.map(t => new Date(t.date).getFullYear()))].sort((a, b) => b - a);
-        return y;
-    }, [transactions]);
+    // ── Pre-computed data ──
+    const dailyMap = useMemo(() => groupByDate(transactions), [transactions]);
+    const summary = useMemo(() => computeSummary(transactions), [transactions]);
 
-    // Filtered transactions
-    const filtered = useMemo(() => {
-        let list = [...transactions];
-        if (filterYear) list = list.filter(t => new Date(t.date).getFullYear() === parseInt(filterYear));
-        if (filterMonth) list = list.filter(t => new Date(t.date).getMonth() + 1 === parseInt(filterMonth));
-        return list;
-    }, [transactions, filterMonth, filterYear]);
+    // ── Navigation ──
+    const navPrev = () => {
+        if (viewMode === 'monthly') {
+            if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); }
+            else setCalMonth(m => m - 1);
+        } else if (viewMode === 'weekly') {
+            const d = new Date(weekStart);
+            d.setDate(d.getDate() - 7);
+            setWeekStart(d);
+        }
+    };
+    const navNext = () => {
+        if (viewMode === 'monthly') {
+            if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); }
+            else setCalMonth(m => m + 1);
+        } else if (viewMode === 'weekly') {
+            const d = new Date(weekStart);
+            d.setDate(d.getDate() + 7);
+            setWeekStart(d);
+        }
+    };
+    const goToday = () => {
+        const today = new Date();
+        setCalYear(today.getFullYear());
+        setCalMonth(today.getMonth());
+        setSelectedDate(today);
+        setWeekStart(getWeekRange(today).start);
+    };
 
+    // ── Navigation label ──
+    const navLabel = viewMode === 'monthly'
+        ? `${MONTH_NAMES[calMonth]} ${calYear}`
+        : viewMode === 'weekly'
+            ? formatDateRange(weekStart, new Date(weekStart.getTime() + 6 * 86400000))
+            : '';
+
+    // ── CRUD handlers ──
     const resetForm = () => {
         setForm({ accountId: '', categoryId: '', amount: '', type: 'Expense', onlineOffline: 'Offline', bankMode: '', description: '', date: '', isMonitor: false, isAutoDebit: false, transferAccountId: '', tagId: '', investmentId: '' });
         setEditing(null);
@@ -91,7 +147,7 @@ export default function Transactions() {
                 toast.success('Transaction created successfully');
             }
             resetForm();
-            loadData();
+            fetchTransactions();
         } catch (err) {
             toast.error(err.response?.data?.message || 'Error saving transaction');
         }
@@ -115,35 +171,17 @@ export default function Transactions() {
         try {
             await api.delete(`/transaction/${deleteTarget}`);
             toast.success('Transaction deleted successfully');
-            loadData();
+            fetchTransactions();
         } catch (err) {
             toast.error(err.response?.data?.message || 'Error deleting transaction');
         }
         setDeleteTarget(null);
     };
 
-    const getDateRangeLabel = () => {
-        const parts = [];
-        if (filterMonth) {
-            const m = MONTHS.find(m => m.value === filterMonth);
-            if (m) parts.push(m.label);
-        }
-        if (filterYear) parts.push(filterYear);
-        return parts.length > 0 ? parts.join(' ') : 'All Time';
-    };
-
-    const handleQuickPDF = () => {
-        downloadPDF(filtered, {
-            title: 'Transaction Report',
-            dateRange: getDateRangeLabel(),
-        });
-    };
-
-    const handleQuickExcel = () => {
-        downloadExcel(filtered, {
-            title: `Transaction Report — ${getDateRangeLabel()}`,
-        });
-    };
+    // ── Downloads ──
+    const getDateRangeLabel = () => navLabel || 'All Time';
+    const handleQuickPDF = () => { downloadPDF(transactions, { title: 'Transaction Report', dateRange: getDateRangeLabel() }); };
+    const handleQuickExcel = () => { downloadExcel(transactions, { title: `Transaction Report — ${getDateRangeLabel()}` }); };
 
     if (loading) return <div className="page-loader">Loading…</div>;
 
@@ -156,7 +194,6 @@ export default function Transactions() {
                 onConfirm={handleDelete}
                 onCancel={() => setDeleteTarget(null)}
             />
-
             <DownloadCenter
                 open={dlOpen}
                 onClose={() => setDlOpen(false)}
@@ -165,41 +202,79 @@ export default function Transactions() {
                 categories={categories}
             />
 
-            {/* Header */}
+            {/* ── Header ── */}
             <div className="page-header">
                 <h1 className="page-title">Transactions</h1>
                 <div className="tx-header-actions">
-                    <button className="btn btn-primary" onClick={() => { resetForm(); setShowForm(!showForm); }}>
+                    <button className="btn btn-primary" onClick={() => { resetForm(); setShowForm(!showForm); setShowUpload(false); }}>
                         <FiPlus /> New
                     </button>
-                </div>
-            </div>
-
-            {/* Toolbar — filters + downloads */}
-            <div className="tx-toolbar">
-                <div className="tx-filters">
-                    <select className="tx-select" value={filterMonth} onChange={e => setFilterMonth(e.target.value)}>
-                        {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                    </select>
-                    <select className="tx-select" value={filterYear} onChange={e => setFilterYear(e.target.value)}>
-                        <option value="">All Years</option>
-                        {years.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
-                    <span className="tx-count">{filtered.length} transactions</span>
-                </div>
-                <div className="tx-downloads">
-                    <button className="tx-dl-btn" onClick={handleQuickPDF} title="Download PDF">
-                        <FiFileText /> PDF
-                    </button>
-                    <button className="tx-dl-btn" onClick={handleQuickExcel} title="Download Excel">
-                        <FiGrid /> Excel
-                    </button>
-                    <button className="tx-dl-btn tx-dl-center" onClick={() => setDlOpen(true)} title="Download Center">
-                        <FiDownload /> Downloads
+                    <button className={`btn ${showUpload ? 'btn-active' : 'btn-ghost'}`} onClick={() => { setShowUpload(!showUpload); setShowForm(false); }}>
+                        <FiUpload /> Upload Statement
                     </button>
                 </div>
             </div>
 
+            {/* ── Calendar Toolbar ── */}
+            <div className="cal-toolbar">
+                <div className="cal-toolbar-left">
+                    {/* View Mode Switcher */}
+                    <div className="cal-view-pills">
+                        {[
+                            { key: 'daily', icon: <FiList />, label: 'Daily' },
+                            { key: 'weekly', icon: <FiGrid />, label: 'Weekly' },
+                            { key: 'monthly', icon: <FiCalendar />, label: 'Monthly' },
+                        ].map(v => (
+                            <button
+                                key={v.key}
+                                className={`cal-view-pill ${viewMode === v.key ? 'cal-pill-active' : ''}`}
+                                onClick={() => setViewMode(v.key)}
+                            >
+                                {v.icon} {v.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Navigation (for monthly & weekly) */}
+                    {viewMode !== 'daily' && (
+                        <div className="cal-nav">
+                            <button className="btn-icon" onClick={navPrev}><FiChevronLeft /></button>
+                            <span className="cal-nav-label">{navLabel}</span>
+                            <button className="btn-icon" onClick={navNext}><FiChevronRight /></button>
+                            <button className="cal-today-btn" onClick={goToday}>Today</button>
+                        </div>
+                    )}
+                </div>
+
+                <div className="cal-toolbar-right">
+                    {/* Summary */}
+                    <div className="cal-toolbar-summary">
+                        <span className="cal-tb-income">Income: ₹{summary.income.toLocaleString('en-IN')}</span>
+                        <span className="cal-tb-expense">Expense: ₹{summary.expense.toLocaleString('en-IN')}</span>
+                        <span className={`cal-tb-savings ${summary.savings >= 0 ? 'text-green' : 'text-red'}`}>
+                            Savings: ₹{summary.savings.toLocaleString('en-IN')}
+                        </span>
+                    </div>
+
+                    {/* Downloads */}
+                    <div className="tx-downloads">
+                        <button className="tx-dl-btn" onClick={handleQuickPDF} title="Download PDF"><FiFileText /> PDF</button>
+                        <button className="tx-dl-btn" onClick={handleQuickExcel} title="Download Excel"><FiGrid /> Excel</button>
+                        <button className="tx-dl-btn tx-dl-center" onClick={() => setDlOpen(true)} title="Download Center"><FiDownload /></button>
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Statement Upload ── */}
+            {showUpload && (
+                <StatementUpload
+                    accounts={accounts}
+                    onImportSuccess={() => { fetchTransactions(); setShowUpload(false); }}
+                    toast={toast}
+                />
+            )}
+
+            {/* ── Form ── */}
             {showForm && (
                 <div className="form-card">
                     <h3>{editing ? 'Edit Transaction' : 'New Transaction'}</h3>
@@ -295,39 +370,34 @@ export default function Transactions() {
                 </div>
             )}
 
-            <div className="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Date</th><th>Description</th><th>Category</th><th>Account</th>
-                            <th>Type</th><th>Tag</th><th>Channel</th><th className="text-right">Amount</th><th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filtered.length === 0 ? (
-                            <tr><td colSpan="10" className="text-center">No transactions found</td></tr>
-                        ) : (
-                            filtered.map((tx) => (
-                                <tr key={tx.id}>
-                                    <td>{new Date(tx.date).toLocaleDateString('en-IN')}</td>
-                                    <td>{tx.description || '—'}</td>
-                                    <td><span className="badge">{tx.categoryName}</span></td>
-                                    <td>{tx.accountName}</td>
-                                    <td><span className={`badge badge-${tx.type?.toLowerCase()}`}>{tx.type}</span></td>
-                                    <td>{tx.tagName ? <span className="badge badge-tag">{tx.tagName}</span> : '—'}</td>
-                                    <td>{tx.onlineOffline}{tx.bankMode ? ` · ${tx.bankMode}` : ''}</td>
-                                    <td className="text-right amount-cell">₹{tx.amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                                    <td>
-                                        <div className="action-btns">
-                                            <button className="btn-icon" onClick={() => handleEdit(tx)}><FiEdit2 /></button>
-                                            <button className="btn-icon btn-danger" onClick={() => setDeleteTarget(tx.id)}><FiTrash2 /></button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+            {/* ── Calendar View ── */}
+            <div className="cal-view-container">
+                {viewMode === 'monthly' && (
+                    <CalendarMonthView
+                        year={calYear}
+                        month={calMonth}
+                        dailyMap={dailyMap}
+                        onEdit={handleEdit}
+                        onDelete={(id) => setDeleteTarget(id)}
+                    />
+                )}
+                {viewMode === 'weekly' && (
+                    <CalendarWeekView
+                        weekStart={weekStart}
+                        dailyMap={dailyMap}
+                        onEdit={handleEdit}
+                        onDelete={(id) => setDeleteTarget(id)}
+                    />
+                )}
+                {viewMode === 'daily' && (
+                    <CalendarDayView
+                        selectedDate={selectedDate}
+                        onDateChange={setSelectedDate}
+                        dailyMap={dailyMap}
+                        onEdit={handleEdit}
+                        onDelete={(id) => setDeleteTarget(id)}
+                    />
+                )}
             </div>
         </div>
     );

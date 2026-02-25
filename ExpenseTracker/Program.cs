@@ -66,6 +66,7 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<ITagService, TagService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IMileageService, MileageService>();
+builder.Services.AddScoped<IStatementParserService, StatementParserService>();
 
 // ───────────────────── Controllers + Swagger ─────────────────────
 builder.Services.AddControllers()
