@@ -1,5 +1,5 @@
 /* ══════════════════════ RESET & BASE ══════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans:wght@400;500;600;700&display=swap');
 
 *,
 *::before,
@@ -45,7 +45,7 @@
   --chart-tooltip-border: rgba(42, 49, 72, 0.5);
   --chart-tick: #555b78;
   --chart-legend: #6b7394;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', 'Noto Sans', system-ui, -apple-system, sans-serif;
   color: var(--text);
   background: var(--bg);
 }
@@ -1806,42 +1806,88 @@ tr:hover td {
 .dl-panel-body {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 18px;
+  padding: 18px 22px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
 
-.dl-section {
+/* live preview bar */
+.dl-preview-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 10px 14px;
   background: var(--bg-card);
   border: 1px solid rgba(30, 37, 54, 0.4);
-  border-radius: 16px;
-  padding: 14px 16px;
+  border-radius: 12px;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
 }
 
-.dl-section-title {
-  font-size: 0.8rem;
-  font-weight: 600;
-  margin-bottom: 10px;
+.dl-preview-count {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--primary);
+}
+
+.dl-preview-label {
+  font-size: 0.82rem;
   color: var(--text-secondary);
+  flex: 1;
+}
+
+.dl-reset-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.dl-reset-btn:hover {
+  color: var(--text);
+}
+
+/* filter grid */
+.dl-filter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.dl-filter-group {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 6px;
+}
+
+.dl-filter-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .dl-select {
   width: 100%;
-  padding: 7px 10px;
+  padding: 9px 12px;
   background: var(--bg-input);
   border: 1px solid var(--border);
   border-radius: 10px;
   color: var(--text);
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-family: inherit;
-  margin-bottom: 8px;
   transition: var(--transition);
   cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a0a5be' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
 }
 
 .dl-select:focus {
@@ -1850,26 +1896,16 @@ tr:hover td {
   box-shadow: 0 0 0 2px var(--primary-glow);
 }
 
-.dl-row {
-  display: flex;
-  gap: 8px;
-}
-
-.dl-row .dl-select {
-  flex: 1;
-}
-
 /* Payment Mode Chips */
 .dl-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
-  margin: 6px 0 10px;
+  gap: 6px;
 }
 
 .dl-chip {
-  padding: 4px 10px;
-  font-size: 0.68rem;
+  padding: 6px 14px;
+  font-size: 0.72rem;
   font-weight: 500;
   font-family: inherit;
   border: 1px solid var(--border);
@@ -1894,41 +1930,62 @@ tr:hover td {
 /* Download Action Buttons */
 .dl-actions {
   display: flex;
-  gap: 8px;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 24px;
+}
+
+.dl-actions-main {
+  justify-content: space-between;
 }
 
 .dl-btn {
   flex: 1;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 7px 0;
-  font-size: 0.72rem;
+  gap: 8px;
+  padding: 10px;
+  font-size: 0.82rem;
   font-weight: 600;
-  font-family: inherit;
-  border: none;
   border-radius: 10px;
   cursor: pointer;
+  border: 1px solid transparent;
   transition: var(--transition);
+  font-family: inherit;
+}
+
+.dl-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
+.dl-btn-large {
+  padding: 12px 16px;
+  border-radius: 12px;
 }
 
 .dl-btn-pdf {
-  background: rgba(220, 80, 80, 0.1);
-  color: rgba(220, 110, 110, 0.9);
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--red);
+  border-color: rgba(239, 68, 68, 0.2);
 }
 
-.dl-btn-pdf:hover {
-  background: rgba(220, 80, 80, 0.18);
+.dl-btn-pdf:not(:disabled):hover {
+  background: var(--red);
+  color: #fff;
 }
 
 .dl-btn-excel {
   background: rgba(16, 185, 129, 0.1);
-  color: rgba(80, 200, 150, 0.9);
+  color: var(--green);
+  border-color: rgba(16, 185, 129, 0.2);
 }
 
-.dl-btn-excel:hover {
-  background: rgba(16, 185, 129, 0.18);
+.dl-btn-excel:not(:disabled):hover {
+  background: var(--green);
+  color: #fff;
 }
 
 /* ══════════════════════ THEME TOGGLE ══════════════════════ */
@@ -3782,3 +3839,18 @@ tr:hover td {
   color: var(--text-muted);
   font-size: 0.9rem;
 }
+
+/* ── Download Center Error ── */
+.dl-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  background: rgba(239, 68, 68, 0.10);
+  border: 1px solid rgba(239, 68, 68, 0.30);
+  border-radius: 8px;
+  color: var(--red);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
