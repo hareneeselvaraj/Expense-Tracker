@@ -15,7 +15,12 @@ public class Investment
     public string Name { get; set; } = string.Empty;
 
     [MaxLength(50)]
-    public string? AssetType { get; set; }  // Stock, MutualFund, Gold, FD, RD, PPF, Silver
+    public string? AssetType { get; set; }  // Stock, Mutual Fund, ETF, NPS, Crypto, FD, RD, PPF, SSY, Gold, Silver, Land, Real Estate
+
+    // ── Category: auto-derived from AssetType ──
+    // "Market" | "Deposit" | "Physical"
+    [MaxLength(20)]
+    public string? Category { get; set; }
 
     [Column(TypeName = "decimal(18,4)")]
     public decimal? Quantity { get; set; }
@@ -38,6 +43,29 @@ public class Investment
 
     public DateTime? DateInvested { get; set; }
 
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal? InterestRate { get; set; }      // FD, RD, PPF, SSY
+
+    public int? TenureMonths { get; set; }           // FD, RD (in months)
+
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal? MonthlyAmount { get; set; }      // RD monthly installment
+
+    [MaxLength(20)]
+    public string? InvestmentFrequency { get; set; } // PPF: "Monthly" or "Yearly"
+
+    // ── Deposit lifecycle fields ──
+    [MaxLength(20)]
+    public string? Status { get; set; }              // "Active" | "Matured"
+
+    public int? MonthsCompleted { get; set; }        // installments deposited so far
+
+    public DateTime? LastProcessedDate { get; set; } // last auto-processed date
+
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal? ProjectedMaturityValue { get; set; } // pre-calculated maturity
+
+
     /// <summary>
     /// ROI = ((CurrentValue - InvestedAmount) / InvestedAmount) * 100
     /// </summary>
@@ -49,4 +77,19 @@ public class Investment
     // Navigation
     [ForeignKey(nameof(UserId))]
     public User User { get; set; } = null!;
+
+    // ── Category helper: derives category from AssetType ──
+    private static readonly HashSet<string> MarketTypes = new(StringComparer.OrdinalIgnoreCase)
+        { "Stock", "Mutual Fund", "ETF", "NPS", "Crypto" };
+
+    private static readonly HashSet<string> DepositTypes = new(StringComparer.OrdinalIgnoreCase)
+        { "FD", "RD", "PPF", "SSY" };
+
+    public static string DeriveCategory(string? assetType)
+    {
+        if (string.IsNullOrWhiteSpace(assetType)) return "Physical";
+        if (MarketTypes.Contains(assetType)) return "Market";
+        if (DepositTypes.Contains(assetType)) return "Deposit";
+        return "Physical"; // Gold, Silver, Land, Real Estate, etc.
+    }
 }

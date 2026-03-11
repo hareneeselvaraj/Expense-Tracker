@@ -15,11 +15,46 @@ public class DashboardController : BaseApiController
         _dashboardService = dashboardService;
     }
 
+    /// <summary>Debug: test dashboard without auth.</summary>
+    [HttpGet("debug")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetDashboardDebug()
+    {
+        try
+        {
+            // Get the first user from db to test
+            var db = HttpContext.RequestServices.GetRequiredService<ExpenseTracker.Data.AppDbContext>();
+            var user = db.Users.FirstOrDefault();
+            if (user == null) return Ok(new { message = "No users in DB" });
+            var result = await _dashboardService.GetDashboardAsync(user.Id);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var log = $"[{DateTime.UtcNow}] {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}\n";
+            if (ex.InnerException != null)
+                log += $"INNER: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}\n{ex.InnerException.StackTrace}\n";
+            await System.IO.File.AppendAllTextAsync(@"C:\Users\HareneeS\Desktop\Expense_Tracker\dashboard_error.log", log);
+            return StatusCode(500, new { error = ex.Message, inner = ex.InnerException?.Message, stack = ex.StackTrace });
+        }
+    }
+
     /// <summary>Get summary dashboard: totals, monthly breakdown, category breakdown, accounts.</summary>
     [HttpGet]
     public async Task<IActionResult> GetDashboard()
     {
-        var result = await _dashboardService.GetDashboardAsync(GetUserId());
-        return Ok(result);
+        try
+        {
+            var result = await _dashboardService.GetDashboardAsync(GetUserId());
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var log = $"[{DateTime.UtcNow}] {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}\n";
+            if (ex.InnerException != null)
+                log += $"INNER: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}\n{ex.InnerException.StackTrace}\n";
+            await System.IO.File.AppendAllTextAsync(@"C:\Users\HareneeS\Desktop\Expense_Tracker\dashboard_error.log", log);
+            throw;
+        }
     }
 }

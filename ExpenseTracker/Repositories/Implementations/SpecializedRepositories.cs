@@ -15,6 +15,7 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
             .Include(t => t.Category)
             .Include(t => t.TransferAccount)
             .Include(t => t.Tag)
+            .Include(t => t.Investment)
             .Where(t => t.UserId == userId)
             .OrderByDescending(t => t.Date)
             .ToListAsync();
@@ -28,6 +29,7 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
             .Include(t => t.Category)
             .Include(t => t.TransferAccount)
             .Include(t => t.Tag)
+            .Include(t => t.Investment)
             .Where(t => t.UserId == userId);
 
         if (startDate.HasValue)
@@ -50,6 +52,7 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
             .Include(t => t.Category)
             .Include(t => t.TransferAccount)
             .Include(t => t.Tag)
+            .Include(t => t.Investment)
             .FirstOrDefaultAsync(t => t.Id == id);
 }
 
@@ -100,4 +103,33 @@ public class UserRepository : Repository<User>, IUserRepository
 
     public async Task<User?> GetByEmailAsync(string email)
         => await _dbSet.FirstOrDefaultAsync(u => u.Email == email);
+}
+
+public class VehicleRepository : Repository<Vehicle>, IVehicleRepository
+{
+    public VehicleRepository(AppDbContext context) : base(context) { }
+
+    public async Task<IEnumerable<Vehicle>> GetByUserIdAsync(Guid userId)
+        => await _dbSet.Where(v => v.UserId == userId)
+            .OrderByDescending(v => v.CreatedAt)
+            .ToListAsync();
+}
+
+public class FuelEntryRepository : Repository<FuelEntry>, IFuelEntryRepository
+{
+    public FuelEntryRepository(AppDbContext context) : base(context) { }
+
+    public async Task<IEnumerable<FuelEntry>> GetByUserIdAsync(Guid userId)
+        => await _dbSet
+            .Include(f => f.Vehicle)
+            .Where(f => f.UserId == userId)
+            .OrderByDescending(f => f.Date)
+            .ToListAsync();
+
+    public async Task<IEnumerable<FuelEntry>> GetByVehicleIdAsync(Guid vehicleId)
+        => await _dbSet
+            .Include(f => f.Vehicle)
+            .Where(f => f.VehicleId == vehicleId)
+            .OrderByDescending(f => f.Date)
+            .ToListAsync();
 }

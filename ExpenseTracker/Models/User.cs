@@ -25,4 +25,6 @@ public class User
     public ICollection<Tag> Tags { get; set; } = new List<Tag>();
     public ICollection<Budget> Budgets { get; set; } = new List<Budget>();
     public ICollection<Investment> Investments { get; set; } = new List<Investment>();
+    public ICollection<Vehicle> Vehicles { get; set; } = new List<Vehicle>();
+    public ICollection<FuelEntry> FuelEntries { get; set; } = new List<FuelEntry>();
 }

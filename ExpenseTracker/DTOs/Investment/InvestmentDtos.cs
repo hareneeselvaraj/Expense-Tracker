@@ -25,6 +25,13 @@ public class CreateInvestmentDto
     public string? Notes { get; set; }
 
     public DateTime? DateInvested { get; set; }
+
+    public decimal? InterestRate { get; set; }
+    public int? TenureMonths { get; set; }
+    public decimal? MonthlyAmount { get; set; }
+
+    [MaxLength(20)]
+    public string? InvestmentFrequency { get; set; }
 }
 
 public class UpdateInvestmentDto
@@ -47,6 +54,13 @@ public class UpdateInvestmentDto
     public string? Notes { get; set; }
 
     public DateTime? DateInvested { get; set; }
+
+    public decimal? InterestRate { get; set; }
+    public int? TenureMonths { get; set; }
+    public decimal? MonthlyAmount { get; set; }
+
+    [MaxLength(20)]
+    public string? InvestmentFrequency { get; set; }
 }
 
 public class InvestmentResponseDto
@@ -54,6 +68,7 @@ public class InvestmentResponseDto
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? AssetType { get; set; }
+    public string? Category { get; set; }       // "Market" | "Deposit" | "Physical"
     public decimal? Quantity { get; set; }
     public decimal? BuyPrice { get; set; }
     public decimal InvestedAmount { get; set; }
@@ -62,4 +77,14 @@ public class InvestmentResponseDto
     public string? Notes { get; set; }
     public DateTime? DateInvested { get; set; }
     public decimal ROI { get; set; }
+    public decimal? InterestRate { get; set; }
+    public int? TenureMonths { get; set; }
+    public decimal? MonthlyAmount { get; set; }
+    public string? InvestmentFrequency { get; set; }
+
+    // Deposit lifecycle
+    public string? Status { get; set; }
+    public int? MonthsCompleted { get; set; }
+    public DateTime? LastProcessedDate { get; set; }
+    public decimal? ProjectedMaturityValue { get; set; }
 }

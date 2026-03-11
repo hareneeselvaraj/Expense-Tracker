@@ -4,7 +4,10 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { FiArrowUp, FiArrowDown, FiDollarSign, FiTrendingUp, FiBarChart2, FiPieChart, FiActivity, FiTarget } from 'react-icons/fi';
 import MonthlyChart from '../charts/MonthlyChart';
+import MonthlySpendingChart from '../charts/MonthlySpendingChart';
 import CategoryChart from '../charts/CategoryChart';
+import YearlyTrendChart from '../charts/YearlyTrendChart';
+import BankWiseChart from '../charts/BankWiseChart';
 import OnlineOfflineChart from '../charts/OnlineOfflineChart';
 import BudgetChart from '../charts/BudgetChart';
 
@@ -34,9 +37,6 @@ export default function Dashboard() {
         { label: 'Total Investment', value: data.totalInvestment, icon: <FiTrendingUp />, color: '#f59e0b' },
     ];
 
-    // Get last 5 transactions from monthly summary to show recent activity
-    const recentTransactions = data.monthlySummary?.slice(0, 5) || [];
-
     return (
         <div className="page">
             {/* Greeting Header */}
@@ -58,15 +58,31 @@ export default function Dashboard() {
                 ))}
             </div>
 
-            {/* Charts */}
+            {/* ── Primary Charts Grid (2×2) ── */}
+            <div className="dash-charts-2x2">
+                <div className="dash-chart-card">
+                    <h3 className="dash-chart-title">Category-wise Spending</h3>
+                    <CategoryChart data={data.categoryWiseSpending || []} />
+                </div>
+                <div className="dash-chart-card">
+                    <h3 className="dash-chart-title">Monthly Spending</h3>
+                    <MonthlySpendingChart data={data.monthlySummary || []} />
+                </div>
+                <div className="dash-chart-card">
+                    <h3 className="dash-chart-title">Yearly Expense Trend</h3>
+                    <YearlyTrendChart data={data.yearlyTrend || []} />
+                </div>
+                <div className="dash-chart-card">
+                    <h3 className="dash-chart-title">Bank-wise Spending</h3>
+                    <BankWiseChart data={data.bankWiseSpending || []} />
+                </div>
+            </div>
+
+            {/* ── Secondary Charts ── */}
             <div className="charts-grid">
                 <div className="chart-card chart-wide">
                     <h3><FiBarChart2 /> Monthly Summary</h3>
                     <MonthlyChart data={data.monthlySummary || []} />
-                </div>
-                <div className="chart-card">
-                    <h3><FiPieChart /> Category Spending</h3>
-                    <CategoryChart data={data.categoryWiseSpending || []} />
                 </div>
                 <div className="chart-card">
                     <h3><FiActivity /> Online vs Offline</h3>

@@ -2,11 +2,38 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
+// ── Number to Words (Indian system) ──
+const ones = [
+    '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+    'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
+    'Seventeen', 'Eighteen', 'Nineteen',
+];
+const tensWords = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+function belowThousand(n) {
+    if (n === 0) return '';
+    if (n < 20) return ones[n];
+    if (n < 100) return tensWords[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+    return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + belowThousand(n % 100) : '');
+}
+
+function numberToWords(amount) {
+    const n = Math.floor(amount);
+    if (n === 0) return 'Zero Only';
+    let result = '';
+    if (n >= 10000000) result += belowThousand(Math.floor(n / 10000000)) + ' Crore ';
+    if (n % 10000000 >= 100000) result += belowThousand(Math.floor((n % 10000000) / 100000)) + ' Lakh ';
+    if (n % 100000 >= 1000) result += belowThousand(Math.floor((n % 100000) / 1000)) + ' Thousand ';
+    if (n % 1000 > 0) result += belowThousand(n % 1000);
+    return result.trim() + ' Only';
+}
+
 /**
  * Generate a professional bank-statement-style PDF from transactions
  */
 export function downloadPDF(transactions, { title = 'Transaction Report', dateRange = '' } = {}) {
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    // Use landscape A4 to accommodate the extra "Amount in Words" column
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
 
     // ── Header ──
@@ -28,13 +55,12 @@ export function downloadPDF(transactions, { title = 'Transaction Report', dateRa
     const expense = transactions.filter(t => t.type === 'Expense').reduce((s, t) => s + (t.amount || 0), 0);
     const investment = transactions.filter(t => t.type === 'Investment').reduce((s, t) => s + (t.amount || 0), 0);
     const balance = income - expense - investment;
-    const fmt = (v) => `₹${v.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+    // jsPDF's built-in Helvetica font doesn't support the Rs. glyph; use "Rs." instead
+    const fmt = (v) => `Rs.${v.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
 
     const summaryY = 44;
     doc.setFillColor(245, 246, 250);
     doc.roundedRect(14, summaryY, pageW - 28, 22, 3, 3, 'F');
-    doc.setTextColor(80, 85, 110);
-    doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
     const colW = (pageW - 28) / 4;
     const labels = ['Total Income', 'Total Expense', 'Investments', 'Net Balance'];
@@ -42,31 +68,32 @@ export function downloadPDF(transactions, { title = 'Transaction Report', dateRa
     const colors = [[16, 185, 129], [239, 68, 68], [245, 158, 11], [99, 102, 241]];
     labels.forEach((label, i) => {
         const x = 14 + colW * i + colW / 2;
+        doc.setFontSize(8);
         doc.setTextColor(100, 105, 130);
         doc.text(label, x, summaryY + 8, { align: 'center' });
         doc.setTextColor(...colors[i]);
         doc.setFontSize(10);
         doc.text(values[i], x, summaryY + 16, { align: 'center' });
-        doc.setFontSize(8);
     });
 
     // ── Table ──
     const rows = transactions.map(t => [
         new Date(t.date).toLocaleDateString('en-IN'),
-        (t.description || '—').substring(0, 40),
+        (t.description || '—').substring(0, 35),
         t.categoryName || '—',
         t.onlineOffline + (t.bankMode ? ` · ${t.bankMode}` : ''),
         fmt(t.amount || 0),
+        numberToWords(t.amount || 0),
         t.type,
     ]);
 
     autoTable(doc, {
         startY: summaryY + 28,
-        head: [['Date', 'Description', 'Category', 'Payment Mode', 'Amount', 'Type']],
+        head: [['Date', 'Description', 'Category', 'Payment Mode', 'Amount', 'Amount in Words', 'Type']],
         body: rows,
         styles: {
             font: 'helvetica',
-            fontSize: 8,
+            fontSize: 7.5,
             cellPadding: 3,
             lineColor: [230, 232, 240],
             lineWidth: 0.2,
@@ -81,13 +108,17 @@ export function downloadPDF(transactions, { title = 'Transaction Report', dateRa
         },
         alternateRowStyles: { fillColor: [248, 249, 252] },
         columnStyles: {
-            0: { cellWidth: 22 },
-            4: { halign: 'right', fontStyle: 'bold' },
-            5: { cellWidth: 20 },
+            0: { cellWidth: 24 },                                              // Date
+            1: { cellWidth: 50 },                                              // Description
+            2: { cellWidth: 28 },                                              // Category
+            3: { cellWidth: 32 },                                              // Payment Mode
+            4: { halign: 'right', fontStyle: 'bold', cellWidth: 28 },         // Amount
+            5: { cellWidth: 'auto', fontSize: 7, textColor: [80, 85, 110] },  // Amount in Words
+            6: { cellWidth: 24 },                                              // Type
         },
         margin: { left: 14, right: 14 },
         didParseCell: (data) => {
-            if (data.section === 'body' && data.column.index === 5) {
+            if (data.section === 'body' && data.column.index === 6) {
                 const val = data.cell.raw;
                 if (val === 'Income') data.cell.styles.textColor = [16, 185, 129];
                 else if (val === 'Expense') data.cell.styles.textColor = [220, 80, 80];
@@ -139,13 +170,14 @@ export function downloadExcel(transactions, { title = 'Transaction Report' } = {
         Account: t.accountName || '—',
         'Payment Mode': t.onlineOffline + (t.bankMode ? ` · ${t.bankMode}` : ''),
         Amount: t.amount || 0,
+        'Amount in Words': numberToWords(t.amount || 0),
         Type: t.type,
         Tag: t.tagName || '—',
     }));
     const ws2 = XLSX.utils.json_to_sheet(rows);
     ws2['!cols'] = [
         { wch: 12 }, { wch: 30 }, { wch: 16 }, { wch: 16 },
-        { wch: 18 }, { wch: 14 }, { wch: 12 }, { wch: 14 },
+        { wch: 18 }, { wch: 14 }, { wch: 30 }, { wch: 12 }, { wch: 14 },
     ];
     XLSX.utils.book_append_sheet(wb, ws2, 'Transactions');
 

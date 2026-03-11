@@ -19,7 +19,8 @@ public enum TransactionType
     Income,
     Expense,
     Investment,
-    Transfer
+    Transfer,
+    Withdraw
 }
 
 public enum OnlineOffline

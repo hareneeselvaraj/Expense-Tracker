@@ -68,7 +68,8 @@ public class TransactionService : ITransactionService
             IsMonitor = dto.IsMonitor,
             IsAutoDebit = dto.IsAutoDebit,
             TransferAccountId = dto.TransferAccountId,
-            TagId = dto.TagId
+            TagId = dto.TagId,
+            InvestmentId = dto.InvestmentId
         };
 
         // ── Business rules: adjust account balances ──
@@ -109,12 +110,26 @@ public class TransactionService : ITransactionService
                 break;
 
             case TransactionType.Investment:
+            case TransactionType.Withdraw:
                 account.Balance -= dto.Amount;
                 await _accountRepo.UpdateAsync(account);
                 break;
         }
 
         await _transactionRepo.AddAsync(transaction);
+
+        // ── Update linked Investment record ──
+        if (transaction.InvestmentId.HasValue)
+        {
+            var investment = await _context.Investments.FindAsync(transaction.InvestmentId.Value);
+            if (investment != null && investment.UserId == userId)
+            {
+                investment.InvestedAmount += dto.Amount;
+                investment.CurrentValue += dto.Amount;
+                _context.Investments.Update(investment);
+                await _context.SaveChangesAsync();
+            }
+        }
 
         // ── Budget alert check ──
         await CheckBudgetAndNotifyAsync(userId, transaction.CategoryId, transaction.Date);
@@ -163,6 +178,7 @@ public class TransactionService : ITransactionService
         if (dto.IsAutoDebit.HasValue) transaction.IsAutoDebit = dto.IsAutoDebit.Value;
         if (dto.TransferAccountId.HasValue) transaction.TransferAccountId = dto.TransferAccountId.Value;
         if (dto.TagId.HasValue) transaction.TagId = dto.TagId.Value;
+        if (dto.InvestmentId.HasValue) transaction.InvestmentId = dto.InvestmentId.Value;
 
         await _transactionRepo.UpdateAsync(transaction);
 
@@ -188,6 +204,7 @@ public class TransactionService : ITransactionService
 
                 case TransactionType.Expense:
                 case TransactionType.Investment:
+                case TransactionType.Withdraw:
                     account.Balance += transaction.Amount;
                     await _accountRepo.UpdateAsync(account);
                     break;
@@ -206,6 +223,19 @@ public class TransactionService : ITransactionService
                         }
                     }
                     break;
+            }
+        }
+
+        // ── Reverse linked Investment record ──
+        if (transaction.InvestmentId.HasValue)
+        {
+            var investment = await _context.Investments.FindAsync(transaction.InvestmentId.Value);
+            if (investment != null && investment.UserId == userId)
+            {
+                investment.InvestedAmount -= transaction.Amount;
+                investment.CurrentValue -= transaction.Amount;
+                _context.Investments.Update(investment);
+                await _context.SaveChangesAsync();
             }
         }
 
@@ -231,7 +261,9 @@ public class TransactionService : ITransactionService
         TransferAccountId = t.TransferAccountId,
         TransferAccountName = t.TransferAccount?.Name,
         TagId = t.TagId,
-        TagName = t.Tag?.Name
+        TagName = t.Tag?.Name,
+        InvestmentId = t.InvestmentId,
+        InvestmentName = t.Investment?.Name
     };
 
     private async Task CheckBudgetAndNotifyAsync(Guid userId, Guid categoryId, DateTime transactionDate)

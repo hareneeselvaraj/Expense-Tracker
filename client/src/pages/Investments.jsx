@@ -1,81 +1,556 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import api from '../services/api';
-import { FiPlus, FiTrash2, FiEdit2, FiTrendingUp, FiTrendingDown, FiDollarSign, FiPercent, FiFilter, FiX, FiList, FiBarChart2 } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiEdit2, FiTrendingUp, FiX, FiZap } from 'react-icons/fi';
 import { useToast } from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
-import { Doughnut } from 'react-chartjs-2';
-import { useTheme } from '../context/ThemeContext';
 
-const ASSET_TYPES = ['Stock', 'Mutual Fund', 'Gold', 'Silver', 'FD', 'RD', 'PPF'];
-const SORT_OPTIONS = [
-    { value: 'roi-desc', label: 'Highest Return' },
-    { value: 'roi-asc', label: 'Lowest Return' },
-    { value: 'invested-desc', label: 'Highest Invested' },
-    { value: 'date-desc', label: 'Most Recent' },
-];
+// ── Category → AssetType Mapping ──
+const CATEGORY_TYPES = {
+    Market: ['Stock', 'Mutual Fund', 'ETF', 'NPS', 'Crypto'],
+    Deposit: ['FD', 'RD', 'PPF', 'SSY'],
+    Physical: ['Gold', 'Silver'],
+};
+
+const ALL_TYPES = [...CATEGORY_TYPES.Market, ...CATEGORY_TYPES.Deposit, ...CATEGORY_TYPES.Physical];
+
+// ── Category helpers ──
+function getCategory(type) {
+    if (CATEGORY_TYPES.Market.includes(type)) return 'Market';
+    if (CATEGORY_TYPES.Deposit.includes(type)) return 'Deposit';
+    return 'Physical';
+}
+function isMarket(t) { return CATEGORY_TYPES.Market.includes(t); }
+function isDeposit(t) { return CATEGORY_TYPES.Deposit.includes(t); }
+function isRD(t) { return t === 'RD'; }
+function isPPF(t) { return t === 'PPF'; }
+function isFixedIncome(t) { return isDeposit(t); }
+function isPhysicalMetal(t) { return t === 'Gold' || t === 'Silver'; }
 
 function fmt(v) {
     return `₹${(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
-const EMPTY_FORM = { name: '', assetType: '', customType: '', quantity: '', buyPrice: '', investedAmount: '', currentValue: '', platform: '', notes: '', dateInvested: '' };
+function fmtDate(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' });
+}
 
-export default function Investments() {
-    const [tab, setTab] = useState('manage');
-    const [investments, setInvestments] = useState([]);
-    const [showForm, setShowForm] = useState(false);
-    const [editing, setEditing] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [deleteTarget, setDeleteTarget] = useState(null);
-    const [filterType, setFilterType] = useState('');
-    const [sortBy, setSortBy] = useState('date-desc');
+// ── Maturity Calculators ──
+function calcFDMaturity(principal, rate, tenureMonths) {
+    if (!principal || !rate || !tenureMonths) return 0;
+    const r = rate / 100;
+    const n = 4; // quarterly compounding
+    const t = tenureMonths / 12;
+    return principal * Math.pow(1 + r / n, n * t);
+}
+
+function calcRDMaturity(monthly, rate, tenureMonths) {
+    if (!monthly || !rate || !tenureMonths) return 0;
+    let maturity = 0;
+    for (let i = 0; i < tenureMonths; i++) {
+        const monthsRemaining = tenureMonths - i;
+        maturity += monthly * Math.pow(1 + (rate / 100) / 12, monthsRemaining);
+    }
+    return maturity;
+}
+
+function calcPPFProjected(amount, rate, frequency, tenureYears = 15) {
+    if (!amount || !rate) return 0;
+    const annualDeposit = frequency === 'Yearly' ? amount : amount * 12;
+    const r = rate / 100;
+    let balance = 0;
+    for (let y = 0; y < tenureYears; y++) {
+        balance = (balance + annualDeposit) * (1 + r);
+    }
+    return balance;
+}
+
+// ── Empty form defaults ──
+const EMPTY_DEFAULTS = {
+    name: '', assetType: '', quantity: '', buyPrice: '', investedAmount: '', currentValue: '',
+    platform: '', notes: '', dateInvested: '', interestRate: '', tenureMonths: '', monthlyAmount: '',
+    investmentFrequency: 'Monthly',
+};
+
+
+// ══════════════════════════════════════════════════════════
+//  DYNAMIC FORM (adapts by assetType, shared across tabs)
+// ══════════════════════════════════════════════════════════
+function InvestmentForm({ editing, onClose, onSaved, investments, defaultCategory }) {
     const toast = useToast();
-    const { isDark } = useTheme();
-    const [form, setForm] = useState({ ...EMPTY_FORM });
 
-    const load = () => api.get('/investment').then((res) => { setInvestments(res.data); setLoading(false); });
-    useEffect(() => { load(); }, []);
+    // Types: merge db + known types, filter to active tab category
+    const dynamicTypes = useMemo(() => {
+        const dbTypes = [...new Set(investments.map(i => i.assetType).filter(Boolean))];
+        const merged = [...new Set([...ALL_TYPES, ...dbTypes])];
+        if (defaultCategory) {
+            return merged.filter(t => getCategory(t) === defaultCategory).sort();
+        }
+        return merged.sort();
+    }, [investments, defaultCategory]);
 
-    const resetForm = () => { setForm({ ...EMPTY_FORM }); setEditing(null); setShowForm(false); };
+    const { register, handleSubmit, control, setValue, reset, formState: { errors } } = useForm({
+        defaultValues: { ...EMPTY_DEFAULTS },
+    });
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const resolvedType = form.assetType === '__custom__' ? (form.customType || '').trim() : form.assetType;
+    const assetType = useWatch({ control, name: 'assetType' });
+    const quantity = useWatch({ control, name: 'quantity' });
+    const buyPrice = useWatch({ control, name: 'buyPrice' });
+    const interestRate = useWatch({ control, name: 'interestRate' });
+    const tenureMonths = useWatch({ control, name: 'tenureMonths' });
+    const monthlyAmount = useWatch({ control, name: 'monthlyAmount' });
+    const investedAmount = useWatch({ control, name: 'investedAmount' });
+    const investmentFrequency = useWatch({ control, name: 'investmentFrequency' });
+
+    // Load editing data
+    useEffect(() => {
+        if (editing) {
+            reset({
+                name: editing.name || '',
+                assetType: editing.assetType || '',
+                quantity: editing.quantity ?? '',
+                buyPrice: editing.buyPrice ?? '',
+                investedAmount: editing.investedAmount ?? '',
+                currentValue: editing.currentValue ?? '',
+                platform: editing.platform || '',
+                notes: editing.notes || '',
+                dateInvested: editing.dateInvested?.split('T')[0] || '',
+                interestRate: editing.interestRate ?? '',
+                tenureMonths: editing.tenureMonths ?? '',
+                monthlyAmount: editing.monthlyAmount ?? '',
+                investmentFrequency: editing.investmentFrequency || 'Monthly',
+            });
+        } else {
+            reset({ ...EMPTY_DEFAULTS });
+        }
+    }, [editing, reset]);
+
+    // ── Auto-calculations ──
+    // Stock / MF / ETF etc: investedAmount = quantity × buyPrice
+    useEffect(() => {
+        if (isMarket(assetType) && quantity && buyPrice) {
+            const calc = (parseFloat(quantity) || 0) * (parseFloat(buyPrice) || 0);
+            setValue('investedAmount', calc.toFixed(2));
+        }
+    }, [assetType, quantity, buyPrice, setValue]);
+
+    // FD: currentValue = maturity
+    useEffect(() => {
+        if (assetType === 'FD' && investedAmount && interestRate && tenureMonths) {
+            const mat = calcFDMaturity(parseFloat(investedAmount), parseFloat(interestRate), parseInt(tenureMonths));
+            setValue('currentValue', mat.toFixed(2));
+        }
+    }, [assetType, investedAmount, interestRate, tenureMonths, setValue]);
+
+    // RD: investedAmount = monthly × tenure, currentValue = maturity
+    useEffect(() => {
+        if (isRD(assetType) && monthlyAmount && tenureMonths) {
+            const totalInvested = parseFloat(monthlyAmount) * parseInt(tenureMonths);
+            setValue('investedAmount', totalInvested.toFixed(2));
+            if (interestRate) {
+                const mat = calcRDMaturity(parseFloat(monthlyAmount), parseFloat(interestRate), parseInt(tenureMonths));
+                setValue('currentValue', mat.toFixed(2));
+            }
+        }
+    }, [assetType, monthlyAmount, interestRate, tenureMonths, setValue]);
+
+    // PPF: currentValue = projected
+    useEffect(() => {
+        if (isPPF(assetType) && investedAmount && interestRate) {
+            const proj = calcPPFProjected(parseFloat(investedAmount), parseFloat(interestRate), investmentFrequency);
+            setValue('currentValue', proj.toFixed(2));
+        }
+    }, [assetType, investedAmount, interestRate, investmentFrequency, setValue]);
+
+    // Default PPF rate
+    useEffect(() => {
+        if (isPPF(assetType) && !interestRate) setValue('interestRate', '7.1');
+    }, [assetType, interestRate, setValue]);
+
+    // Default date for RD
+    useEffect(() => {
+        if (isRD(assetType) && !editing) {
+            setValue('dateInvested', new Date().toISOString().split('T')[0]);
+        }
+    }, [assetType, editing, setValue]);
+
+    const onSubmit = async (data) => {
+        const resolvedType = data.assetType;
         const payload = {
-            name: form.name,
+            name: data.name,
             assetType: resolvedType || undefined,
-            quantity: form.quantity ? parseFloat(form.quantity) : undefined,
-            buyPrice: form.buyPrice ? parseFloat(form.buyPrice) : undefined,
-            investedAmount: parseFloat(form.investedAmount),
-            currentValue: parseFloat(form.currentValue),
-            platform: form.platform || undefined,
-            notes: form.notes || undefined,
-            dateInvested: form.dateInvested || undefined,
+            quantity: (isMarket(resolvedType) || isPhysicalMetal(resolvedType)) && data.quantity ? parseFloat(data.quantity) : undefined,
+            buyPrice: isMarket(resolvedType) && data.buyPrice ? parseFloat(data.buyPrice) : undefined,
+            investedAmount: parseFloat(data.investedAmount),
+            currentValue: parseFloat(data.currentValue),
+            platform: data.platform || undefined,
+            notes: data.notes || undefined,
+            dateInvested: data.dateInvested || undefined,
+            interestRate: isFixedIncome(resolvedType) && data.interestRate ? parseFloat(data.interestRate) : undefined,
+            tenureMonths: (assetType === 'FD' || isRD(resolvedType)) && data.tenureMonths ? parseInt(data.tenureMonths) : undefined,
+            monthlyAmount: isRD(resolvedType) && data.monthlyAmount ? parseFloat(data.monthlyAmount) : undefined,
+            investmentFrequency: isPPF(resolvedType) ? data.investmentFrequency : undefined,
         };
         try {
             if (editing) {
-                await api.put(`/investment/${editing}`, payload);
+                await api.put(`/investment/${editing.id}`, payload);
                 toast.success('Investment updated');
             } else {
                 await api.post('/investment', payload);
                 toast.success('Investment added');
             }
-            resetForm();
-            load();
+            onSaved();
         } catch (err) {
             toast.error(err.response?.data?.error || 'Error saving investment');
         }
     };
 
+    const showQty = isMarket(assetType);
+    const showInterest = isFixedIncome(assetType);
+    const showTenure = assetType === 'FD' || isRD(assetType);
+    const showMonthly = isRD(assetType);
+    const showFrequency = isPPF(assetType);
+    const investedReadOnly = isMarket(assetType) || isRD(assetType);
+    const currentReadOnly = isFixedIncome(assetType);
+    const showGrams = isPhysicalMetal(assetType);
+
+    return (
+        <div className="form-card inv-form-card">
+            <div className="inv-form-header">
+                <h3>{editing ? 'Edit Investment' : 'New Investment'}</h3>
+                <button className="btn-icon" onClick={onClose}><FiX /></button>
+            </div>
+            <form onSubmit={handleSubmit(onSubmit)} className="form-grid">
+                {/* Row 1: Name + Type */}
+                <div className="form-group">
+                    <label>Asset Name <span className="req">*</span></label>
+                    <input {...register('name', { required: 'Name is required' })} placeholder="e.g. Infosys, SBI MF" />
+                    {errors.name && <span className="inv-field-error">{errors.name.message}</span>}
+                </div>
+                <div className="form-group">
+                    <label>Asset Type <span className="req">*</span></label>
+                    <select {...register('assetType', { required: 'Select an asset type' })}>
+                        <option value="">Select type</option>
+                        {dynamicTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                    {errors.assetType && <span className="inv-field-error">{errors.assetType.message}</span>}
+                </div>
+
+                {/* Gold/Silver: Weight in Grams */}
+                {showGrams && (
+                    <div className="form-group">
+                        <label>Weight (Grams) <span className="req">*</span></label>
+                        <input type="number" step="0.01"
+                            {...register('quantity', { required: 'Weight in grams is required' })}
+                            placeholder="e.g. 10, 50, 100" />
+                        {errors.quantity && <span className="inv-field-error">{errors.quantity.message}</span>}
+                    </div>
+                )}
+
+                {/* Stock/MF/ETF: Quantity + Buy Price — side by side */}
+                {showQty && (
+                    <div className="inv-field-group inv-field-visible">
+                        <div className="form-group">
+                            <label>Quantity (Units) <span className="req">*</span></label>
+                            <input type="number" step="0.0001"
+                                {...register('quantity', { required: 'Quantity is required' })}
+                                placeholder="Units" />
+                            {errors.quantity && <span className="inv-field-error">{errors.quantity.message}</span>}
+                        </div>
+                        <div className="form-group">
+                            <label>Buy Price / Unit <span className="req">*</span></label>
+                            <input type="number" step="0.01" {...register('buyPrice', { required: 'Buy price is required' })} placeholder="₹ per unit" />
+                            {errors.buyPrice && <span className="inv-field-error">{errors.buyPrice.message}</span>}
+                        </div>
+                    </div>
+                )}
+
+                {/* RD Monthly Amount */}
+                <div className={`inv-field-group ${showMonthly ? 'inv-field-visible' : 'inv-field-hidden'}`}>
+                    <div className="form-group form-full">
+                        <label>Monthly Investment <span className="req">*</span></label>
+                        <input type="number" step="0.01" {...register('monthlyAmount', showMonthly ? { required: 'Monthly amount is required' } : {})} placeholder="₹ per month" />
+                        {errors.monthlyAmount && <span className="inv-field-error">{errors.monthlyAmount.message}</span>}
+                    </div>
+                </div>
+
+                {/* Interest Rate + Tenure */}
+                <div className={`inv-field-group ${showInterest ? 'inv-field-visible' : 'inv-field-hidden'}`}>
+                    <div className="form-group">
+                        <label>Interest Rate (%) <span className="req">*</span></label>
+                        <input type="number" step="0.01" {...register('interestRate', showInterest ? { required: 'Interest rate is required' } : {})} placeholder="e.g. 7.1" />
+                        {errors.interestRate && <span className="inv-field-error">{errors.interestRate.message}</span>}
+                    </div>
+                    {showTenure && (
+                        <div className="form-group">
+                            <label>Tenure (months) <span className="req">*</span></label>
+                            <input type="number" {...register('tenureMonths', showTenure ? { required: 'Tenure is required' } : {})} placeholder="e.g. 12, 24, 60" />
+                            {errors.tenureMonths && <span className="inv-field-error">{errors.tenureMonths.message}</span>}
+                        </div>
+                    )}
+                </div>
+
+                {/* PPF Frequency */}
+                <div className={`inv-field-group ${showFrequency ? 'inv-field-visible' : 'inv-field-hidden'}`}>
+                    <div className="form-group form-full">
+                        <label>Investment Frequency</label>
+                        <div className="inv-freq-toggle">
+                            <button type="button" className={`inv-freq-btn ${investmentFrequency === 'Monthly' ? 'inv-freq-active' : ''}`}
+                                onClick={() => setValue('investmentFrequency', 'Monthly')}>Monthly</button>
+                            <button type="button" className={`inv-freq-btn ${investmentFrequency === 'Yearly' ? 'inv-freq-active' : ''}`}
+                                onClick={() => setValue('investmentFrequency', 'Yearly')}>Yearly</button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Invested + Current Value */}
+                <div className="form-group">
+                    <label>Amount Invested {!investedReadOnly && <span className="req">*</span>}
+                        {investedReadOnly && <span className="inv-auto-badge"><FiZap /> Auto</span>}
+                    </label>
+                    <input type="number" step="0.01"
+                        {...register('investedAmount', { required: 'Amount is required' })}
+                        readOnly={investedReadOnly}
+                        className={investedReadOnly ? 'inv-auto-calc' : ''} />
+                    {errors.investedAmount && <span className="inv-field-error">{errors.investedAmount.message}</span>}
+                </div>
+                <div className="form-group">
+                    <label>{isFixedIncome(assetType) ? 'Maturity / Projected Value' : 'Current Value'}
+                        {currentReadOnly && <span className="inv-auto-badge"><FiZap /> Auto</span>}
+                    </label>
+                    <input type="number" step="0.01"
+                        {...register('currentValue', { required: 'Value is required' })}
+                        readOnly={currentReadOnly}
+                        className={currentReadOnly ? 'inv-auto-calc' : ''} />
+                    {errors.currentValue && <span className="inv-field-error">{errors.currentValue.message}</span>}
+                </div>
+
+                {/* Platform + Date */}
+                <div className="form-group">
+                    <label>Platform</label>
+                    <input {...register('platform')} placeholder="e.g. Zerodha, Groww" />
+                </div>
+                <div className="form-group">
+                    <label>Date Invested</label>
+                    <input type="date" {...register('dateInvested')} />
+                </div>
+
+                {/* Notes */}
+                <div className="form-group form-full">
+                    <label>Notes</label>
+                    <input {...register('notes')} placeholder="Optional notes" />
+                </div>
+
+                <div className="form-actions">
+                    <button type="submit" className="btn btn-primary">{editing ? 'Update' : 'Add Investment'}</button>
+                    <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
+                </div>
+            </form>
+        </div>
+    );
+}
+
+
+// ══════════════════════════════════════════════════════════
+//  Tab-specific tables
+// ══════════════════════════════════════════════════════════
+
+// ── MARKET TABLE ──
+function MarketTable({ items, onEdit, onDelete }) {
+    if (items.length === 0) return <div className="inv-empty">No market investments yet — add stocks, mutual funds, or crypto!</div>;
+    return (
+        <div className="inv-table-card">
+            <div className="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Asset Name</th><th>Type</th>
+                            <th className="text-right">Invested</th>
+                            <th className="text-right">Current Value</th>
+                            <th className="text-right">ROI (%)</th>
+                            <th>Platform</th><th>Date</th><th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {items.map(inv => {
+                            const isPos = inv.roi >= 0;
+                            return (
+                                <tr key={inv.id}>
+                                    <td>
+                                        <div className="inv-asset-cell">
+                                            <span className="inv-asset-name">{inv.name}</span>
+                                            {inv.quantity && <span className="inv-asset-platform">{inv.quantity} units @ {fmt(inv.buyPrice)}</span>}
+                                        </div>
+                                    </td>
+                                    <td><span className="inv-type-badge">{inv.assetType}</span></td>
+                                    <td className="text-right">{fmt(inv.investedAmount)}</td>
+                                    <td className="text-right">{fmt(inv.currentValue)}</td>
+                                    <td className={`text-right ${isPos ? 'text-green' : 'text-red'}`}>{isPos ? '+' : ''}{inv.roi?.toFixed(2)}%</td>
+                                    <td>{inv.platform || '—'}</td>
+                                    <td>{fmtDate(inv.dateInvested)}</td>
+                                    <td>
+                                        <div className="action-btns">
+                                            <button className="btn-icon" onClick={() => onEdit(inv)}><FiEdit2 /></button>
+                                            <button className="btn-icon btn-danger" onClick={() => onDelete(inv.id)}><FiTrash2 /></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+// ── DEPOSITS TABLE ──
+function DepositsTable({ items, onEdit, onDelete }) {
+    if (items.length === 0) return <div className="inv-empty">No deposits yet — add FD, RD, PPF or SSY!</div>;
+    return (
+        <div className="inv-table-card">
+            <div className="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Asset Name</th><th>Type</th>
+                            <th className="text-right">Total Contributed</th>
+                            <th className="text-right">Maturity Value</th>
+                            <th>Progress</th>
+                            <th>Status</th>
+                            <th>Date Started</th><th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {items.map(inv => {
+                            // Progress: % of tenure completed
+                            const completed = inv.monthsCompleted || 0;
+                            const total = inv.tenureMonths || 0;
+                            const progressPct = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : null;
+
+                            const maturityVal = inv.projectedMaturityValue || inv.currentValue;
+                            const isPPFType = inv.assetType === 'PPF';
+                            const statusClass = inv.status === 'Matured' ? 'inv-status-matured' : 'inv-status-active';
+
+                            return (
+                                <tr key={inv.id}>
+                                    <td>
+                                        <div className="inv-asset-cell">
+                                            <span className="inv-asset-name">{inv.name}</span>
+                                            {inv.platform && <span className="inv-asset-platform">{inv.platform}</span>}
+                                        </div>
+                                    </td>
+                                    <td><span className="inv-type-badge">{inv.assetType}</span></td>
+                                    <td className="text-right">{fmt(inv.investedAmount)}</td>
+                                    <td className="text-right">
+                                        {fmt(maturityVal)}
+                                        {isPPFType && <span className="inv-estimated-label">Estimated</span>}
+                                    </td>
+                                    <td>
+                                        {progressPct !== null ? (
+                                            <div className="inv-progress-wrap">
+                                                <div className="inv-progress-bar">
+                                                    <div className="inv-progress-fill" style={{ width: `${progressPct}%` }} />
+                                                </div>
+                                                <span className="inv-progress-text">{progressPct}%</span>
+                                            </div>
+                                        ) : '—'}
+                                    </td>
+                                    <td>
+                                        {inv.status
+                                            ? <span className={`inv-status-badge ${statusClass}`}>{inv.status}</span>
+                                            : '—'}
+                                    </td>
+                                    <td>{fmtDate(inv.dateInvested)}</td>
+                                    <td>
+                                        <div className="action-btns">
+                                            <button className="btn-icon" onClick={() => onEdit(inv)}><FiEdit2 /></button>
+                                            <button className="btn-icon btn-danger" onClick={() => onDelete(inv.id)}><FiTrash2 /></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+// ── PHYSICAL ASSETS TABLE ──
+function PhysicalTable({ items, onEdit, onDelete }) {
+    if (items.length === 0) return <div className="inv-empty">No physical assets yet — add gold or silver!</div>;
+    return (
+        <div className="inv-table-card">
+            <div className="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Asset Name</th><th>Type</th>
+                            <th className="text-right">Grams</th>
+                            <th className="text-right">Purchase Value</th>
+                            <th className="text-right">Current Value</th>
+                            <th className="text-right">ROI (%)</th>
+                            <th>Last Updated</th>
+                            <th>Notes</th><th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {items.map(inv => {
+                            const isPos = inv.roi >= 0;
+                            return (
+                                <tr key={inv.id}>
+                                    <td>
+                                        <div className="inv-asset-cell">
+                                            <span className="inv-asset-name">{inv.name}</span>
+                                        </div>
+                                    </td>
+                                    <td><span className="inv-type-badge">{inv.assetType}</span></td>
+                                    <td className="text-right">{inv.quantity ? `${inv.quantity}g` : '—'}</td>
+                                    <td className="text-right">{fmt(inv.investedAmount)}</td>
+                                    <td className="text-right">{fmt(inv.currentValue)}</td>
+                                    <td className={`text-right ${isPos ? 'text-green' : 'text-red'}`}>{isPos ? '+' : ''}{inv.roi?.toFixed(2)}%</td>
+                                    <td>{fmtDate(inv.dateInvested)}</td>
+                                    <td><span className="inv-notes-cell">{inv.notes || '—'}</span></td>
+                                    <td>
+                                        <div className="action-btns">
+                                            <button className="btn-icon" onClick={() => onEdit(inv)}><FiEdit2 /></button>
+                                            <button className="btn-icon btn-danger" onClick={() => onDelete(inv.id)}><FiTrash2 /></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+
+// ══════════════════════════════════════════════════════════
+//  MAIN PAGE
+// ══════════════════════════════════════════════════════════
+export default function Investments() {
+    const [tab, setTab] = useState('Market');
+    const [investments, setInvestments] = useState([]);
+    const [showForm, setShowForm] = useState(false);
+    const [editing, setEditing] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const toast = useToast();
+
+    const load = () => api.get('/investment').then((res) => { setInvestments(res.data); setLoading(false); });
+    useEffect(() => { load(); }, []);
+
+    const resetForm = () => { setEditing(null); setShowForm(false); };
+
     const handleEdit = (inv) => {
-        setForm({
-            name: inv.name, assetType: inv.assetType || '', quantity: inv.quantity ?? '',
-            buyPrice: inv.buyPrice ?? '', investedAmount: inv.investedAmount, currentValue: inv.currentValue,
-            platform: inv.platform || '', notes: inv.notes || '', dateInvested: inv.dateInvested?.split('T')[0] || '',
-        });
-        setEditing(inv.id);
+        setEditing(inv);
         setShowForm(true);
-        setTab('manage');
     };
 
     const handleDelete = async () => {
@@ -88,71 +563,26 @@ export default function Investments() {
         setDeleteTarget(null);
     };
 
-    // ── Dynamic asset types from actual data ──
-    const dynamicTypes = useMemo(() => {
-        const types = [...new Set(investments.map(i => i.assetType).filter(Boolean))];
-        return types.sort();
-    }, [investments]);
-
-    // ── Filtering & Sorting (for Track tab) ──
-    const filtered = useMemo(() => {
-        let list = [...investments];
-        if (filterType) list = list.filter(i => i.assetType === filterType);
-        switch (sortBy) {
-            case 'roi-desc': list.sort((a, b) => b.roi - a.roi); break;
-            case 'roi-asc': list.sort((a, b) => a.roi - b.roi); break;
-            case 'invested-desc': list.sort((a, b) => b.investedAmount - a.investedAmount); break;
-            case 'date-desc': list.sort((a, b) => new Date(b.dateInvested || 0) - new Date(a.dateInvested || 0)); break;
-        }
-        return list;
-    }, [investments, filterType, sortBy]);
-
-    // ── Portfolio Summary ──
-    const summary = useMemo(() => {
-        const totalInvested = investments.reduce((s, i) => s + i.investedAmount, 0);
-        const currentValue = investments.reduce((s, i) => s + i.currentValue, 0);
-        const pnl = currentValue - totalInvested;
-        const pnlPct = totalInvested > 0 ? (pnl / totalInvested) * 100 : 0;
-        return { totalInvested, currentValue, pnl, pnlPct };
-    }, [investments]);
-
-    // ── Allocation Chart ──
-    const allocationData = useMemo(() => {
-        const map = {};
-        investments.forEach(i => {
-            const t = i.assetType || 'Other';
-            map[t] = (map[t] || 0) + i.currentValue;
+    // ── Split data by category ──
+    const byCategory = useMemo(() => {
+        const market = [], deposit = [], physical = [];
+        investments.forEach(inv => {
+            const cat = inv.category || getCategory(inv.assetType);
+            if (cat === 'Market') market.push(inv);
+            else if (cat === 'Deposit') deposit.push(inv);
+            else physical.push(inv);
         });
-        const labels = Object.keys(map);
-        const data = Object.values(map);
-        const palette = isDark
-            ? ['#6366f1', '#818cf8', '#a5b4fc', '#94a3b8', '#64748b', '#475569', '#cbd5e1']
-            : ['#4f46e5', '#6366f1', '#818cf8', '#94a3b8', '#64748b', '#475569', '#a5b4fc'];
-        return {
-            labels,
-            datasets: [{ data, backgroundColor: palette.slice(0, labels.length), borderWidth: 0, hoverOffset: 4 }],
-        };
-    }, [investments, isDark]);
+        return { Market: market, Deposit: deposit, Physical: physical };
+    }, [investments]);
 
-    const chartOpts = {
-        responsive: true, maintainAspectRatio: false, cutout: '62%',
-        plugins: {
-            legend: {
-                position: 'bottom',
-                labels: {
-                    padding: 12, boxWidth: 8, boxHeight: 8, usePointStyle: true, pointStyleWidth: 8,
-                    font: { size: 11, family: 'Inter' }, color: isDark ? '#94a3b8' : '#64748b',
-                },
-            },
-            tooltip: {
-                backgroundColor: isDark ? '#1e293b' : '#ffffff',
-                titleColor: isDark ? '#e2e8f0' : '#1e293b',
-                bodyColor: isDark ? '#94a3b8' : '#64748b',
-                borderColor: isDark ? '#334155' : '#e2e8f0',
-                borderWidth: 1, padding: 10, bodyFont: { size: 11 },
-                callbacks: { label: (ctx) => ` ${ctx.label}: ${fmt(ctx.raw)}` },
-            },
-        },
+    const currentItems = byCategory[tab] || [];
+
+
+
+    const tabInfo = {
+        Market: { icon: '📈', label: 'Market Investments', desc: 'Stocks, Mutual Funds, ETFs, NPS, Crypto — value driven by market price.' },
+        Deposit: { icon: '🏦', label: 'Deposits & Schemes', desc: 'FD, RD, PPF, SSY — time-based, contribution-driven investments.' },
+        Physical: { icon: '🏠', label: 'Physical Assets', desc: 'Gold, Silver — manually valued assets.' },
     };
 
     if (loading) return <div className="page-loader">Loading investments…</div>;
@@ -167,260 +597,44 @@ export default function Investments() {
 
             <div className="page-header">
                 <div>
-                    <h1 className="page-title"><FiTrendingUp /> Investments</h1>
-                    <p className="inv-subtitle">Manage and track your investment portfolio</p>
+                    <h1 className="page-title"><FiTrendingUp /> Investment Transactions</h1>
+                    <p className="inv-subtitle">Add, edit, and manage your investments by category</p>
                 </div>
             </div>
 
-            {/* ── Tab Bar ── */}
+            {/* ── Category Tab Bar ── */}
             <div className="inv-tabs">
-                <button className={`inv-tab ${tab === 'manage' ? 'inv-tab-active' : ''}`} onClick={() => setTab('manage')}>
-                    <FiList /> Manage Investments
-                </button>
-                <button className={`inv-tab ${tab === 'track' ? 'inv-tab-active' : ''}`} onClick={() => setTab('track')}>
-                    <FiBarChart2 /> Portfolio Tracker
-                </button>
+                {['Market', 'Deposit', 'Physical'].map(cat => (
+                    <button key={cat}
+                        className={`inv-tab ${tab === cat ? 'inv-tab-active' : ''}`}
+                        onClick={() => { setTab(cat); resetForm(); }}>
+                        <span className="inv-tab-icon">{tabInfo[cat].icon}</span>{tabInfo[cat].label}
+                        <span className="inv-tab-count">{byCategory[cat].length}</span>
+                    </button>
+                ))}
             </div>
 
-            {/* ═══════════ TAB 1: MANAGE ═══════════ */}
-            {tab === 'manage' && (
-                <>
-                    <div className="inv-tab-header">
-                        <p className="inv-tab-desc">Add, edit, or remove investments from your portfolio.</p>
-                        <button className="btn btn-primary" onClick={() => { resetForm(); setShowForm(!showForm); }}><FiPlus /> Add Investment</button>
-                    </div>
+            {/* ── Tab Header ── */}
+            <div className="inv-tab-header">
+                <p className="inv-tab-desc">{tabInfo[tab].desc}</p>
+                <button className="btn btn-primary" onClick={() => { resetForm(); setShowForm(!showForm); }}><FiPlus /> Add Investment</button>
+            </div>
 
-                    {showForm && (
-                        <div className="form-card inv-form-card">
-                            <div className="inv-form-header">
-                                <h3>{editing ? 'Edit Investment' : 'New Investment'}</h3>
-                                <button className="btn-icon" onClick={resetForm}><FiX /></button>
-                            </div>
-                            <form onSubmit={handleSubmit} className="form-grid">
-                                <div className="form-group">
-                                    <label>Asset Name</label>
-                                    <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required placeholder="e.g. Infosys, SBI MF" />
-                                </div>
-                                <div className="form-group">
-                                    <label>Asset Type</label>
-                                    {form.assetType === '__custom__' ? (
-                                        <div className="inv-custom-type">
-                                            <input
-                                                value={form.customType || ''}
-                                                onChange={e => setForm({ ...form, customType: e.target.value })}
-                                                placeholder="Enter new asset type"
-                                                autoFocus
-                                            />
-                                            <button type="button" className="btn-icon" onClick={() => setForm({ ...form, assetType: '', customType: '' })}><FiX /></button>
-                                        </div>
-                                    ) : (
-                                        <select value={form.assetType} onChange={e => setForm({ ...form, assetType: e.target.value })}>
-                                            <option value="">Select type</option>
-                                            {[...new Set([...ASSET_TYPES, ...dynamicTypes])].sort().map(t => <option key={t} value={t}>{t}</option>)}
-                                            <option value="__custom__">+ Add Custom Type</option>
-                                        </select>
-                                    )}
-                                </div>
-                                <div className="form-group">
-                                    <label>Quantity</label>
-                                    <input type="number" step="0.0001" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} placeholder="Units" />
-                                </div>
-                                <div className="form-group">
-                                    <label>Buy Price / Unit</label>
-                                    <input type="number" step="0.01" value={form.buyPrice} onChange={e => setForm({ ...form, buyPrice: e.target.value })} placeholder="₹ per unit" />
-                                </div>
-                                <div className="form-group">
-                                    <label>Amount Invested</label>
-                                    <input type="number" step="0.01" value={form.investedAmount} onChange={e => setForm({ ...form, investedAmount: e.target.value })} required />
-                                </div>
-                                <div className="form-group">
-                                    <label>Current Value</label>
-                                    <input type="number" step="0.01" value={form.currentValue} onChange={e => setForm({ ...form, currentValue: e.target.value })} required />
-                                </div>
-                                <div className="form-group">
-                                    <label>Platform</label>
-                                    <input value={form.platform} onChange={e => setForm({ ...form, platform: e.target.value })} placeholder="e.g. Zerodha, Groww" />
-                                </div>
-                                <div className="form-group">
-                                    <label>Date Invested</label>
-                                    <input type="date" value={form.dateInvested} onChange={e => setForm({ ...form, dateInvested: e.target.value })} />
-                                </div>
-                                <div className="form-group form-full">
-                                    <label>Notes</label>
-                                    <input value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Optional notes" />
-                                </div>
-                                <div className="form-actions">
-                                    <button type="submit" className="btn btn-primary">{editing ? 'Update' : 'Add Investment'}</button>
-                                    <button type="button" className="btn btn-ghost" onClick={resetForm}>Cancel</button>
-                                </div>
-                            </form>
-                        </div>
-                    )}
-
-                    {/* Simple listing table for manage tab */}
-                    <div className="inv-table-card">
-                        <div className="table-wrapper">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Asset</th><th>Type</th><th className="text-right">Invested</th>
-                                        <th className="text-right">Current</th><th className="text-right">ROI</th>
-                                        <th>Date</th><th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {investments.length === 0 ? (
-                                        <tr><td colSpan="7" className="text-center">No investments yet — add your first one!</td></tr>
-                                    ) : (
-                                        investments.map(inv => {
-                                            const isPos = inv.roi >= 0;
-                                            return (
-                                                <tr key={inv.id}>
-                                                    <td>
-                                                        <div className="inv-asset-cell">
-                                                            <span className="inv-asset-name">{inv.name}</span>
-                                                            {inv.platform && <span className="inv-asset-platform">{inv.platform}</span>}
-                                                        </div>
-                                                    </td>
-                                                    <td><span className="inv-type-badge">{inv.assetType || '—'}</span></td>
-                                                    <td className="text-right">{fmt(inv.investedAmount)}</td>
-                                                    <td className="text-right">{fmt(inv.currentValue)}</td>
-                                                    <td className={`text-right ${isPos ? 'text-green' : 'text-red'}`}>{isPos ? '+' : ''}{inv.roi?.toFixed(2)}%</td>
-                                                    <td>{inv.dateInvested ? new Date(inv.dateInvested).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}</td>
-                                                    <td>
-                                                        <div className="action-btns">
-                                                            <button className="btn-icon" onClick={() => handleEdit(inv)}><FiEdit2 /></button>
-                                                            <button className="btn-icon btn-danger" onClick={() => setDeleteTarget(inv.id)}><FiTrash2 /></button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </>
+            {/* ── Form ── */}
+            {showForm && (
+                <InvestmentForm
+                    editing={editing}
+                    investments={investments}
+                    defaultCategory={tab}
+                    onClose={resetForm}
+                    onSaved={() => { resetForm(); load(); }}
+                />
             )}
 
-            {/* ═══════════ TAB 2: PORTFOLIO TRACKER ═══════════ */}
-            {tab === 'track' && (
-                <>
-                    {/* Portfolio Summary */}
-                    <div className="inv-summary-grid">
-                        <div className="inv-summary-card">
-                            <div className="inv-sum-icon" style={{ color: '#6366f1', background: 'rgba(99,102,241,0.08)' }}><FiDollarSign /></div>
-                            <div>
-                                <p className="inv-sum-label">Total Invested</p>
-                                <p className="inv-sum-value">{fmt(summary.totalInvested)}</p>
-                            </div>
-                        </div>
-                        <div className="inv-summary-card">
-                            <div className="inv-sum-icon" style={{ color: '#818cf8', background: 'rgba(129,140,248,0.08)' }}><FiTrendingUp /></div>
-                            <div>
-                                <p className="inv-sum-label">Current Value</p>
-                                <p className="inv-sum-value">{fmt(summary.currentValue)}</p>
-                            </div>
-                        </div>
-                        <div className="inv-summary-card">
-                            <div className="inv-sum-icon" style={{ color: summary.pnl >= 0 ? '#10b981' : '#ef4444', background: summary.pnl >= 0 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)' }}>
-                                {summary.pnl >= 0 ? <FiTrendingUp /> : <FiTrendingDown />}
-                            </div>
-                            <div>
-                                <p className="inv-sum-label">Profit / Loss</p>
-                                <p className={`inv-sum-value ${summary.pnl >= 0 ? 'text-green' : 'text-red'}`}>{summary.pnl >= 0 ? '+' : ''}{fmt(summary.pnl)}</p>
-                            </div>
-                        </div>
-                        <div className="inv-summary-card">
-                            <div className="inv-sum-icon" style={{ color: summary.pnlPct >= 0 ? '#10b981' : '#ef4444', background: summary.pnlPct >= 0 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)' }}><FiPercent /></div>
-                            <div>
-                                <p className="inv-sum-label">Return</p>
-                                <p className={`inv-sum-value ${summary.pnlPct >= 0 ? 'text-green' : 'text-red'}`}>{summary.pnlPct >= 0 ? '+' : ''}{summary.pnlPct.toFixed(2)}%</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Chart + Filters Row */}
-                    <div className="inv-mid-row">
-                        {investments.length > 0 && (
-                            <div className="inv-chart-card">
-                                <h3 className="inv-chart-title">Allocation by Type</h3>
-                                <div className="inv-chart-wrap">
-                                    <Doughnut data={allocationData} options={chartOpts} />
-                                </div>
-                            </div>
-                        )}
-                        <div className="inv-filters-card">
-                            <h3 className="inv-chart-title"><FiFilter /> Filters</h3>
-                            <div className="inv-filter-group">
-                                <label className="inv-filter-label">Asset Type</label>
-                                <div className="inv-pills">
-                                    <button className={`inv-pill ${filterType === '' ? 'inv-pill-active' : ''}`} onClick={() => setFilterType('')}>All</button>
-                                    {dynamicTypes.map(t => (
-                                        <button key={t} className={`inv-pill ${filterType === t ? 'inv-pill-active' : ''}`} onClick={() => setFilterType(filterType === t ? '' : t)}>{t}</button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="inv-filter-group">
-                                <label className="inv-filter-label">Sort By</label>
-                                <select className="inv-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
-                                    {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Detailed Tracking Table */}
-                    <div className="inv-table-card">
-                        <div className="table-wrapper">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Asset</th><th>Type</th><th>Qty</th>
-                                        <th className="text-right">Buy Price</th>
-                                        <th className="text-right">Invested</th>
-                                        <th className="text-right">Current</th>
-                                        <th className="text-right">P&L</th>
-                                        <th className="text-right">ROI</th>
-                                        <th>Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filtered.length === 0 ? (
-                                        <tr><td colSpan="9" className="text-center">
-                                            {filterType ? 'No investments match this filter' : 'No investments yet'}
-                                        </td></tr>
-                                    ) : (
-                                        filtered.map(inv => {
-                                            const pnl = inv.currentValue - inv.investedAmount;
-                                            const isPos = pnl >= 0;
-                                            return (
-                                                <tr key={inv.id}>
-                                                    <td>
-                                                        <div className="inv-asset-cell">
-                                                            <span className="inv-asset-name">{inv.name}</span>
-                                                            {inv.platform && <span className="inv-asset-platform">{inv.platform}</span>}
-                                                        </div>
-                                                    </td>
-                                                    <td><span className="inv-type-badge">{inv.assetType || '—'}</span></td>
-                                                    <td>{inv.quantity ?? '—'}</td>
-                                                    <td className="text-right">{inv.buyPrice != null ? fmt(inv.buyPrice) : '—'}</td>
-                                                    <td className="text-right">{fmt(inv.investedAmount)}</td>
-                                                    <td className="text-right">{fmt(inv.currentValue)}</td>
-                                                    <td className={`text-right ${isPos ? 'text-green' : 'text-red'}`}>{isPos ? '+' : ''}{fmt(pnl)}</td>
-                                                    <td className={`text-right ${isPos ? 'text-green' : 'text-red'}`}>{inv.roi >= 0 ? '+' : ''}{inv.roi?.toFixed(2)}%</td>
-                                                    <td>{inv.dateInvested ? new Date(inv.dateInvested).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}</td>
-                                                </tr>
-                                            );
-                                        })
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </>
-            )}
+            {/* ── Category-specific Table ── */}
+            {tab === 'Market' && <MarketTable items={currentItems} onEdit={handleEdit} onDelete={setDeleteTarget} />}
+            {tab === 'Deposit' && <DepositsTable items={currentItems} onEdit={handleEdit} onDelete={setDeleteTarget} />}
+            {tab === 'Physical' && <PhysicalTable items={currentItems} onEdit={handleEdit} onDelete={setDeleteTarget} />}
         </div>
     );
 }
