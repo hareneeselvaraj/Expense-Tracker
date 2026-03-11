@@ -1,21 +1,32 @@
 import { useTheme } from '../context/ThemeContext';
-import { FiSun, FiMoon } from 'react-icons/fi';
+import { FiSun, FiMoon, FiDroplet } from 'react-icons/fi';
 
 export default function ThemeToggle() {
-    const { isDark, toggleTheme } = useTheme();
+    const { theme, toggleTheme } = useTheme();
+
+    const icons = {
+        dark: <FiMoon />,
+        light: <FiSun />,
+        lavender: <FiDroplet />
+    };
+
+    const labels = {
+        dark: 'Switch to Light Mode',
+        light: 'Switch to Lavender Theme',
+        lavender: 'Switch to Dark Mode'
+    };
 
     return (
-        <div className="theme-toggle-wrapper">
-            <FiSun className={`theme-icon ${!isDark ? 'theme-icon-active' : ''}`} />
-            <button
-                className={`theme-switch ${isDark ? 'theme-switch-on' : ''}`}
-                onClick={toggleTheme}
-                aria-label="Toggle dark mode"
-                title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-                <span className="theme-switch-knob" />
-            </button>
-            <FiMoon className={`theme-icon ${isDark ? 'theme-icon-active' : ''}`} />
-        </div>
+        <button
+            className="theme-cycle-btn"
+            onClick={toggleTheme}
+            aria-label="Toggle Theme"
+            title={labels[theme] || 'Toggle Theme'}
+        >
+            {icons[theme]}
+            <span className="theme-cycle-label">
+                {theme.charAt(0).toUpperCase() + theme.slice(1)} Mode
+            </span>
+        </button>
     );
 }

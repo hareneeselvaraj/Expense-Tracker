@@ -16,6 +16,9 @@ import Categories from './pages/Categories';
 import Tags from './pages/Tags';
 import AIInsights from './pages/AIInsights';
 import MileageTracker from './pages/MileageTracker';
+import Goals from './pages/Goals';
+import UpcomingReminders from './pages/UpcomingReminders';
+import History from './pages/History';
 
 export default function App() {
     return (
@@ -37,6 +40,10 @@ export default function App() {
                                 <Route path="/portfolio" element={<Portfolio />} />
                                 <Route path="/mileage" element={<MileageTracker />} />
                                 <Route path="/ai-insights" element={<AIInsights />} />
+                                <Route path="/goals" element={<Goals />} />
+                                <Route path="/upcoming" element={<UpcomingReminders />} />
+                                <Route path="/reminders" element={<UpcomingReminders />} />
+                                <Route path="/history" element={<History />} />
                             </Route>
                         </Routes>
                     </BrowserRouter>
