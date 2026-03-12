@@ -92,7 +92,7 @@ const initialGoals = [
 export default function Goals() {
     const [goals, setGoals] = useState(initialGoals);
     const [loaded, setLoaded] = useState(false);
-    
+
     // Unified Modal State
     const [showModal, setShowModal] = useState(false);
     const [editingGoal, setEditingGoal] = useState(null);
@@ -183,7 +183,7 @@ export default function Goals() {
                     <p className="goal-stat-label">Active Goals</p>
                     <p className="goal-stat-value">{goals.length}</p>
                 </div>
-                
+
                 <div className="goal-stat-card variant-amber" style={{ animationDelay: '0.1s' }}>
                     <FiTarget className="goal-stat-bg-icon" />
                     <p className="goal-stat-label">Total Target</p>
@@ -208,11 +208,11 @@ export default function Goals() {
                 {goals.map((goal, i) => {
                     const pct = Math.min(100, Math.round((goal.current / goal.target) * 100));
                     const daysLeft = Math.floor((new Date(goal.deadline) - new Date()) / (1000 * 60 * 60 * 24));
-                    
+
                     let deadlineClass = 'safe';
-                    let deadlineIcon = <FiClock/>;
-                    if (daysLeft < 0) { deadlineClass = 'urgent'; deadlineIcon = <FiAlertCircle/>; }
-                    else if (daysLeft < 30) { deadlineClass = 'urgent'; deadlineIcon = <FiAlertCircle/>; }
+                    let deadlineIcon = <FiClock />;
+                    if (daysLeft < 0) { deadlineClass = 'urgent'; deadlineIcon = <FiAlertCircle />; }
+                    else if (daysLeft < 30) { deadlineClass = 'urgent'; deadlineIcon = <FiAlertCircle />; }
                     else if (daysLeft < 90) { deadlineClass = 'warning'; }
 
                     const radius = 45; // reduced mapping radius for smaller 110px circle SVG
@@ -221,18 +221,18 @@ export default function Goals() {
 
                     return (
                         <div className="goal-premium-card" key={goal.id} style={{ '--goal-color': goal.color, animationDelay: `${0.4 + i * 0.1}s` }}>
-                            
+
                             <div className="goal-card-hero">
                                 <div className="goal-hero-icon">{goal.icon}</div>
                                 <button className="goal-edit-btn" onClick={() => handleEditClick(goal)} title="Update Goal">
                                     <FiEdit2 />
                                 </button>
                             </div>
-                            
+
                             <div className="goal-card-body">
                                 <h3 className="goal-title">{goal.title}</h3>
                                 <p className="goal-desc">{goal.description}</p>
-                                
+
                                 <div className="goal-ring-container">
                                     <svg className="goal-ring-svg" viewBox="0 0 110 110" preserveAspectRatio="xMidYMid meet">
                                         <circle
@@ -281,21 +281,21 @@ export default function Goals() {
                             <div className="goal-input-grid">
                                 <div className="goal-input-group">
                                     <label>Goal Title</label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         required
                                         placeholder="e.g. Save for a Car"
                                         value={formData.title}
-                                        onChange={e => setFormData({...formData, title: e.target.value})}
+                                        onChange={e => setFormData({ ...formData, title: e.target.value })}
                                     />
                                 </div>
                                 <div className="goal-input-group">
                                     <label>Brief Description</label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         placeholder="e.g. Monthly savings target"
                                         value={formData.description}
-                                        onChange={e => setFormData({...formData, description: e.target.value})}
+                                        onChange={e => setFormData({ ...formData, description: e.target.value })}
                                     />
                                 </div>
                             </div>
@@ -303,31 +303,31 @@ export default function Goals() {
                             <div className="goal-input-grid triple">
                                 <div className="goal-input-group">
                                     <label>Target Amount (₹)</label>
-                                    <input 
-                                        type="number" 
+                                    <input
+                                        type="number"
                                         required
                                         min="1"
                                         value={formData.target}
-                                        onChange={e => setFormData({...formData, target: e.target.value})}
+                                        onChange={e => setFormData({ ...formData, target: e.target.value })}
                                     />
                                 </div>
                                 <div className="goal-input-group">
                                     <label>Currently Saved (₹)</label>
-                                    <input 
-                                        type="number" 
+                                    <input
+                                        type="number"
                                         required
                                         min="0"
                                         value={formData.current}
-                                        onChange={e => setFormData({...formData, current: e.target.value})}
+                                        onChange={e => setFormData({ ...formData, current: e.target.value })}
                                     />
                                 </div>
                                 <div className="goal-input-group">
                                     <label>Target Deadline</label>
-                                    <input 
-                                        type="date" 
+                                    <input
+                                        type="date"
                                         required
                                         value={formData.deadline}
-                                        onChange={e => setFormData({...formData, deadline: e.target.value})}
+                                        onChange={e => setFormData({ ...formData, deadline: e.target.value })}
                                     />
                                 </div>
                             </div>
@@ -336,10 +336,10 @@ export default function Goals() {
                                 <label>Choose Icon</label>
                                 <div className="goal-icon-grid">
                                     {ICON_CHOICES.map(ic => (
-                                        <div 
-                                            key={ic.name} 
+                                        <div
+                                            key={ic.name}
                                             className={`goal-icon-opt ${formData.iconName === ic.name ? 'selected' : ''}`}
-                                            onClick={() => setFormData({...formData, icon: ic.icon, iconName: ic.name})}
+                                            onClick={() => setFormData({ ...formData, icon: ic.icon, iconName: ic.name })}
                                             title={ic.name}
                                         >
                                             {ic.icon}
@@ -352,11 +352,11 @@ export default function Goals() {
                                 <label>Theme Color</label>
                                 <div className="goal-color-grid">
                                     {COLOR_CHOICES.map(c => (
-                                        <div 
-                                            key={c} 
+                                        <div
+                                            key={c}
                                             className={`goal-color-opt ${formData.color === c ? 'selected' : ''}`}
                                             style={{ '--opt-color': c }}
-                                            onClick={() => setFormData({...formData, color: c})}
+                                            onClick={() => setFormData({ ...formData, color: c })}
                                         />
                                     ))}
                                 </div>

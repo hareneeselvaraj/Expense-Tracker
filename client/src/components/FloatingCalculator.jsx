@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { FiCalculate, FiX, FiRotateCcw } from 'react-icons/fi';
+import { useState, useRef, useEffect } from 'react';
+import { FiZap, FiX, FiRotateCcw } from 'react-icons/fi';
 
 export default function FloatingCalculator() {
     const [isOpen, setIsOpen] = useState(false);
@@ -12,8 +12,33 @@ export default function FloatingCalculator() {
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
     const floatingBtnRef = useRef(null);
 
+    // Handle escape key to close calculator
+    useEffect(() => {
+        const handleEscapeKey = (e) => {
+            if (e.key === 'Escape' && isOpen) {
+                setIsOpen(false);
+            }
+        };
+
+        window.addEventListener('keydown', handleEscapeKey);
+        return () => window.removeEventListener('keydown', handleEscapeKey);
+    }, [isOpen]);
+
     const handleMouseDown = (e) => {
-        if (e.target.closest('button') || e.target.closest('[role="button"]')) return;
+        // When calculator is closed, allow dragging the floating button itself
+        if (!isOpen) {
+            setIsDragging(true);
+            setDragOffset({
+                x: e.clientX - position.x,
+                y: e.clientY - position.y,
+            });
+            return;
+        }
+
+        // When calculator is open, don't drag if clicking the close button or other inner buttons
+        if (e.target.closest('.calc-close-btn') || e.target.closest('.calc-btn')) return;
+
+        // Allow dragging from the header area
         setIsDragging(true);
         setDragOffset({
             x: e.clientX - position.x,
@@ -137,7 +162,7 @@ export default function FloatingCalculator() {
                     onMouseDown={handleMouseDown}
                     title="Open Calculator"
                 >
-                    <FiCalculate size={24} />
+                    <FiZap size={24} />
                 </button>
             ) : (
                 <div className="floating-calc-panel" onMouseDown={handleMouseDown}>
