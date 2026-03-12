@@ -7369,6 +7369,78 @@ tr:hover td {
   }
 }
 
+/* --- Transactions Page Mobile Fixes --- */
+@media (max-width: 768px) {
+  .tx-header-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+  
+  .tx-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .tx-filters {
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+  
+  .tx-select {
+    flex: 1;
+    min-width: 120px;
+  }
+  
+  .tx-count {
+    width: 100%;
+    text-align: right;
+    margin-top: 4px;
+  }
+  
+  .tx-downloads {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .tx-dl-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+  
+  /* Make table scrollable but keep layout clean */
+  .table-wrapper {
+    margin: 0 -16px;
+    padding: 0 16px;
+    width: calc(100% + 32px);
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+  
+  table th, table td {
+    padding: 12px 10px;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .tx-downloads {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .tx-dl-btn {
+    min-width: calc(50% - 4px);
+  }
+  
+  .tx-dl-center {
+    width: 100%;
+  }
+}
+
 /* ══════════════════════ MOBILE LAYOUT & NAVIGATION ══════════════════════ */
 .mobile-header {
   display: none;
