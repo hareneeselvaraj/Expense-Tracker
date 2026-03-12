@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FiBell, FiPlus, FiCalendar, FiCheck, FiClock, FiAlertCircle, FiX, FiDollarSign, FiTag } from 'react-icons/fi';
+import { FiBell, FiPlus, FiCalendar, FiCheck, FiClock, FiAlertCircle, FiX, FiTag, FiTrendingUp } from 'react-icons/fi';
 
 const sampleReminders = [
     { id: 1, title: 'Pay EMI - SBI Home Loan',     date: '2026-03-12', amount: 28500, category: 'Loan',         status: 'upcoming', priority: 'high'   },
@@ -132,7 +132,7 @@ export default function UpcomingReminders() {
                                 </div>
                                 <div className="reminder-meta">
                                     <span className="reminder-meta-item"><FiCalendar /> {dateLabel}</span>
-                                    {r.amount && <span className="reminder-meta-item"><FiDollarSign /> ₹{r.amount.toLocaleString()}</span>}
+                                    {r.amount && <span className="reminder-meta-item"><span className="reminder-rupee-icon">₹</span> {r.amount.toLocaleString()}</span>}
                                     <span className="reminder-urgency-chip" style={{ color: urgencyColor, background: `${urgencyColor}20` }}>
                                         {urgencyLabel}
                                     </span>
