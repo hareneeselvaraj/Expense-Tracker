@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiTarget, FiPlus, FiHome, FiShoppingBag, FiAirplay, FiCheckCircle, FiClock, FiList, FiAlertCircle, FiEdit2, FiX, FiDollarSign, FiHeart, FiBriefcase, FiGift, FiCoffee, FiTruck, FiSmile, FiStar, FiUmbrella, FiMusic } from 'react-icons/fi';
+import { FiTarget, FiPlus, FiHome, FiShoppingBag, FiAirplay, FiCheckCircle, FiClock, FiList, FiAlertCircle, FiEdit2, FiX, FiDollarSign, FiHeart, FiBriefcase, FiGift, FiCoffee, FiTruck, FiSmile, FiStar, FiUmbrella, FiMusic, FiPlane, FiBook, FiCamera, FiGlobe, FiAward, FiTrendingUp, FiZap, FiBike, FiWatch, FiVideo, FiMapPin, FiFeather, FiGamepad2, FiFilm, FiPercent } from 'react-icons/fi';
 
 const ICON_CHOICES = [
     { name: 'Target', icon: <FiTarget /> },
@@ -11,11 +11,26 @@ const ICON_CHOICES = [
     { name: 'Work', icon: <FiBriefcase /> },
     { name: 'Gift', icon: <FiGift /> },
     { name: 'Lifestyle', icon: <FiCoffee /> },
-    { name: 'Travel', icon: <FiTruck /> },
+    { name: 'Vehicle', icon: <FiTruck /> },
+    { name: 'Plane', icon: <FiPlane /> },
+    { name: 'Book', icon: <FiBook /> },
+    { name: 'Camera', icon: <FiCamera /> },
+    { name: 'Globe', icon: <FiGlobe /> },
+    { name: 'Award', icon: <FiAward /> },
+    { name: 'Investment', icon: <FiTrendingUp /> },
+    { name: 'Fitness', icon: <FiZap /> },
+    { name: 'Bike', icon: <FiBike /> },
+    { name: 'Watch', icon: <FiWatch /> },
+    { name: 'Video', icon: <FiVideo /> },
+    { name: 'Location', icon: <FiMapPin /> },
+    { name: 'Nature', icon: <FiFeather /> },
+    { name: 'Gaming', icon: <FiGamepad2 /> },
+    { name: 'Movies', icon: <FiFilm /> },
+    { name: 'Interest', icon: <FiPercent /> },
     { name: 'Personal', icon: <FiSmile /> },
     { name: 'Special', icon: <FiStar /> },
     { name: 'Protection', icon: <FiUmbrella /> },
-    { name: 'Hobby', icon: <FiMusic /> },
+    { name: 'Music', icon: <FiMusic /> },
 ];
 
 const COLOR_CHOICES = [
