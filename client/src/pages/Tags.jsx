@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import { FiPlus, FiTrash2, FiTag, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiTag, FiChevronDown, FiChevronUp, FiFolder } from 'react-icons/fi';
 import { useToast } from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -17,13 +17,21 @@ export default function Tags() {
     const load = () => api.get('/tag').then((res) => { setTags(res.data); setLoading(false); });
     useEffect(() => { load(); }, []);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        await api.post('/tag', { name });
+    const resetForm = () => {
         setName('');
         setShowForm(false);
-        toast.success('Tag created successfully');
-        load();
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await api.post('/tag', { name });
+            toast.success('Tag created successfully');
+            resetForm();
+            load();
+        } catch (err) {
+            toast.error('Error creating tag');
+        }
     };
 
     const handleDelete = async () => {
@@ -61,71 +69,82 @@ export default function Tags() {
                 onConfirm={handleDelete}
                 onCancel={() => setDeleteTarget(null)}
             />
-            <div className="page-header">
-                <h1 className="page-title">Tags</h1>
-                <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}><FiPlus /> New</button>
-            </div>
 
-            <p className="tag-description">
-                Tags group transactions by event or occasion. For example, create a <strong>"Marriage"</strong> tag and assign it to all related transactions (Travel, Food, Stay). Click a tag to see the total amount spent and all linked transactions.
-            </p>
-
+            {/* ── Add Tag Modal ── */}
             {showForm && (
-                <div className="form-card">
-                    <form onSubmit={handleSubmit} className="form-grid">
-                        <div className="form-group">
-                            <label>Tag Name</label>
-                            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Marriage, Vacation, Project" required />
+                <div className="modal-overlay" onClick={resetForm}>
+                    <div className="modal-card" style={{ maxWidth: 460, textAlign: 'left' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                            <h2 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>Create New Tag</h2>
+                            <button onClick={resetForm} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1.2rem' }}>✕</button>
                         </div>
-                        <div className="form-actions">
-                            <button type="submit" className="btn btn-primary">Create</button>
-                            <button type="button" className="btn btn-ghost" onClick={() => setShowForm(false)}>Cancel</button>
-                        </div>
-                    </form>
+                        <form onSubmit={handleSubmit}>
+                            <div className="form-group">
+                                <label>Tag Name</label>
+                                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Marriage, Vacation, Project" required />
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 8 }}>
+                                    Tags help you group related expenses across different categories (like travel, food, and stay for a specific trip).
+                                </p>
+                            </div>
+                            <div className="form-actions" style={{ marginTop: 24 }}>
+                                <button type="submit" className="btn btn-primary">Create Tag</button>
+                                <button type="button" className="btn btn-ghost" onClick={resetForm}>Cancel</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             )}
 
-            <div className="tags-list">
+            <div className="page-header">
+                <div>
+                    <h1 className="page-title"><FiTag /> Tags</h1>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Group transactions by events or projects</p>
+                </div>
+                <button className="btn btn-primary" onClick={() => setShowForm(true)}><FiPlus /> New Tag</button>
+            </div>
+
+            <div className="tags-grid">
                 {tags.map((tag) => (
-                    <div key={tag.id} className={`tag-card ${expandedTag === tag.id ? 'expanded' : ''}`}>
-                        <div className="tag-card-header" onClick={() => toggleExpand(tag.id)}>
-                            <div className="tag-card-left">
-                                <FiTag className="tag-icon" />
-                                <h3>{tag.name}</h3>
+                    <div key={tag.id} className={`tag-card-new ${expandedTag === tag.id ? 'expanded' : ''}`}>
+                        <div className="tag-card-main" onClick={() => toggleExpand(tag.id)}>
+                            <div className="tag-card-icon-wrap">
+                                <FiTag className="tag-card-icon" />
                             </div>
-                            <div className="tag-card-right">
-                                <button className="btn-icon btn-danger" onClick={(e) => { e.stopPropagation(); setDeleteTarget(tag.id); }}><FiTrash2 /></button>
+                            <div className="tag-card-info">
+                                <h3 className="tag-card-name">{tag.name}</h3>
+                                <span className="tag-card-sub">Event / Group</span>
+                            </div>
+                            <div className="tag-card-actions">
+                                <button className="tag-delete-btn" onClick={(e) => { e.stopPropagation(); setDeleteTarget(tag.id); }}><FiTrash2 /></button>
                                 {expandedTag === tag.id ? <FiChevronUp /> : <FiChevronDown />}
                             </div>
                         </div>
 
                         {expandedTag === tag.id && tagDetail && (
-                            <div className="tag-detail">
-                                <div className="tag-summary">
-                                    <div className="tag-summary-item">
-                                        <span className="tag-summary-label">Total Spent</span>
-                                        <span className="tag-summary-value">₹{tagDetail.totalSpent?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            <div className="tag-expand-content">
+                                <div className="tag-detail-stats">
+                                    <div className="tag-stat-box">
+                                        <span className="tag-stat-label">Total Spent</span>
+                                        <span className="tag-stat-val">₹{tagDetail.totalSpent?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                                     </div>
-                                    <div className="tag-summary-item">
-                                        <span className="tag-summary-label">Transactions</span>
-                                        <span className="tag-summary-value">{tagDetail.transactionCount}</span>
+                                    <div className="tag-stat-box">
+                                        <span className="tag-stat-label">Transactions</span>
+                                        <span className="tag-stat-val">{tagDetail.transactionCount}</span>
                                     </div>
                                 </div>
 
                                 {tagDetail.transactions?.length > 0 ? (
-                                    <div className="table-wrapper">
-                                        <table>
+                                    <div className="table-wrapper" style={{ marginTop: 16 }}>
+                                        <table style={{ fontSize: '0.85rem' }}>
                                             <thead>
-                                                <tr><th>Date</th><th>Category</th><th>Account</th><th>Type</th><th>Description</th><th className="text-right">Amount</th></tr>
+                                                <tr><th>Date</th><th>Category</th><th>Type</th><th className="text-right">Amount</th></tr>
                                             </thead>
                                             <tbody>
                                                 {tagDetail.transactions.map((tx) => (
                                                     <tr key={tx.id}>
                                                         <td>{new Date(tx.date).toLocaleDateString('en-IN')}</td>
                                                         <td><span className="badge">{tx.categoryName}</span></td>
-                                                        <td>{tx.accountName}</td>
                                                         <td><span className={`badge badge-${tx.type?.toLowerCase()}`}>{tx.type}</span></td>
-                                                        <td>{tx.description || '—'}</td>
                                                         <td className="text-right amount-cell">₹{tx.amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                                                     </tr>
                                                 ))}
@@ -133,13 +152,21 @@ export default function Tags() {
                                         </table>
                                     </div>
                                 ) : (
-                                    <p className="text-muted" style={{ padding: '16px 0' }}>No transactions linked to this tag yet. Assign it when creating transactions.</p>
+                                    <p className="text-muted" style={{ padding: '20px 0', textAlign: 'center' }}>
+                                        No transactions linked to this tag yet.
+                                    </p>
                                 )}
                             </div>
                         )}
                     </div>
                 ))}
-                {tags.length === 0 && <p className="text-muted">No tags yet. Create one to group expenses by event!</p>}
+
+                {tags.length === 0 && (
+                    <div className="acc-empty">
+                        <FiTag className="acc-empty-icon" />
+                        <p>No tags created yet. Create one to group your events!</p>
+                    </div>
+                )}
             </div>
         </div>
     );

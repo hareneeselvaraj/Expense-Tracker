@@ -1,25 +1,51 @@
 import { useState } from 'react';
-import { FiBell, FiPlus, FiCalendar, FiCheck, FiClock } from 'react-icons/fi';
+import { FiBell, FiPlus, FiCalendar, FiCheck, FiClock, FiAlertCircle, FiX, FiDollarSign, FiTag } from 'react-icons/fi';
 
 const sampleReminders = [
-    { id: 1, title: 'Pay Monthly Loan', date: '2026-03-12', amount: 15000, category: 'Loan', status: 'upcoming', priority: 'high' },
-    { id: 2, title: 'Online Meeting with Client', date: '2026-03-13', amount: null, category: 'Work', status: 'upcoming', priority: 'medium' },
-    { id: 3, title: 'Send Money to Kate', date: '2026-03-15', amount: 5000, category: 'Transfer', status: 'upcoming', priority: 'low' },
-    { id: 4, title: 'Cancel Subscription', date: '2026-03-18', amount: 999, category: 'Subscription', status: 'upcoming', priority: 'medium' },
-    { id: 5, title: 'Home Bills Payment', date: '2026-03-20', amount: 3500, category: 'Bills', status: 'upcoming', priority: 'high' },
-    { id: 6, title: 'Entertainment Subscription', date: '2026-03-25', amount: 499, category: 'Entertainment', status: 'upcoming', priority: 'low' },
+    { id: 1, title: 'Pay EMI - SBI Home Loan',     date: '2026-03-12', amount: 28500, category: 'Loan',         status: 'upcoming', priority: 'high'   },
+    { id: 2, title: 'Electricity Bill Due',          date: '2026-03-13', amount: 2400,  category: 'Bills',        status: 'upcoming', priority: 'high'   },
+    { id: 3, title: 'Netflix Renewal',               date: '2026-03-15', amount: 999,   category: 'Subscription', status: 'upcoming', priority: 'low'    },
+    { id: 4, title: 'Transfer Rent to Landlord',     date: '2026-03-17', amount: 32000, category: 'Transfer',     status: 'upcoming', priority: 'high'   },
+    { id: 5, title: 'Top Up Emergency Fund',         date: '2026-03-20', amount: 10000, category: 'Savings',      status: 'upcoming', priority: 'medium' },
+    { id: 6, title: 'Pay Credit Card Bill',          date: '2026-03-22', amount: 15200, category: 'Bills',        status: 'upcoming', priority: 'high'   },
+    { id: 7, title: 'Spotify Premium Renewal',       date: '2026-03-24', amount: 499,   category: 'Subscription', status: 'upcoming', priority: 'low'    },
+    { id: 8, title: 'SIP Groww Mutual Fund',         date: '2026-03-25', amount: 5000,  category: 'Investment',   status: 'upcoming', priority: 'medium' },
 ];
 
-const priorityColors = { high: '#ef4444', medium: '#f59e0b', low: '#10b981' };
+const priorityConfig = {
+    high:   { color: '#ef4444', bg: '#fef2f2', label: 'High',   icon: <FiAlertCircle /> },
+    medium: { color: '#f59e0b', bg: '#fffbeb', label: 'Medium', icon: <FiClock />       },
+    low:    { color: '#10b981', bg: '#f0fdf4', label: 'Low',    icon: <FiCheck />        },
+};
+
+const categoryColors = {
+    Loan:         '#6366f1',
+    Work:         '#8b5cf6',
+    Transfer:     '#06b6d4',
+    Subscription: '#f59e0b',
+    Bills:        '#ef4444',
+    Entertainment:'#ec4899',
+    General:      '#64748b',
+};
 
 export default function UpcomingReminders() {
     const [reminders, setReminders] = useState(sampleReminders);
     const [showForm, setShowForm] = useState(false);
+    const [filter, setFilter] = useState('all');
     const [form, setForm] = useState({ title: '', date: '', amount: '', category: 'General', priority: 'medium' });
+
+    const upcomingCount  = reminders.filter(r => r.status !== 'completed').length;
+    const completedCount = reminders.filter(r => r.status === 'completed').length;
+
+    const filteredReminders = filter === 'completed'
+        ? reminders.filter(r => r.status === 'completed')
+        : filter === 'uncompleted'
+        ? reminders.filter(r => r.status !== 'completed')
+        : reminders;
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        const newReminder = {
+        setReminders([{
             id: Date.now(),
             title: form.title,
             date: form.date,
@@ -27,8 +53,7 @@ export default function UpcomingReminders() {
             category: form.category,
             status: 'upcoming',
             priority: form.priority
-        };
-        setReminders([newReminder, ...reminders]);
+        }, ...reminders]);
         setShowForm(false);
         setForm({ title: '', date: '', amount: '', category: 'General', priority: 'medium' });
     };
@@ -39,85 +64,138 @@ export default function UpcomingReminders() {
 
     return (
         <div className="page">
+            {/* Header */}
             <div className="page-header">
-                <h1 className="page-title"><FiBell /> Upcoming Reminders</h1>
-                <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+                <div>
+                    <h1 className="page-title"><FiBell /> Reminders</h1>
+                    <p className="page-subtitle">Stay on top of your financial commitments</p>
+                </div>
+                <button className="btn btn-primary" onClick={() => setShowForm(true)}>
                     <FiPlus /> Add Reminder
                 </button>
             </div>
 
-            {showForm && (
-                <div className="form-card" style={{ marginBottom: '20px' }}>
-                    <form onSubmit={handleSubmit} className="form-grid">
-                        <div className="form-group">
-                            <label>Title</label>
-                            <input required value={form.title} onChange={e => setForm({...form, title: e.target.value})} />
-                        </div>
-                        <div className="form-group">
-                            <label>Date</label>
-                            <input type="date" required value={form.date} onChange={e => setForm({...form, date: e.target.value})} />
-                        </div>
-                        <div className="form-group">
-                            <label>Amount (Optional)</label>
-                            <input type="number" step="0.01" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} />
-                        </div>
-                        <div className="form-group">
-                            <label>Category</label>
-                            <input required value={form.category} onChange={e => setForm({...form, category: e.target.value})} placeholder="e.g. Bills, Work" />
-                        </div>
-                        <div className="form-group">
-                            <label>Priority</label>
-                            <select value={form.priority} onChange={e => setForm({...form, priority: e.target.value})}>
-                                <option value="high">High</option>
-                                <option value="medium">Medium</option>
-                                <option value="low">Low</option>
-                            </select>
-                        </div>
-                        <div className="form-actions" style={{ gridColumn: '1 / -1' }}>
-                            <button type="submit" className="btn btn-primary">Add Reminder</button>
-                            <button type="button" className="btn btn-ghost" onClick={() => setShowForm(false)}>Cancel</button>
-                        </div>
-                    </form>
+            {/* Stats/Filter Pills */}
+            <div className="reminder-stats-row">
+                <div className={`reminder-stat-pill${filter === 'all' ? ' rsp-active-all' : ''}`} onClick={() => setFilter('all')}>
+                    <FiBell /> <span>{reminders.length} Total</span>
                 </div>
-            )}
-
-            <div className="reminders-summary-row">
-                <div className="reminder-summary-chip">
-                    <FiClock /> <span>{reminders.filter(r => r.status === 'upcoming').length} Upcoming</span>
+                <div className={`reminder-stat-pill rsp-upcoming${filter === 'uncompleted' ? ' rsp-active-upcoming' : ''}`} onClick={() => setFilter('uncompleted')}>
+                    <FiClock /> <span>{upcomingCount} Upcoming</span>
                 </div>
-                <div className="reminder-summary-chip" style={{ color: '#10b981' }}>
-                    <FiCheck /> <span>{reminders.filter(r => r.status === 'completed').length} Completed</span>
+                <div className={`reminder-stat-pill rsp-completed${filter === 'completed' ? ' rsp-active-completed' : ''}`} onClick={() => setFilter('completed')}>
+                    <FiCheck /> <span>{completedCount} Completed</span>
                 </div>
             </div>
 
-            <div className="reminders-list">
-                {reminders.map((r) => {
+            {/* List */}
+            <div className="reminders-list-premium">
+                {filteredReminders.length === 0 && (
+                    <div className="reminders-empty">
+                        <FiBell />
+                        <p>No reminders in this category</p>
+                    </div>
+                )}
+                {filteredReminders.map((r, i) => {
                     const date = new Date(r.date);
                     const dateLabel = date.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
                     const daysLeft = Math.floor((date - new Date()) / (1000 * 60 * 60 * 24));
+                    const pCfg = priorityConfig[r.priority];
+                    const catColor = categoryColors[r.category] || '#64748b';
+                    const isDone = r.status === 'completed';
+
+                    let urgencyLabel = `In ${daysLeft} days`;
+                    let urgencyColor = '#94a3b8';
+                    if (daysLeft < 0)       { urgencyLabel = 'Overdue';   urgencyColor = '#ef4444'; }
+                    else if (daysLeft === 0) { urgencyLabel = 'Today';    urgencyColor = '#ef4444'; }
+                    else if (daysLeft === 1) { urgencyLabel = 'Tomorrow'; urgencyColor = '#f59e0b'; }
+                    else if (daysLeft <= 3)  {                             urgencyColor = '#f59e0b'; }
+
                     return (
-                        <div className="reminder-card-full" key={r.id}>
-                            <div className="reminder-priority-dot" style={{ background: priorityColors[r.priority] }} />
-                            <div className="reminder-card-content">
-                                <div className="reminder-title-row">
-                                    <h3 className="reminder-title-text">{r.title}</h3>
-                                    <span className="reminder-category-badge">{r.category}</span>
+                        <div
+                            className={`reminder-premium-card${isDone ? ' reminder-done' : ''}`}
+                            key={r.id}
+                            style={{ '--cat-color': catColor, '--pri-color': pCfg.color, animationDelay: `${i * 0.07}s` }}
+                        >
+                            <div className="reminder-accent-stripe" />
+
+                            <div className="reminder-priority-icon" style={{ color: pCfg.color, background: pCfg.bg }}>
+                                {pCfg.icon}
+                            </div>
+
+                            <div className="reminder-content">
+                                <div className="reminder-top-row">
+                                    <h3 className={`reminder-title${isDone ? ' reminder-strikethrough' : ''}`}>{r.title}</h3>
+                                    <span className="reminder-cat-badge" style={{ background: `${catColor}18`, color: catColor }}>
+                                        <FiTag /> {r.category}
+                                    </span>
                                 </div>
-                                <div className="reminder-meta-row">
-                                    <span><FiCalendar /> {dateLabel}</span>
-                                    {r.amount && <span>₹{r.amount.toLocaleString()}</span>}
-                                    <span style={{ color: daysLeft <= 3 ? '#ef4444' : daysLeft <= 7 ? '#f59e0b' : 'var(--text-muted)' }}>
-                                        {daysLeft === 0 ? 'Today' : daysLeft === 1 ? 'Tomorrow' : `In ${daysLeft} days`}
+                                <div className="reminder-meta">
+                                    <span className="reminder-meta-item"><FiCalendar /> {dateLabel}</span>
+                                    {r.amount && <span className="reminder-meta-item"><FiDollarSign /> ₹{r.amount.toLocaleString()}</span>}
+                                    <span className="reminder-urgency-chip" style={{ color: urgencyColor, background: `${urgencyColor}20` }}>
+                                        {urgencyLabel}
                                     </span>
                                 </div>
                             </div>
-                            <button className="btn btn-ghost" style={{ fontSize: '0.8rem', padding: '6px 14px' }} onClick={() => handleDone(r.id)} disabled={r.status === 'completed'}>
-                                <FiCheck /> {r.status === 'completed' ? 'Completed' : 'Done'}
+
+                            <button
+                                className={`reminder-done-btn${isDone ? ' reminder-done-completed' : ''}`}
+                                onClick={() => handleDone(r.id)}
+                                disabled={isDone}
+                                style={!isDone ? { '--btn-color': pCfg.color } : {}}
+                            >
+                                <FiCheck />
+                                {isDone ? 'Done ✓' : 'Mark Done'}
                             </button>
                         </div>
                     );
                 })}
             </div>
+
+            {/* Add Reminder Modal */}
+            {showForm && (
+                <div className="modal-overlay" onClick={() => setShowForm(false)}>
+                    <div className="modal-card" style={{ maxWidth: 520, textAlign: 'left' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+                            <h2 style={{ fontSize: '1.2rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <FiBell style={{ color: 'var(--primary)' }} /> Add Reminder
+                            </h2>
+                            <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1.3rem' }}><FiX /></button>
+                        </div>
+                        <form onSubmit={handleSubmit} className="form-grid">
+                            <div className="form-group">
+                                <label>Title</label>
+                                <input required placeholder="e.g. Pay Monthly Loan" value={form.title} onChange={e => setForm({...form, title: e.target.value})} />
+                            </div>
+                            <div className="form-group">
+                                <label>Date</label>
+                                <input type="date" required value={form.date} onChange={e => setForm({...form, date: e.target.value})} />
+                            </div>
+                            <div className="form-group">
+                                <label>Amount (Optional)</label>
+                                <input type="number" step="0.01" placeholder="0.00" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} />
+                            </div>
+                            <div className="form-group">
+                                <label>Category</label>
+                                <input required value={form.category} onChange={e => setForm({...form, category: e.target.value})} placeholder="e.g. Bills, Work" />
+                            </div>
+                            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                                <label>Priority</label>
+                                <select value={form.priority} onChange={e => setForm({...form, priority: e.target.value})}>
+                                    <option value="high">🔴 High</option>
+                                    <option value="medium">🟡 Medium</option>
+                                    <option value="low">🟢 Low</option>
+                                </select>
+                            </div>
+                            <div className="form-actions" style={{ gridColumn: '1 / -1' }}>
+                                <button type="submit" className="btn btn-primary">Add Reminder</button>
+                                <button type="button" className="btn btn-ghost" onClick={() => setShowForm(false)}>Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

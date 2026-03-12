@@ -12,11 +12,13 @@ namespace ExpenseTracker.Services.Implementations;
 public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepo;
+    private readonly ICategoryRepository _categoryRepo;
     private readonly IConfiguration _config;
 
-    public AuthService(IUserRepository userRepo, IConfiguration config)
+    public AuthService(IUserRepository userRepo, ICategoryRepository categoryRepo, IConfiguration config)
     {
         _userRepo = userRepo;
+        _categoryRepo = categoryRepo;
         _config = config;
     }
 
@@ -35,6 +37,30 @@ public class AuthService : IAuthService
         };
 
         await _userRepo.AddAsync(user);
+
+        // Seed default categories
+        var defaultCategories = new List<Category>
+        {
+            // Income
+            new Category { UserId = user.Id, Name = "Salary", Type = CategoryType.Income, Icon = "💸" },
+            new Category { UserId = user.Id, Name = "Freelance", Type = CategoryType.Income, Icon = "💻" },
+            new Category { UserId = user.Id, Name = "Investments", Type = CategoryType.Income, Icon = "📈" },
+            // Expense
+            new Category { UserId = user.Id, Name = "Food", Type = CategoryType.Expense, Icon = "🍔" },
+            new Category { UserId = user.Id, Name = "Transport", Type = CategoryType.Expense, Icon = "🚗" },
+            new Category { UserId = user.Id, Name = "Housing", Type = CategoryType.Expense, Icon = "🏠" },
+            new Category { UserId = user.Id, Name = "Entertainment", Type = CategoryType.Expense, Icon = "🎬" },
+            new Category { UserId = user.Id, Name = "Utilities", Type = CategoryType.Expense, Icon = "⚡" },
+            new Category { UserId = user.Id, Name = "Shopping", Type = CategoryType.Expense, Icon = "🛍️" },
+            // Investment
+            new Category { UserId = user.Id, Name = "Stocks", Type = CategoryType.Investment, Icon = "📊" },
+            new Category { UserId = user.Id, Name = "Crypto", Type = CategoryType.Investment, Icon = "🪙" }
+        };
+
+        foreach (var cat in defaultCategories)
+        {
+            await _categoryRepo.AddAsync(cat);
+        }
 
         return new AuthResponseDto
         {

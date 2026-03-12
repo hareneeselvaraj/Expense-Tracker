@@ -201,97 +201,102 @@ export default function Transactions() {
             </div>
 
             {showForm && (
-                <div className="form-card">
-                    <h3>{editing ? 'Edit Transaction' : 'New Transaction'}</h3>
-                    <form onSubmit={handleSubmit} className="form-grid">
-                        <div className="form-group">
-                            <label>Account</label>
-                            <select value={form.accountId} onChange={(e) => setForm({ ...form, accountId: e.target.value })} required>
-                                <option value="">Select Account</option>
-                                {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                            </select>
+                <div className="modal-overlay" onClick={resetForm}>
+                    <div className="modal-card" style={{ maxWidth: 640, textAlign: 'left', padding: '28px 32px' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>{editing ? 'Edit Transaction' : 'New Transaction'}</h3>
+                            <button onClick={resetForm} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1.2rem' }}>✕</button>
                         </div>
-                        <div className="form-group">
-                            <label>Category</label>
-                            <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} required>
-                                <option value="">Select Category</option>
-                                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
-                        </div>
-                        <div className="form-group">
-                            <label>Amount</label>
-                            <input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required />
-                        </div>
-                        <div className="form-group">
-                            <label>Type</label>
-                            <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-                                <option value="Income">Income</option>
-                                <option value="Expense">Expense</option>
-                                <option value="Transfer">Transfer</option>
-                                <option value="Investment">Investment</option>
-                                <option value="Withdraw">Withdraw</option>
-                            </select>
-                        </div>
-                        <div className="form-group">
-                            <label>Online / Offline</label>
-                            <select value={form.onlineOffline} onChange={(e) => setForm({ ...form, onlineOffline: e.target.value })}>
-                                <option value="Offline">Offline</option>
-                                <option value="Online">Online</option>
-                            </select>
-                        </div>
-                        {form.onlineOffline === 'Online' && (
+                        <form onSubmit={handleSubmit} className="form-grid">
                             <div className="form-group">
-                                <label>Bank Mode</label>
-                                <select value={form.bankMode} onChange={(e) => setForm({ ...form, bankMode: e.target.value })}>
-                                    <option value="NetBanking">Net Banking</option>
-                                    <option value="Debit">Debit Card</option>
-                                    <option value="Credit">Credit Card</option>
-                                    <option value="GPay">GPay / UPI</option>
-                                </select>
-                            </div>
-                        )}
-                        {form.type === 'Transfer' && (
-                            <div className="form-group">
-                                <label>Transfer To</label>
-                                <select value={form.transferAccountId} onChange={(e) => setForm({ ...form, transferAccountId: e.target.value })} required>
+                                <label>Account</label>
+                                <select value={form.accountId} onChange={(e) => setForm({ ...form, accountId: e.target.value })} required>
                                     <option value="">Select Account</option>
-                                    {accounts.filter((a) => a.id !== form.accountId).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                    {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
                                 </select>
                             </div>
-                        )}
-                        {(form.type === 'Investment' || (form.type === 'Expense' && form.isAutoDebit)) && (
                             <div className="form-group">
-                                <label>Link to Investment</label>
-                                <select value={form.investmentId} onChange={(e) => setForm({ ...form, investmentId: e.target.value })}>
-                                    <option value="">None</option>
-                                    {investments.map((inv) => <option key={inv.id} value={inv.id}>{inv.name} ({inv.assetType})</option>)}
+                                <label>Category</label>
+                                <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} required>
+                                    <option value="">Select Category</option>
+                                    {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                             </div>
-                        )}
-                        <div className="form-group">
-                            <label>Date</label>
-                            <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
-                        </div>
-                        <div className="form-group">
-                            <label>Description</label>
-                            <input type="text" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Optional" />
-                        </div>
-                        <div className="form-group form-check-row">
-                            <label><input type="checkbox" checked={form.isMonitor} onChange={(e) => setForm({ ...form, isMonitor: e.target.checked })} /> Monitor</label>
-                            <label><input type="checkbox" checked={form.isAutoDebit} onChange={(e) => setForm({ ...form, isAutoDebit: e.target.checked })} /> Auto-Debit</label>
-                        </div>
-                        <div className="form-group">
-                            <label>Tag (Optional)</label>
-                            <select value={form.tagId} onChange={(e) => setForm({ ...form, tagId: e.target.value })}>
-                                <option value="">No Tag</option>
-                                {tags.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                            </select>
-                        </div>
-                        <div className="form-actions">
-                            <button type="submit" className="btn btn-primary">{editing ? 'Update' : 'Create'}</button>
-                            <button type="button" className="btn btn-ghost" onClick={resetForm}>Cancel</button>
-                        </div>
-                    </form>
+                            <div className="form-group">
+                                <label>Amount</label>
+                                <input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required />
+                            </div>
+                            <div className="form-group">
+                                <label>Type</label>
+                                <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+                                    <option value="Income">Income</option>
+                                    <option value="Expense">Expense</option>
+                                    <option value="Transfer">Transfer</option>
+                                    <option value="Investment">Investment</option>
+                                    <option value="Withdraw">Withdraw</option>
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Online / Offline</label>
+                                <select value={form.onlineOffline} onChange={(e) => setForm({ ...form, onlineOffline: e.target.value })}>
+                                    <option value="Offline">Offline</option>
+                                    <option value="Online">Online</option>
+                                </select>
+                            </div>
+                            {form.onlineOffline === 'Online' && (
+                                <div className="form-group">
+                                    <label>Bank Mode</label>
+                                    <select value={form.bankMode} onChange={(e) => setForm({ ...form, bankMode: e.target.value })}>
+                                        <option value="NetBanking">Net Banking</option>
+                                        <option value="Debit">Debit Card</option>
+                                        <option value="Credit">Credit Card</option>
+                                        <option value="GPay">GPay / UPI</option>
+                                    </select>
+                                </div>
+                            )}
+                            {form.type === 'Transfer' && (
+                                <div className="form-group">
+                                    <label>Transfer To</label>
+                                    <select value={form.transferAccountId} onChange={(e) => setForm({ ...form, transferAccountId: e.target.value })} required>
+                                        <option value="">Select Account</option>
+                                        {accounts.filter((a) => a.id !== form.accountId).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                    </select>
+                                </div>
+                            )}
+                            {(form.type === 'Investment' || (form.type === 'Expense' && form.isAutoDebit)) && (
+                                <div className="form-group">
+                                    <label>Link to Investment</label>
+                                    <select value={form.investmentId} onChange={(e) => setForm({ ...form, investmentId: e.target.value })}>
+                                        <option value="">None</option>
+                                        {investments.map((inv) => <option key={inv.id} value={inv.id}>{inv.name} ({inv.assetType})</option>)}
+                                    </select>
+                                </div>
+                            )}
+                            <div className="form-group">
+                                <label>Date</label>
+                                <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+                            </div>
+                            <div className="form-group">
+                                <label>Description</label>
+                                <input type="text" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Optional" />
+                            </div>
+                            <div className="form-group form-check-row">
+                                <label><input type="checkbox" checked={form.isMonitor} onChange={(e) => setForm({ ...form, isMonitor: e.target.checked })} /> Monitor</label>
+                                <label><input type="checkbox" checked={form.isAutoDebit} onChange={(e) => setForm({ ...form, isAutoDebit: e.target.checked })} /> Auto-Debit</label>
+                            </div>
+                            <div className="form-group">
+                                <label>Tag (Optional)</label>
+                                <select value={form.tagId} onChange={(e) => setForm({ ...form, tagId: e.target.value })}>
+                                    <option value="">No Tag</option>
+                                    {tags.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                </select>
+                            </div>
+                            <div className="form-actions">
+                                <button type="submit" className="btn btn-primary">{editing ? 'Update' : 'Create'}</button>
+                                <button type="button" className="btn btn-ghost" onClick={resetForm}>Cancel</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             )}
 

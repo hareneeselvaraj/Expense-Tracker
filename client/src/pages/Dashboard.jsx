@@ -76,10 +76,10 @@ const CATEGORY_TILES = [
 
 const WEEK_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const WEEK_EXPENSE = [12000, 8000, 5000, 18000, 6000, 9000, 4000];
-const WEEK_INCOME  = [0, 0, 21800, 0, 0, 0, 0];
+const WEEK_INCOME = [0, 0, 21800, 0, 0, 0, 0];
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const YEARS  = ['2022', '2023', '2024', '2025', '2026'];
+const YEARS = ['2022', '2023', '2024', '2025', '2026'];
 
 const SAMPLE_TXS = [
     { icon: '🏠', title: 'Home bills', bank: 'BNP Bank', amount: -80000, date: 'Today, 4 May' },
@@ -90,15 +90,15 @@ const SAMPLE_TXS = [
 ];
 
 export default function Dashboard() {
-    const [data, setData]           = useState(null);
-    const [loading, setLoading]     = useState(true);
-    const { user }                  = useAuth();
-    const { isDark }                = useTheme();
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const { user } = useAuth();
+    const { isDark } = useTheme();
     const [chartType, setChartType] = useState('bar');
-    const [balView, setBalView]     = useState('pie');
-    const [month, setMonth]         = useState('March');
-    const [year, setYear]           = useState('2026');
-    const [account, setAccount]     = useState('All Accounts');
+    const [balView, setBalView] = useState('pie');
+    const [month, setMonth] = useState('March');
+    const [year, setYear] = useState('2026');
+    const [account, setAccount] = useState('All Accounts');
 
     useEffect(() => {
         api.get('/dashboard').then((res) => {
@@ -110,19 +110,19 @@ export default function Dashboard() {
     if (loading) return <div className="page-loader">Loading dashboard…</div>;
 
     /* values */
-    const income  = data?.totalIncome  ?? 0;
+    const income = data?.totalIncome ?? 0;
     const expense = data?.totalExpense ?? 0;
     const balance = data?.currentBalance ?? 0;
-    const total   = income || 1;
-    const balPct  = Math.min(100, Math.round(Math.abs(balance / total) * 100)) || 72;
-    const expPct  = Math.min(100, Math.round((expense / total) * 100)) || 28;
+    const total = income || 1;
+    const balPct = Math.min(100, Math.round(Math.abs(balance / total) * 100)) || 72;
+    const expPct = Math.min(100, Math.round((expense / total) * 100)) || 28;
 
     /* chart.js color helpers */
-    const gridColor   = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
-    const tickColor   = isDark ? '#6b7394' : '#7c8298';
-    const ttBg        = isDark ? 'rgba(20,24,33,0.95)' : 'rgba(255,255,255,0.96)';
-    const ttText      = isDark ? '#c8cad0' : '#1a1d28';
-    const ttBorder    = isDark ? 'rgba(42,49,72,0.5)' : 'rgba(0,0,0,0.08)';
+    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    const tickColor = isDark ? '#6b7394' : '#7c8298';
+    const ttBg = isDark ? 'rgba(20,24,33,0.95)' : 'rgba(255,255,255,0.96)';
+    const ttText = isDark ? '#c8cad0' : '#1a1d28';
+    const ttBorder = isDark ? 'rgba(42,49,72,0.5)' : 'rgba(0,0,0,0.08)';
 
     const baseTooltip = {
         backgroundColor: ttBg, titleColor: ttText, bodyColor: ttText,
@@ -409,7 +409,7 @@ export default function Dashboard() {
                         {balView === 'pie' ? (
                             <Doughnut data={donutData} options={donutOptions} />
                         ) : (
-                            <Bar 
+                            <Bar
                                 data={{
                                     labels: donutData.labels,
                                     datasets: [{
@@ -417,16 +417,16 @@ export default function Dashboard() {
                                         borderRadius: 4,
                                         maxBarThickness: 32
                                     }]
-                                }} 
+                                }}
                                 options={{
-                                    responsive: true, 
+                                    responsive: true,
                                     maintainAspectRatio: false,
                                     plugins: { legend: { display: false }, tooltip: baseTooltip },
                                     scales: {
                                         x: { grid: { display: false }, border: { display: false }, ticks: { color: tickColor, font: { size: 10, family: 'Inter' } } },
                                         y: { display: false, beginAtZero: true },
                                     }
-                                }} 
+                                }}
                             />
                         )}
                     </div>

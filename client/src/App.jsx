@@ -41,7 +41,6 @@ export default function App() {
                                 <Route path="/mileage" element={<MileageTracker />} />
                                 <Route path="/ai-insights" element={<AIInsights />} />
                                 <Route path="/goals" element={<Goals />} />
-                                <Route path="/upcoming" element={<UpcomingReminders />} />
                                 <Route path="/reminders" element={<UpcomingReminders />} />
                                 <Route path="/history" element={<History />} />
                             </Route>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -29,7 +29,6 @@ export default function Sidebar() {
         { to: '/categories', icon: <FiGrid />, label: 'Categories' },
         { to: '/accounts', icon: <FiDollarSign />, label: 'Balance' },
         { to: '/goals', icon: <FiTarget />, label: 'Goals' },
-        { to: '/upcoming', icon: <FiClock />, label: 'Upcoming' },
     ];
 
     const secondaryLinks = [
@@ -51,7 +50,7 @@ export default function Sidebar() {
                 <div className="sidebar-logo">
                     <span className="sidebar-logo-icon">💰</span>
                 </div>
-                {!isCollapsed && <h2>ExpenseTracker</h2>}
+                <h2>ExpenseTracker</h2>
                 <button className="sidebar-toggle-btn" onClick={toggleSidebar}>
                     {isCollapsed ? <FiChevronRight /> : <FiChevronLeft />}
                 </button>
@@ -62,12 +61,10 @@ export default function Sidebar() {
                 <div className="sidebar-avatar">
                     {user?.name?.[0]?.toUpperCase() || 'U'}
                 </div>
-                {!isCollapsed && (
-                    <div className="sidebar-profile-info">
-                        <p className="sidebar-profile-name">{user?.name || 'User'}</p>
-                        <p className="sidebar-profile-role">Personal</p>
-                    </div>
-                )}
+                <div className="sidebar-profile-info">
+                    <p className="sidebar-profile-name">{user?.name || 'User'}</p>
+                    <p className="sidebar-profile-role">Personal</p>
+                </div>
             </div>
 
             {/* Main Nav */}
@@ -81,7 +78,7 @@ export default function Sidebar() {
                         title={isCollapsed ? link.label : undefined}
                     >
                         {link.icon}
-                        {!isCollapsed && <span>{link.label}</span>}
+                        <span>{link.label}</span>
                     </NavLink>
                 ))}
 
@@ -95,7 +92,7 @@ export default function Sidebar() {
                         title={isCollapsed ? link.label : undefined}
                     >
                         {link.icon}
-                        {!isCollapsed && <span>{link.label}</span>}
+                        <span>{link.label}</span>
                     </NavLink>
                 ))}
 
@@ -109,16 +106,16 @@ export default function Sidebar() {
                         title={isCollapsed ? link.label : undefined}
                     >
                         {link.icon}
-                        {!isCollapsed && <span>{link.label}</span>}
+                        <span>{link.label}</span>
                     </NavLink>
                 ))}
             </nav>
 
             {/* Footer */}
             <div className="sidebar-footer">
-                {!isCollapsed && <ThemeToggle />}
+                <ThemeToggle />
                 <button className="logout-btn" onClick={handleLogout} title={isCollapsed ? "Log Out" : undefined}>
-                    <FiLogOut /> {!isCollapsed && "Log Out"}
+                    <FiLogOut /> <span>Log Out</span>
                 </button>
             </div>
         </aside>

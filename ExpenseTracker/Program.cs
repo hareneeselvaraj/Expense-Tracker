@@ -202,6 +202,24 @@ using (var scope = app.Services.CreateScope())
         }
     }
 
+    // ── Add missing Icon column to Categories table ──
+    var catCols = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    using (var cmdCat = conn.CreateCommand())
+    {
+        cmdCat.CommandText = "PRAGMA table_info(Categories);";
+        using var readerCat = await cmdCat.ExecuteReaderAsync();
+        while (await readerCat.ReadAsync())
+            catCols.Add(readerCat.GetString(1));
+    }
+
+    if (!catCols.Contains("Icon"))
+    {
+        using var cmdIcon = conn.CreateCommand();
+        cmdIcon.CommandText = "ALTER TABLE Categories ADD COLUMN Icon TEXT NULL";
+        await cmdIcon.ExecuteNonQueryAsync();
+        Console.WriteLine($"  ✓ Added column to Categories: Icon");
+    }
+
     // ── Create Vehicles table if it doesn't exist ──
     using (var cmdCheck = conn.CreateCommand())
     {

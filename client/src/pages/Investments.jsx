@@ -546,6 +546,13 @@ export default function Investments() {
     const load = () => api.get('/investment').then((res) => { setInvestments(res.data); setLoading(false); });
     useEffect(() => { load(); }, []);
 
+    // Portfolio summary stats
+    const totalInvested  = investments.reduce((s, i) => s + (i.investedAmount || 0), 0);
+    const totalCurrent   = investments.reduce((s, i) => s + (i.currentValue   || 0), 0);
+    const totalGain      = totalCurrent - totalInvested;
+    const totalGainPct   = totalInvested > 0 ? ((totalGain / totalInvested) * 100) : 0;
+    const isGain         = totalGain >= 0;
+
     const resetForm = () => { setEditing(null); setShowForm(false); };
 
     const handleEdit = (inv) => {
@@ -597,8 +604,32 @@ export default function Investments() {
 
             <div className="page-header">
                 <div>
-                    <h1 className="page-title"><FiTrendingUp /> Investment Transactions</h1>
-                    <p className="inv-subtitle">Add, edit, and manage your investments by category</p>
+                    <h1 className="page-title"><FiTrendingUp /> Investments</h1>
+                    <p className="page-subtitle">Track and grow your financial portfolio</p>
+                </div>
+            </div>
+
+            {/* Portfolio Summary Cards */}
+            <div className="inv-stat-row">
+                <div className="inv-stat-card" style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
+                    <FiTrendingUp className="isc-bg-icon" />
+                    <p className="isc-label">Total Invested</p>
+                    <p className="isc-value">{fmt(totalInvested)}</p>
+                </div>
+                <div className="inv-stat-card" style={{ background: 'linear-gradient(135deg, #06b6d4, #0891b2)' }}>
+                    <FiTrendingUp className="isc-bg-icon" />
+                    <p className="isc-label">Current Value</p>
+                    <p className="isc-value">{fmt(totalCurrent)}</p>
+                </div>
+                <div className="inv-stat-card" style={{ background: isGain ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #ef4444, #dc2626)' }}>
+                    <FiTrendingUp className="isc-bg-icon" />
+                    <p className="isc-label">Total {isGain ? 'Gain' : 'Loss'}</p>
+                    <p className="isc-value">{isGain ? '+' : ''}{fmt(totalGain)}</p>
+                </div>
+                <div className="inv-stat-card" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
+                    <FiTrendingUp className="isc-bg-icon" />
+                    <p className="isc-label">Return</p>
+                    <p className="isc-value">{isGain ? '+' : ''}{totalGainPct.toFixed(1)}%</p>
                 </div>
             </div>
 
