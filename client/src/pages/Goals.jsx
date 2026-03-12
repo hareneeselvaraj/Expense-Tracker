@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiTarget, FiPlus, FiHome, FiShoppingBag, FiAirplay, FiCheckCircle, FiClock, FiList, FiAlertCircle, FiEdit2, FiX, FiDollarSign, FiHeart, FiBriefcase, FiGift, FiCoffee, FiTruck, FiSmile, FiStar, FiUmbrella, FiMusic, FiPlane, FiBook, FiCamera, FiGlobe, FiAward, FiTrendingUp, FiZap, FiBike, FiWatch, FiVideo, FiMapPin, FiFeather, FiGamepad2, FiFilm, FiPercent } from 'react-icons/fi';
+import { FiTarget, FiPlus, FiHome, FiShoppingBag, FiAirplay, FiCheckCircle, FiClock, FiList, FiAlertCircle, FiEdit2, FiX, FiDollarSign, FiHeart, FiBriefcase, FiGift, FiCoffee, FiTruck, FiSmile, FiStar, FiUmbrella, FiMusic, FiArrowRight, FiBook, FiCamera, FiGlobe, FiAward, FiTrendingUp, FiZap, FiCheck, FiBox, FiVideo, FiMapPin, FiFeather, FiPlay, FiFilm, FiBarChart2 } from 'react-icons/fi';
 
 const ICON_CHOICES = [
     { name: 'Target', icon: <FiTarget /> },
@@ -12,21 +12,21 @@ const ICON_CHOICES = [
     { name: 'Gift', icon: <FiGift /> },
     { name: 'Lifestyle', icon: <FiCoffee /> },
     { name: 'Vehicle', icon: <FiTruck /> },
-    { name: 'Plane', icon: <FiPlane /> },
+    { name: 'Travel', icon: <FiArrowRight /> },
     { name: 'Book', icon: <FiBook /> },
     { name: 'Camera', icon: <FiCamera /> },
     { name: 'Globe', icon: <FiGlobe /> },
     { name: 'Award', icon: <FiAward /> },
     { name: 'Investment', icon: <FiTrendingUp /> },
     { name: 'Fitness', icon: <FiZap /> },
-    { name: 'Bike', icon: <FiBike /> },
-    { name: 'Watch', icon: <FiWatch /> },
+    { name: 'Success', icon: <FiCheck /> },
+    { name: 'Goods', icon: <FiBox /> },
     { name: 'Video', icon: <FiVideo /> },
     { name: 'Location', icon: <FiMapPin /> },
     { name: 'Nature', icon: <FiFeather /> },
-    { name: 'Gaming', icon: <FiGamepad2 /> },
+    { name: 'Entertainment', icon: <FiPlay /> },
     { name: 'Movies', icon: <FiFilm /> },
-    { name: 'Interest', icon: <FiPercent /> },
+    { name: 'Analysis', icon: <FiBarChart2 /> },
     { name: 'Personal', icon: <FiSmile /> },
     { name: 'Special', icon: <FiStar /> },
     { name: 'Protection', icon: <FiUmbrella /> },
@@ -300,7 +300,7 @@ export default function Goals() {
                                 </div>
                             </div>
 
-                            <div className="goal-input-grid">
+                            <div className="goal-input-grid triple">
                                 <div className="goal-input-group">
                                     <label>Target Amount (₹)</label>
                                     <input 
