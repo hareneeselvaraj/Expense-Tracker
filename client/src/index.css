@@ -3993,12 +3993,18 @@ tr:hover td {
 ═══════════════════════════════════════════════════════════ */
 
 .dash-new {
-  max-width: 1560px;
+  max-width: 1600px;
   width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 28px;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ── Top bar ── */
@@ -4008,13 +4014,16 @@ tr:hover td {
   justify-content: space-between;
   gap: 20px;
   flex-wrap: wrap;
-  margin-bottom: 8px;
 }
 
 .dash-title {
-  font-size: 1.8rem;
+  font-size: 2rem;
   font-weight: 800;
-  letter-spacing: -0.4px;
+  letter-spacing: -0.6px;
+  background: linear-gradient(135deg, var(--text), var(--text-muted));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .dash-filters {
@@ -4024,39 +4033,45 @@ tr:hover td {
 }
 
 .dash-filter-select {
-  padding: 10px 16px;
+  padding: 10px 18px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   color: var(--text);
-  font-size: 0.95rem;
-  font-weight: 500;
-  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7394' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 40px;
 }
 
-.dash-filter-select:focus {
-  outline: none;
-  border-color: var(--primary);
+.dash-filter-select:hover {
+  border-color: var(--border-light);
+  background-color: var(--bg-card-hover);
 }
 
 .dash-filter-icon-btn {
-  padding: 10px 14px;
+  width: 42px;
+  height: 42px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   color: var(--text-muted);
   cursor: pointer;
-  font-size: 1.1rem;
-  transition: var(--transition);
   display: flex;
   align-items: center;
+  justify-content: center;
+  transition: var(--transition);
 }
 
 .dash-filter-icon-btn:hover {
   color: var(--primary);
   border-color: var(--primary);
+  background: var(--primary-glow);
 }
 
 /* ── Stat Cards Row ── */
@@ -4070,278 +4085,180 @@ tr:hover td {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 30px 32px;
-  border-radius: 20px;
+  padding: 28px 32px;
+  border-radius: 24px;
   border: 1px solid var(--border);
-  transition: var(--transition);
+  background: var(--bg-card);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
   overflow: hidden;
-}
-
-.dash-stat-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: 0.04;
-  border-radius: inherit;
-}
-
-.dash-stat-balance {
-  background: linear-gradient(135deg, #1a1f35, #141821);
-}
-
-.dash-stat-balance::before {
-  background: #818cf8;
-}
-
-.dash-stat-expense {
-  background: linear-gradient(135deg, #2a1520, #141821);
-}
-
-.dash-stat-expense::before {
-  background: #ef4444;
-}
-
-.dash-stat-income {
-  background: linear-gradient(135deg, #142520, #141821);
-}
-
-.dash-stat-income::before {
-  background: #10b981;
-}
-
-/* ── Lavender Theme Overrides for Stat Cards ── */
-[data-theme="lavender"] .dash-stat-balance {
-  background: linear-gradient(135deg, #a855f7, #ec4899);
-  border: none;
-}
-
-[data-theme="lavender"] .dash-stat-balance .dash-stat-label,
-[data-theme="lavender"] .dash-stat-balance .dash-stat-amount,
-[data-theme="lavender"] .dash-stat-balance .dash-stat-sub,
-[data-theme="lavender"] .dash-stat-balance .recharts-text {
-  color: #fff0f6;
-}
-
-[data-theme="lavender"] .dash-stat-balance::before {
-  background: #fff0f6;
-  opacity: 0.15;
-}
-
-[data-theme="lavender"] .dash-stat-expense {
-  background: linear-gradient(135deg, #ec4899, #f43f5e);
-  border: none;
-}
-
-[data-theme="lavender"] .dash-stat-expense .dash-stat-label,
-[data-theme="lavender"] .dash-stat-expense .dash-stat-amount,
-[data-theme="lavender"] .dash-stat-expense .dash-stat-sub,
-[data-theme="lavender"] .dash-stat-expense .recharts-text {
-  color: #fff0f6;
-}
-
-[data-theme="lavender"] .dash-stat-expense::before {
-  background: #fff0f6;
-  opacity: 0.15;
-}
-
-[data-theme="lavender"] .dash-stat-income {
-  background: linear-gradient(135deg, #8b5cf6, #3b82f6);
-  border: none;
-}
-
-[data-theme="lavender"] .dash-stat-income .dash-stat-label,
-[data-theme="lavender"] .dash-stat-income .dash-stat-amount,
-[data-theme="lavender"] .dash-stat-income .dash-stat-sub,
-[data-theme="lavender"] .dash-stat-income .recharts-text {
-  color: #fff0f6;
-}
-
-[data-theme="lavender"] .dash-stat-income::before {
-  background: #fff0f6;
-  opacity: 0.15;
-}
-
-/* Force Circular Rings inside Stats to White */
-[data-theme="lavender"] .dash-stat-card .circle-ring circle:first-child {
-  stroke: rgba(255, 255, 255, 0.2) !important;
-}
-[data-theme="lavender"] .dash-stat-card .circle-ring circle:nth-child(2) {
-  stroke: #ffffff !important;
-}
-[data-theme="lavender"] .dash-stat-card .circle-ring text {
-  fill: #ffffff !important;
-}
-
-/* ── Recharts Overrides for Lavender Theme (Fallback) ── */
-[data-theme="lavender"] .recharts-text,
-[data-theme="lavender"] .recharts-cartesian-axis-tick-value {
-  fill: #6b21a8 !important;
-  /* Dark purple for axis labels */
-}
-
-[data-theme="lavender"] .recharts-cartesian-grid-horizontal line,
-[data-theme="lavender"] .recharts-cartesian-grid-vertical line {
-  stroke: rgba(107, 33, 168, 0.15) !important;
-  /* Visible grid lines */
-}
-
-[data-theme="lavender"] .recharts-tooltip-wrapper .recharts-default-tooltip {
-  background-color: #fdf2f8 !important;
-  border-color: #d8b4fe !important;
-}
-
-[data-theme="lavender"] .recharts-tooltip-item {
-  color: #3b0764 !important;
-}
-
-/* ── Chart.js Overrides for Lavender Theme ── */
-/* Since Chart.js draws to a canvas, we must adjust the global variables it references */
-[data-theme="lavender"] {
-  --chart-grid: rgba(107, 33, 168, 0.15);
-  --chart-tick: #6b21a8;
-  --chart-legend: #4c1d95;
+  box-shadow: var(--shadow-sm);
 }
 
 .dash-stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--border-light);
 }
+
+.dash-stat-balance { border-bottom: 3px solid var(--primary); }
+.dash-stat-expense { border-bottom: 3px solid var(--red); }
+.dash-stat-income  { border-bottom: 3px solid var(--green); }
 
 .dash-stat-info {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .dash-stat-label {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text-secondary);
-  text-transform: none;
-  letter-spacing: 0;
 }
 
 .dash-stat-sub {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
 }
 
 .dash-stat-amount {
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 800;
-  letter-spacing: -0.5px;
-  margin-top: 8px;
+  letter-spacing: -0.8px;
+  margin-top: 10px;
+  font-variant-numeric: tabular-nums;
 }
 
-/* ── Circular Ring ── */
+/* ── Circular Progress Ring ── */
 .circle-ring {
   flex-shrink: 0;
-  transform: scale(1.3);
-  transform-origin: right center;
+  /* Removed scale scale(1.3) as requested to make it smaller */
 }
 
-/* ── Middle 3 col ── */
+/* ── Middle Grid ── */
 .dash-mid-grid {
   display: grid;
   grid-template-columns: 1fr 1.2fr 0.9fr;
-  gap: 16px;
-}
-
-/* ── Bottom 2 col ── */
-.dash-bottom-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 24px;
 }
 
 /* ── Generic Panel ── */
 .dash-panel {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 18px 20px;
+  border-radius: 24px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
+  box-shadow: var(--shadow-sm);
 }
 
 .dash-panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
 }
 
 .dash-panel-title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.88rem;
+  gap: 10px;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--text);
 }
 
-.dash-panel-title svg {
-  font-size: 0.95rem;
-  opacity: 0.8;
-}
-
-.dash-see-all {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.75rem;
-  color: var(--primary);
-  transition: var(--transition);
-}
-
-.dash-see-all:hover {
-  color: var(--primary-hover);
-}
-
-.dash-stat-period {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-/* ── Chart toggle buttons ── */
 .dash-chart-toggle {
   display: flex;
+  background: var(--bg-input);
+  padding: 4px;
+  border-radius: 12px;
   gap: 4px;
 }
 
 .dash-toggle-btn {
-  padding: 4px 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  padding: 6px 14px;
+  border-radius: 9px;
+  border: none;
   background: transparent;
   color: var(--text-muted);
-  font-size: 0.72rem;
-  font-weight: 500;
+  font-size: 0.75rem;
+  font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
-  font-family: inherit;
 }
 
-.dash-toggle-btn:hover {
-  border-color: var(--primary);
+.dash-toggle-btn.active-toggle {
+  background: var(--bg-card);
   color: var(--primary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
-.active-toggle {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff !important;
+/* ── Categories Treemap/Grid ── */
+.category-treemap {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
 }
 
-/* ── Chart legend ── */
+.cat-tile {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid transparent;
+  transition: var(--transition);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.cat-tile:hover {
+  transform: scale(1.03);
+  box-shadow: var(--shadow-sm);
+  filter: brightness(1.1);
+}
+
+.cat-tile-icon {
+  font-size: 1.5rem;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.cat-tile-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cat-tile-pct {
+  font-size: 1rem;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+/* Custom large tile for first item if needed */
+.cat-tile-food {
+  grid-column: span 1;
+  grid-row: span 1;
+}
+
+/* ── Statistics Chart ── */
+.dash-stat-period {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: -10px;
+}
+
 .dash-chart-legend {
   display: flex;
-  gap: 16px;
-  font-size: 0.75rem;
+  gap: 20px;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 500;
   color: var(--text-muted);
-  align-items: center;
 }
 
 .legend-dot {
@@ -4349,88 +4266,38 @@ tr:hover td {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  margin-right: 4px;
+  margin-right: 6px;
 }
 
-/* ── Category Treemap ── */
-.category-treemap {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: auto auto auto;
-  gap: 8px;
-  flex: 1;
-}
-
-.cat-tile {
-  border-radius: 12px;
-  padding: 10px 10px 8px;
-  border: 1px solid transparent;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 4px;
-  min-height: 72px;
-  transition: var(--transition);
-  cursor: default;
-}
-
-.cat-tile:hover {
-  transform: scale(1.03);
-}
-
-/* Big food tile */
-.cat-tile-food {
-  grid-column: span 2;
-  grid-row: span 2;
-  min-height: 130px;
-}
-
-.cat-tile-icon {
-  font-size: 1.25rem;
-}
-
-.cat-tile-label {
-  font-size: 0.72rem;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.cat-tile-pct {
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-/* ── Reminders Panel ── */
+/* ── Reminders ── */
 .reminder-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-
-.reminder-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  gap: 16px;
 }
 
 .reminder-date-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 2px 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
 }
 
 .reminder-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 10px;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-input);
+  border-radius: 14px;
   transition: var(--transition);
+  cursor: pointer;
 }
 
 .reminder-row:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg-card-hover);
+  transform: translateX(4px);
 }
 
 .reminder-dot {
@@ -4442,66 +4309,67 @@ tr:hover td {
 
 .reminder-text {
   flex: 1;
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   font-weight: 500;
-  color: var(--text);
 }
 
 .reminder-chevron {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: var(--text-muted);
+  opacity: 0.5;
 }
 
-/* ── Transactions ── */
+/* ── Bottom Grid ── */
+.dash-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
 .dash-tx-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
 }
 
 .dash-tx-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 10px;
-  border-radius: 10px;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 16px;
   transition: var(--transition);
 }
 
 .dash-tx-row:hover {
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--bg-input);
 }
 
 .dash-tx-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
+  width: 44px;
+  height: 44px;
+  background: var(--bg-input);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
+  font-size: 1.2rem;
   flex-shrink: 0;
 }
 
 .dash-tx-info {
   flex: 1;
-  min-width: 0;
 }
 
 .dash-tx-title {
-  font-size: 0.83rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  margin-bottom: 2px;
 }
 
 .dash-tx-sub {
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
-  margin-top: 2px;
 }
 
 .dash-tx-right {
@@ -4509,52 +4377,57 @@ tr:hover td {
 }
 
 .dash-tx-amount {
-  font-size: 0.85rem;
+  font-size: 1rem;
   font-weight: 700;
+  margin-bottom: 2px;
 }
 
 .dash-tx-date {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
-  margin-top: 2px;
 }
 
-/* ── Balance section ── */
-.dash-balance-section {
-  display: flex;
-}
-
-.dash-balance-panel {
-  flex: 1;
-}
-
+/* ── Balance Donut Section ── */
 .dash-balance-content {
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 40px;
 }
 
 .dash-balance-legend {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  flex: 1;
 }
 
 .dash-legend-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .dash-legend-name {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  min-width: 60px;
+  flex: 1;
 }
 
 .dash-legend-pct {
-  font-size: 0.85rem;
   font-weight: 700;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1200px) {
+  .dash-mid-grid, .dash-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 850px) {
+  .dash-stat-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -5550,10 +5423,10 @@ tr:hover td {
 /* Background Huge Icon */
 .goal-stat-bg-icon {
   position: absolute;
-  right: -20px;
-  bottom: -20px;
-  font-size: 8rem;
-  color: rgba(255, 255, 255, 0.1);
+  right: 12px;
+  bottom: 8px;
+  font-size: 4rem;
+  color: rgba(255, 255, 255, 0.6);
   transform: rotate(-15deg);
   pointer-events: none;
   transition: transform 0.5s ease;
@@ -5634,7 +5507,7 @@ tr:hover td {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  overflow: hidden;
+  /* overflow: hidden; -- Removed to prevent clipping the icon */
 }
 
 /* Decorative blobs in hero */
@@ -5674,7 +5547,7 @@ tr:hover td {
   transform: translateY(50%);
   position: relative;
   z-index: 2;
-  border: 2.5px solid rgba(255,255,255,0.9);
+  border: 2.5px solid var(--goal-color);
   transition: transform 0.4s ease, box-shadow 0.4s ease;
 }
 
@@ -6564,11 +6437,11 @@ tr:hover td {
 
 .bsc-bg-icon {
   position: absolute;
-  right: -8px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 5rem;
-  opacity: 0.15;
+  font-size: 3.5rem;
+  opacity: 0.2;
 }
 
 .bsc-label {
@@ -7697,7 +7570,118 @@ tr:hover td {
   }
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+
+/* ── PREMIUM GOAL MODAL ── */
+.goal-input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.goal-selector-section {
+  margin-bottom: 24px;
+}
+
+.goal-selector-section label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Icon Grid Selection */
+.goal-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  gap: 10px;
+  background: var(--bg-input);
+  padding: 12px;
+  border-radius: 16px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.goal-icon-opt {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 1.25rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.goal-icon-opt:hover {
+  transform: scale(1.1);
+  color: var(--goal-color);
+  border-color: var(--goal-color);
+}
+
+.goal-icon-opt.selected {
+  background: var(--goal-color);
+  color: #fff;
+  border-color: var(--goal-color);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--goal-color) 40%, transparent);
+}
+
+/* Color Grid Selection */
+.goal-color-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.goal-color-opt {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--opt-color);
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.goal-color-opt:hover {
+  transform: scale(1.2);
+}
+
+.goal-color-opt.selected {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px var(--opt-color);
+}
+
+.goal-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.goal-btn-cancel {
+  padding: 12px 24px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.goal-btn-save {
+  padding: 12px 28px;
+  background: var(--goal-color);
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--goal-color) 40%, transparent);
 }

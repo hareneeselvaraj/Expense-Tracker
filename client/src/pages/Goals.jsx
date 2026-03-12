@@ -1,6 +1,26 @@
 import { useState, useEffect } from 'react';
-import { FiTarget, FiPlus, FiHome, FiShoppingBag, FiAirplay, FiCheckCircle, FiClock, FiList, FiAlertCircle, FiEdit2, FiX } from 'react-icons/fi';
+import { FiTarget, FiPlus, FiHome, FiShoppingBag, FiAirplay, FiCheckCircle, FiClock, FiList, FiAlertCircle, FiEdit2, FiX, FiDollarSign, FiHeart, FiBriefcase, FiGift, FiCoffee, FiTruck, FiSmile, FiStar, FiUmbrella, FiMusic } from 'react-icons/fi';
 
+const ICON_CHOICES = [
+    { name: 'Target', icon: <FiTarget /> },
+    { name: 'Home', icon: <FiHome /> },
+    { name: 'Shopping', icon: <FiShoppingBag /> },
+    { name: 'Tech', icon: <FiAirplay /> },
+    { name: 'Savings', icon: <FiDollarSign /> },
+    { name: 'Health', icon: <FiHeart /> },
+    { name: 'Work', icon: <FiBriefcase /> },
+    { name: 'Gift', icon: <FiGift /> },
+    { name: 'Lifestyle', icon: <FiCoffee /> },
+    { name: 'Travel', icon: <FiTruck /> },
+    { name: 'Personal', icon: <FiSmile /> },
+    { name: 'Special', icon: <FiStar /> },
+    { name: 'Protection', icon: <FiUmbrella /> },
+    { name: 'Hobby', icon: <FiMusic /> },
+];
+
+const COLOR_CHOICES = [
+    '#6366f1', '#10b981', '#f59e0b', '#f43f5e', '#06b6d4', '#8b5cf6', '#ec4899', '#f97316', '#14b8a6', '#64748b'
+];
 const initialGoals = [
     {
         id: 1,
@@ -58,9 +78,19 @@ export default function Goals() {
     const [goals, setGoals] = useState(initialGoals);
     const [loaded, setLoaded] = useState(false);
     
-    // Modal State
+    // Unified Modal State
+    const [showModal, setShowModal] = useState(false);
     const [editingGoal, setEditingGoal] = useState(null);
-    const [editFormData, setEditFormData] = useState({ target: '', current: '', deadline: '' });
+    const [formData, setFormData] = useState({
+        title: '',
+        description: '',
+        target: '',
+        current: '',
+        deadline: '',
+        icon: ICON_CHOICES[0].icon,
+        iconName: ICON_CHOICES[0].name,
+        color: COLOR_CHOICES[0]
+    });
 
     useEffect(() => {
         const timer = setTimeout(() => setLoaded(true), 50);
@@ -69,31 +99,56 @@ export default function Goals() {
 
     const totalTarget = goals.reduce((a, g) => a + g.target, 0);
     const totalCurrent = goals.reduce((a, g) => a + g.current, 0);
-    const totalRemaining = goals.reduce((a, g) => a + (g.target - g.current), 0);
+    const totalRemaining = Math.max(0, goals.reduce((a, g) => a + (g.target - g.current), 0));
+
+    const handleAddClick = () => {
+        setEditingGoal(null);
+        setFormData({
+            title: '',
+            description: '',
+            target: '',
+            current: '0',
+            deadline: new Date().toISOString().split('T')[0],
+            icon: ICON_CHOICES[0].icon,
+            iconName: ICON_CHOICES[0].name,
+            color: COLOR_CHOICES[0]
+        });
+        setShowModal(true);
+    };
 
     const handleEditClick = (goal) => {
         setEditingGoal(goal);
-        setEditFormData({
+        setFormData({
+            title: goal.title,
+            description: goal.description,
             target: goal.target.toString(),
             current: goal.current.toString(),
-            deadline: goal.deadline
+            deadline: goal.deadline,
+            icon: goal.icon,
+            iconName: ICON_CHOICES.find(ic => ic.icon.type === goal.icon.type)?.name || 'Target',
+            color: goal.color
         });
+        setShowModal(true);
     };
 
-    const handleUpdateGoal = (e) => {
+    const handleSubmitGoal = (e) => {
         e.preventDefault();
-        setGoals(prev => prev.map(g => {
-            if (g.id === editingGoal.id) {
-                return {
-                    ...g,
-                    target: Number(editFormData.target),
-                    current: Number(editFormData.current),
-                    deadline: editFormData.deadline
-                };
-            }
-            return g;
-        }));
-        setEditingGoal(null);
+        const goalData = {
+            title: formData.title,
+            description: formData.description,
+            target: Number(formData.target),
+            current: Number(formData.current),
+            deadline: formData.deadline,
+            icon: formData.icon,
+            color: formData.color
+        };
+
+        if (editingGoal) {
+            setGoals(prev => prev.map(g => g.id === editingGoal.id ? { ...g, ...goalData } : g));
+        } else {
+            setGoals(prev => [...prev, { ...goalData, id: Date.now() }]);
+        }
+        setShowModal(false);
     };
 
     return (
@@ -103,7 +158,7 @@ export default function Goals() {
                     <h1 className="page-title"><FiTarget /> Financial Goals</h1>
                     <p className="page-subtitle">Track and achieve your deepest financial aspirations</p>
                 </div>
-                <button className="btn btn-primary"><FiPlus /> Add Goal</button>
+                <button className="btn btn-primary" onClick={handleAddClick}><FiPlus /> Add Goal</button>
             </div>
 
             {/* Premium Stat Cards */}
@@ -199,47 +254,102 @@ export default function Goals() {
                 })}
             </div>
 
-            {/* Edit Goal Modal */}
-            {editingGoal && (
-                <div className="goal-modal-overlay" onClick={() => setEditingGoal(null)}>
-                    <div className="goal-modal" style={{ '--goal-color': editingGoal.color }} onClick={e => e.stopPropagation()}>
+            {/* Add/Edit Goal Modal */}
+            {showModal && (
+                <div className="goal-modal-overlay" onClick={() => setShowModal(false)}>
+                    <div className="goal-modal" style={{ '--goal-color': formData.color }} onClick={e => e.stopPropagation()}>
                         <div className="goal-modal-header">
-                            <h2>Update '{editingGoal.title}'</h2>
-                            <button className="goal-modal-close" onClick={() => setEditingGoal(null)}><FiX /></button>
+                            <h2>{editingGoal ? `Edit '${editingGoal.title}'` : 'Create New Goal'}</h2>
+                            <button className="goal-modal-close" onClick={() => setShowModal(false)}><FiX /></button>
                         </div>
-                        <form className="goal-modal-form" onSubmit={handleUpdateGoal}>
-                            <div className="goal-input-group">
-                                <label>Target Amount (₹)</label>
-                                <input 
-                                    type="number" 
-                                    required
-                                    min="1"
-                                    value={editFormData.target}
-                                    onChange={e => setEditFormData({...editFormData, target: e.target.value})}
-                                />
+                        <form className="goal-modal-form" onSubmit={handleSubmitGoal}>
+                            <div className="goal-input-grid">
+                                <div className="goal-input-group">
+                                    <label>Goal Title</label>
+                                    <input 
+                                        type="text" 
+                                        required
+                                        placeholder="e.g. Save for a Car"
+                                        value={formData.title}
+                                        onChange={e => setFormData({...formData, title: e.target.value})}
+                                    />
+                                </div>
+                                <div className="goal-input-group">
+                                    <label>Brief Description</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="e.g. Monthly savings target"
+                                        value={formData.description}
+                                        onChange={e => setFormData({...formData, description: e.target.value})}
+                                    />
+                                </div>
                             </div>
-                            <div className="goal-input-group">
-                                <label>Currently Saved (₹)</label>
-                                <input 
-                                    type="number" 
-                                    required
-                                    min="0"
-                                    value={editFormData.current}
-                                    onChange={e => setEditFormData({...editFormData, current: e.target.value})}
-                                />
+
+                            <div className="goal-input-grid">
+                                <div className="goal-input-group">
+                                    <label>Target Amount (₹)</label>
+                                    <input 
+                                        type="number" 
+                                        required
+                                        min="1"
+                                        value={formData.target}
+                                        onChange={e => setFormData({...formData, target: e.target.value})}
+                                    />
+                                </div>
+                                <div className="goal-input-group">
+                                    <label>Currently Saved (₹)</label>
+                                    <input 
+                                        type="number" 
+                                        required
+                                        min="0"
+                                        value={formData.current}
+                                        onChange={e => setFormData({...formData, current: e.target.value})}
+                                    />
+                                </div>
+                                <div className="goal-input-group">
+                                    <label>Target Deadline</label>
+                                    <input 
+                                        type="date" 
+                                        required
+                                        value={formData.deadline}
+                                        onChange={e => setFormData({...formData, deadline: e.target.value})}
+                                    />
+                                </div>
                             </div>
-                            <div className="goal-input-group">
-                                <label>Target Deadline</label>
-                                <input 
-                                    type="date" 
-                                    required
-                                    value={editFormData.deadline}
-                                    onChange={e => setEditFormData({...editFormData, deadline: e.target.value})}
-                                />
+
+                            <div className="goal-selector-section">
+                                <label>Choose Icon</label>
+                                <div className="goal-icon-grid">
+                                    {ICON_CHOICES.map(ic => (
+                                        <div 
+                                            key={ic.name} 
+                                            className={`goal-icon-opt ${formData.iconName === ic.name ? 'selected' : ''}`}
+                                            onClick={() => setFormData({...formData, icon: ic.icon, iconName: ic.name})}
+                                            title={ic.name}
+                                        >
+                                            {ic.icon}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
+
+                            <div className="goal-selector-section">
+                                <label>Theme Color</label>
+                                <div className="goal-color-grid">
+                                    {COLOR_CHOICES.map(c => (
+                                        <div 
+                                            key={c} 
+                                            className={`goal-color-opt ${formData.color === c ? 'selected' : ''}`}
+                                            style={{ '--opt-color': c }}
+                                            onClick={() => setFormData({...formData, color: c})}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
                             <div className="goal-modal-actions">
-                                <button type="button" className="goal-btn-cancel" onClick={() => setEditingGoal(null)}>Cancel</button>
-                                <button type="submit" className="goal-btn-save">Save Changes</button>
+                                <button type="button" className="goal-btn-cancel" onClick={() => setShowModal(false)}>Cancel</button>
+                                <button type="submit" className="goal-btn-save">{editingGoal ? 'Update Goal' : 'Create Goal'}</button>
                             </div>
                         </form>
                     </div>

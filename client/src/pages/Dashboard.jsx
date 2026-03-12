@@ -30,7 +30,7 @@ const fmt = (n) => {
 };
 
 /* ── Circular progress ring (SVG) ── */
-function CircleRing({ pct, color, size = 72, stroke = 8 }) {
+function CircleRing({ pct, color, size = 60, stroke = 7 }) {
     const r = (size - stroke) / 2;
     const circ = 2 * Math.PI * r;
     const offset = circ - (pct / 100) * circ;
@@ -44,7 +44,7 @@ function CircleRing({ pct, color, size = 72, stroke = 8 }) {
                 strokeLinecap="round"
                 transform={`rotate(-90 ${size / 2} ${size / 2})`} />
             <text x="50%" y="52%" dominantBaseline="middle" textAnchor="middle"
-                fill={color} fontSize="11" fontWeight="700">{pct}%</text>
+                fill="#fff" fontSize="10" fontWeight="800">{pct}%</text>
         </svg>
     );
 }
@@ -277,11 +277,13 @@ export default function Dashboard() {
                     <div className="category-treemap">
                         {CATEGORY_TILES.map((t) => (
                             <div key={t.label}
-                                className={`cat-tile${t.label === 'Food' ? ' cat-tile-food' : ''}`}
-                                style={{ background: t.color + '22', borderColor: t.color + '44' }}>
+                                className="cat-tile"
+                                style={{ background: t.color + '15', borderColor: t.color + '40' }}>
                                 <span className="cat-tile-icon">{t.icon}</span>
-                                <span className="cat-tile-label">{t.label}</span>
-                                <span className="cat-tile-pct" style={{ color: t.color }}>{t.share}%</span>
+                                <div className="cat-tile-info">
+                                    <span className="cat-tile-label">{t.label}</span>
+                                    <span className="cat-tile-pct" style={{ color: t.color }}>{t.share}%</span>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -299,7 +301,7 @@ export default function Dashboard() {
                         </div>
                     </div>
                     <p className="dash-stat-period">This Week</p>
-                    <div style={{ height: '180px' }}>
+                    <div style={{ height: '180px', marginTop: '10px' }}>
                         {chartType === 'bar'
                             ? <Bar data={weekBarData} options={weekChartOptions} />
                             : <Line data={weekLineData} options={weekChartOptions} />
