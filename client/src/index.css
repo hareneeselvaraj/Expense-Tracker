@@ -7298,17 +7298,53 @@ tr:hover td {
   .inv-tabs {
     flex-wrap: nowrap;
     overflow-x: auto;
-    padding-bottom: 4px;
+    padding: 4px;
+    width: 100%;
+    margin-bottom: 20px;
     -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
   }
 
   .inv-tab {
     flex-shrink: 0;
+    padding: 8px 14px;
+    font-size: 0.85rem;
   }
 
   .inv-stat-row {
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .inv-stat-card {
+    padding: 14px 12px;
+    border-radius: 16px;
+    gap: 2px;
+  }
+
+  .isc-bg-icon {
+    font-size: 3rem;
+    right: -4px;
+  }
+
+  .isc-label {
+    font-size: 0.65rem;
+  }
+
+  .isc-value {
+    font-size: 1.15rem;
+  }
+
+  .inv-tab-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .inv-tab-desc {
+    font-size: 0.8rem;
+    line-height: 1.4;
   }
 
   .inv-table-card .table-wrapper {
@@ -7322,6 +7358,38 @@ tr:hover td {
   
   .goals-summary-cards {
     grid-template-columns: 1fr 1fr;
+  }
+  
+  /* --- Dashboard Page --- */
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  /* --- Budgets Page Layout --- */
+  .budget-main-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  /* --- Categories & Accounts Grids --- */
+  .cat-grid,
+  .acc-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* --- Mileage Page --- */
+  .mt-overview-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .trips-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  /* --- Auth Pages --- */
+  .auth-card {
+    padding: 30px 20px;
+    margin: 20px;
+    width: auto;
   }
 
   /* --- Reminders Page --- */
@@ -7357,14 +7425,40 @@ tr:hover td {
   .ai-overview-stats {
     grid-template-columns: 1fr 1fr;
   }
+
+  /* General Page Header Fixes */
+  .page-header {
+    margin-top: 0 !important; /* Force no top margin globally on mobile */
+    padding-top: 0 !important;
+    margin-bottom: 8px; /* Further reduced from 14px */
+  }
+  
+  .page-title {
+    font-size: 1.25rem; /* Reduced from 1.4rem */
+    margin-top: 0 !important; /* Force override of h1 browser defaults */
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .page-subtitle {
+    font-size: 0.75rem; /* Reduced from 0.8rem */
+    margin-bottom: 8px; /* Reduced from 12px */
+  }
 }
 
 @media (max-width: 480px) {
-  /* Convert 2-col stats into 1-col on very small screens */
+  /* Convert multi-col grids into 1-col on very small screens */
   .bgt-stat-row,
-  .inv-stat-row,
   .goals-summary-cards,
-  .ai-overview-stats {
+  .goals-grid,
+  .ai-overview-stats,
+  .ai-budget-grid,
+  .ai-cat-grid,
+  .budget-cards-grid,
+  .dashboard-grid,
+  .trips-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -7502,8 +7596,19 @@ tr:hover td {
   /* Adjust main content */
   .main-content {
     margin-left: 0 !important;
-    padding: 24px 16px 80px 16px; /* give bottom padding for nav */
+    margin-top: 0 !important; /* Force override of earlier 60px margin */
+    padding: 0 14px 80px 14px !important; /* Force zero top padding globally */
     width: 100%;
+  }
+  
+  .page {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  /* Prevent sidebar container from taking space in flex flow on mobile */
+  .sidebar-container {
+    display: contents;
   }
 
   body.sidebar-collapsed .main-content {
@@ -7515,7 +7620,7 @@ tr:hover td {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px;
+    padding: 10px 16px; /* Reduced padding */
     background: var(--bg-sidebar);
     border-bottom: 1px solid var(--border);
     position: sticky;
