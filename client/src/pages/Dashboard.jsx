@@ -37,14 +37,19 @@ function CircleRing({ pct, color, size = 60, stroke = 7 }) {
     return (
         <svg width={size} height={size} className="circle-ring">
             <circle cx={size / 2} cy={size / 2} r={r} fill="none"
-                stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
+                stroke="var(--bg-input)" strokeWidth={stroke} opacity="0.5" />
             <circle cx={size / 2} cy={size / 2} r={r} fill="none"
                 stroke={color} strokeWidth={stroke}
                 strokeDasharray={circ} strokeDashoffset={offset}
                 strokeLinecap="round"
+                style={{
+                    filter: `drop-shadow(0 2px 6px ${color}80)`,
+                    transition: 'stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
                 transform={`rotate(-90 ${size / 2} ${size / 2})`} />
-            <text x="50%" y="52%" dominantBaseline="middle" textAnchor="middle"
-                fill="#fff" fontSize="10" fontWeight="800">{pct}%</text>
+            <text x="50%" y="54%" dominantBaseline="middle" textAnchor="middle"
+                fill="var(--text)" fontSize="11" fontWeight="800"
+                style={{ letterSpacing: '-0.3px' }}>{pct}%</text>
         </svg>
     );
 }
@@ -243,7 +248,7 @@ export default function Dashboard() {
                         <p className="dash-stat-sub">{data?.accounts?.length || 10} Transactions</p>
                         <p className="dash-stat-amount">₹{fmt(balance)}</p>
                     </div>
-                    <CircleRing pct={balPct} color="#818cf8" />
+                    <CircleRing pct={balPct} color="#818cf8" size={80} stroke={6} />
                 </div>
                 <div className="dash-stat-card dash-stat-expense">
                     <div className="dash-stat-info">
@@ -251,7 +256,7 @@ export default function Dashboard() {
                         <p className="dash-stat-sub">9 Transactions</p>
                         <p className="dash-stat-amount">-₹{fmt(expense)}</p>
                     </div>
-                    <CircleRing pct={expPct} color="#ef4444" />
+                    <CircleRing pct={expPct} color="#ef4444" size={80} stroke={6} />
                 </div>
                 <div className="dash-stat-card dash-stat-income">
                     <div className="dash-stat-info">
@@ -259,7 +264,7 @@ export default function Dashboard() {
                         <p className="dash-stat-sub">1 Transaction</p>
                         <p className="dash-stat-amount">+₹{fmt(income)}</p>
                     </div>
-                    <CircleRing pct={100} color="#10b981" />
+                    <CircleRing pct={100} color="#10b981" size={80} stroke={6} />
                 </div>
             </div>
 
