@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { FiMenu, FiHome, FiCreditCard, FiPieChart, FiTrendingUp, FiCpu, FiX } from 'react-icons/fi';
 import Sidebar from './Sidebar';
+import FloatingCalculator from './FloatingCalculator';
 
 export default function Layout() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -44,6 +45,9 @@ export default function Layout() {
             <main className="main-content">
                 <Outlet />
             </main>
+
+            {/* Floating Calculator */}
+            <FloatingCalculator />
 
             {/* Mobile Bottom Navigation Bar */}
             <nav className="bottom-nav">
