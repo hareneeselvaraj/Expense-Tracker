@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
     FiHome, FiCreditCard, FiGrid, FiDollarSign, FiTarget,
-    FiClock, FiBell, FiList, FiLogOut, FiTrendingUp, FiBarChart2, FiCpu, FiTruck, FiChevronLeft, FiChevronRight
+    FiClock, FiBell, FiList, FiLogOut, FiTrendingUp, FiBarChart2, FiCpu, FiTruck, FiChevronLeft, FiChevronRight, FiTag
 } from 'react-icons/fi';
 import ThemeToggle from './ThemeToggle';
 
@@ -33,6 +33,7 @@ export default function Sidebar() {
     ];
 
     const secondaryLinks = [
+        { to: '/tags', icon: <FiTag />, label: 'Tags' },
         { to: '/reminders', icon: <FiBell />, label: 'Reminders' },
         { to: '/history', icon: <FiList />, label: 'History' },
     ];
