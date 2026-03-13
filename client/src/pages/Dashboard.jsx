@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -6,7 +6,8 @@ import { useTheme } from '../context/ThemeContext';
 import {
     FiArrowUpRight, FiArrowDownRight, FiDollarSign, FiRefreshCw,
     FiTrendingUp, FiPlus, FiChevronRight, FiChevronLeft, FiGrid,
-    FiBell, FiClock, FiBarChart2
+    FiBell, FiClock, FiBarChart2,
+    FiShield, FiTarget, FiTrendingDown, FiCheckCircle, FiAlertTriangle, FiAlertCircle, FiXCircle, FiSettings
 } from 'react-icons/fi';
 import {
     Chart as ChartJS,
@@ -140,6 +141,74 @@ export default function Dashboard() {
     const [catModalLoading, setCatModalLoading] = useState(false);
     const [catPage, setCatPage] = useState(0);
     const CATS_PER_PAGE = 6;
+    const [totalInvestments, setTotalInvestments] = useState(0);
+
+    // Health Formula State
+    const [healthThresholds, setHealthThresholds] = useState(() => {
+        const saved = localStorage.getItem('health_formula_v2');
+        return saved ? JSON.parse(saved) : { 
+            targetSavingsRate: 30, 
+            targetEFMonths: 6, 
+            targetInvRatio: 15,
+            caution: 60,
+            danger: 40 // Lower is worse now as it's a score out of 100
+        };
+    });
+    const [showHealthModal, setShowHealthModal] = useState(false);
+    const [tempThresholds, setTempThresholds] = useState(healthThresholds);
+
+    // ── AI Health Logic (Must be above early return) ──
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const dayOfMonth = now.getDate();
+    const daysRemaining = daysInMonth - dayOfMonth;
+
+    const healthStats = useMemo(() => {
+        if (!data || loading) return null;
+
+        const income = data.totalIncome || 0;
+        const netIncome = Math.max(0, income);
+        const expense = data.totalExpense || 0;
+        const balance = data.currentBalance || 0;
+        const budgetData = data.budgetVsActual || [];
+
+        // 1. Savings Rate (Max 40 pts) - Target 30%
+        const savings = netIncome - expense;
+        const savingsRate = netIncome > 0 ? (savings / netIncome) : 0;
+        const savingsScore = Math.min(40, Math.max(0, (savingsRate / (healthThresholds.targetSavingsRate / 100)) * 40));
+
+        // 2. Budget Adherence (Max 30 pts)
+        const totalBudgets = budgetData.length;
+        const underBudget = budgetData.filter(b => (b.actualSpent || 0) <= (b.budgetAmount || 0)).length;
+        const budgetScore = totalBudgets > 0 ? (underBudget / totalBudgets) * 30 : 30;
+
+        // 3. Emergency Fund (Max 20 pts) - Target 6 Months
+        // Use average monthly expense if available, else current month
+        const monthlyExp = expense || 1; 
+        const efMonths = balance / monthlyExp;
+        const efScore = Math.min(20, Math.max(0, (efMonths / healthThresholds.targetEFMonths) * 20));
+
+        // 4. Investment Ratio (Max 10 pts) - Target 15%
+        const invRatio = netIncome > 0 ? (totalInvestments / netIncome) : 0;
+        const invScore = Math.min(10, Math.max(0, (invRatio / (healthThresholds.targetInvRatio / 100)) * 10));
+
+        const totalScore = Math.round(savingsScore + budgetScore + efScore + invScore);
+        
+        let riskValue = 'safe';
+        if (totalScore < healthThresholds.danger) riskValue = 'exceeded';
+        else if (totalScore < healthThresholds.caution) riskValue = 'caution';
+        
+        const RISK_CONFIG = {
+            safe: { label: 'Excellent', color: '#10b981', icon: <FiCheckCircle />, bg: 'rgba(16,185,129,0.08)' },
+            caution: { label: 'Good', color: '#f59e0b', icon: <FiAlertTriangle />, bg: 'rgba(245,158,11,0.08)' },
+            exceeded: { label: 'At Risk', color: '#ef4444', icon: <FiAlertCircle />, bg: 'rgba(239,68,68,0.08)' },
+        };
+
+        return {
+            totalScore, risk: riskValue, config: RISK_CONFIG[riskValue],
+            breakdown: { savingsRate, budgetScore, efMonths, invRatio }
+        };
+    }, [data, loading, healthThresholds, totalInvestments]);
 
     useEffect(() => {
         const monthMap = { 'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12 };
@@ -166,6 +235,11 @@ export default function Dashboard() {
         api.get('/category').then((res) => {
             setAllCategories(res.data);
         });
+
+        api.get('/investment').then((res) => {
+            const total = res.data.reduce((acc, cur) => acc + (cur.investedAmount || 0), 0);
+            setTotalInvestments(total);
+        }).catch(() => {});
     }, [month, year]);
 
 
@@ -327,6 +401,12 @@ export default function Dashboard() {
     const recent = data?.recentTransactions || [];
     const upcoming = data?.upcomingReminders || [];
 
+    const handleSaveThresholds = () => {
+        setHealthThresholds(tempThresholds);
+        localStorage.setItem('health_formula_v2', JSON.stringify(tempThresholds));
+        setShowHealthModal(false);
+    };
+
     return (
         <div className="dash-new">
             {/* ── Top Header ── */}
@@ -347,8 +427,8 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* ── 3 Stat Cards ── */}
-            <div className="dash-stat-row">
+            {/* ── Stat Cards Row ── */}
+            <div className="dash-stat-row" style={{ marginBottom: '24px' }}>
                 <div className="dash-stat-card dash-stat-balance">
                     <div className="dash-stat-info">
                         <p className="dash-stat-label">Balance</p>
@@ -373,6 +453,25 @@ export default function Dashboard() {
                     </div>
                     <CircleRing pct={100} color="#10b981" size={80} stroke={6} />
                 </div>
+
+                {/* Relocated Health Card at the end of Row 2 */}
+                {healthStats && (
+                    <div 
+                        className="ai-stat-card ai-stat-health" 
+                        style={{ cursor: 'pointer', margin: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', padding: '18px 22px', background: 'rgba(30,35,50,0.6)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.12)' }}
+                        onClick={() => {
+                            setTempThresholds(healthThresholds);
+                            setShowHealthModal(true);
+                        }}
+                    >
+                        <div className="ai-stat-bg-icon" style={{ top: '10px', right: '10px', opacity: 0.15 }}><FiShield /></div>
+                        <p className="ai-stat-label" style={{ fontSize: '0.75rem', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Financial Health</p>
+                        <h2 className="ai-stat-value" style={{ fontSize: '1.8rem', margin: '4px 0', fontWeight: 800 }}>{healthStats.totalScore}</h2>
+                        <div className="ai-health-badge" style={{ background: healthStats.config.bg, color: healthStats.config.color, padding: '4px 8px', borderRadius: '6px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
+                            {healthStats.config.icon} {healthStats.config.label}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* ── Middle 3-col: Categories | Statistics | Reminders ── */}
@@ -661,6 +760,83 @@ export default function Dashboard() {
                         </div>
 
                         <button className="cat-modal-close" onClick={() => setShowCatModal(false)}>Close</button>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Health Formula Customization Modal ── */}
+            {showHealthModal && (
+                <div className="goal-modal-overlay" onClick={() => setShowHealthModal(false)}>
+                    <div className="goal-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+                        <div className="goal-modal-header" style={{ borderBottomColor: 'rgba(255,255,255,0.05)' }}>
+                            <div>
+                                <h2 className="goal-modal-title">Customize Health Score</h2>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '4px' }}>
+                                    Adjust target values for calculation
+                                </p>
+                            </div>
+                            <button className="goal-modal-close-btn" onClick={() => setShowHealthModal(false)}>
+                                <FiPlus style={{ transform: 'rotate(45deg)' }} />
+                            </button>
+                        </div>
+                        <div className="goal-modal-body" style={{ padding: '24px' }}>
+                            <div className="form-group" style={{ marginBottom: '20px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <label className="form-label" style={{ margin: 0 }}>Target Savings Rate (%)</label>
+                                    <span style={{ color: 'var(--primary)', fontWeight: 800 }}>{tempThresholds.targetSavingsRate}%</span>
+                                </div>
+                                <input 
+                                    type="range" min="5" max="50" step="5"
+                                    value={tempThresholds.targetSavingsRate}
+                                    onChange={(e) => setTempThresholds(p => ({ ...p, targetSavingsRate: parseInt(e.target.value) }))}
+                                    style={{ width: '100%', accentColor: 'var(--primary)' }}
+                                />
+                            </div>
+
+                            <div className="form-group" style={{ marginBottom: '20px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <label className="form-label" style={{ margin: 0 }}>Emergency Fund (Months)</label>
+                                    <span style={{ color: 'var(--primary)', fontWeight: 800 }}>{tempThresholds.targetEFMonths}m</span>
+                                </div>
+                                <input 
+                                    type="range" min="1" max="12" step="1"
+                                    value={tempThresholds.targetEFMonths}
+                                    onChange={(e) => setTempThresholds(p => ({ ...p, targetEFMonths: parseInt(e.target.value) }))}
+                                    style={{ width: '100%', accentColor: 'var(--primary)' }}
+                                />
+                            </div>
+
+                            <div className="form-group" style={{ marginBottom: '20px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <label className="form-label" style={{ margin: 0 }}>Target Investment Ratio (%)</label>
+                                    <span style={{ color: 'var(--primary)', fontWeight: 800 }}>{tempThresholds.targetInvRatio}%</span>
+                                </div>
+                                <input 
+                                    type="range" min="5" max="30" step="5"
+                                    value={tempThresholds.targetInvRatio}
+                                    onChange={(e) => setTempThresholds(p => ({ ...p, targetInvRatio: parseInt(e.target.value) }))}
+                                    style={{ width: '100%', accentColor: 'var(--primary)' }}
+                                />
+                            </div>
+
+                            <div className="form-group" style={{ marginBottom: '32px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <label className="form-label" style={{ margin: 0 }}>"Excellent" Threshold</label>
+                                    <span style={{ color: '#10b981', fontWeight: 800 }}>{tempThresholds.caution} pts</span>
+                                </div>
+                                <input 
+                                    type="range" min="10" max="90" step="5"
+                                    value={tempThresholds.caution}
+                                    onChange={(e) => setTempThresholds(p => ({ ...p, caution: parseInt(e.target.value) }))}
+                                    style={{ width: '100%', accentColor: '#10b981' }}
+                                />
+                            </div>
+
+                            <div className="modal-actions" style={{ display: 'flex', gap: '12px' }}>
+                                <button className="btn-pill" style={{ flex: 1, background: 'rgba(255,255,255,0.05)', color: '#fff' }} onClick={() => setShowHealthModal(false)}>Cancel</button>
+                                <button className="btn-pill" style={{ flex: 1, background: 'linear-gradient(135deg, #6366f1, #a855f7)', color: '#fff' }} onClick={handleSaveThresholds}>Save Changes</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

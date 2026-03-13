@@ -267,38 +267,50 @@ public class MileageService : IMileageService
         summary.Alerts = alerts;
 
         // ── Monthly Trend ──
-        var entriesByMonth = allEntries
-            .Where(e => e.Date >= DateTime.UtcNow.AddMonths(-12))
-            .GroupBy(e => new { e.Date.Year, e.Date.Month })
-            .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month);
+        var trendMap = new Dictionary<(int Year, int Month), (decimal Dist, decimal Fuel, decimal Cost)>();
+        var twelveMonthsAgo = DateTime.UtcNow.AddMonths(-12);
+        var cutoff = new DateTime(twelveMonthsAgo.Year, twelveMonthsAgo.Month, 1);
 
-        foreach (var mg in entriesByMonth)
+        foreach (var vehicle in vehicles)
         {
-            // For monthly calculation we need to look at odometer diffs within the month
-            var monthEntries = mg.OrderBy(e => e.OdometerReading).ToList();
-            decimal monthDist = 0, monthFuel = 0, monthCost = 0;
+            var vEntries = allEntries
+                .Where(e => e.VehicleId == vehicle.Id)
+                .OrderBy(e => e.OdometerReading)
+                .ToList();
 
-            if (monthEntries.Count >= 2)
+            // Iterate pairs to calculate distance accurately
+            for (int i = 1; i < vEntries.Count; i++)
             {
-                monthDist = monthEntries.Last().OdometerReading - monthEntries.First().OdometerReading;
-                monthFuel = monthEntries.Skip(1).Sum(e => e.FuelQuantity);
-                monthCost = monthEntries.Skip(1).Sum(e => e.FuelCost);
-            }
-            else
-            {
-                monthFuel = monthEntries.Sum(e => e.FuelQuantity);
-                monthCost = monthEntries.Sum(e => e.FuelCost);
-            }
+                var entry = vEntries[i];
+                var prev = vEntries[i - 1];
 
+                // Attribute distance and fuel to the month of the current fill-up
+                if (entry.Date >= cutoff)
+                {
+                    var key = (entry.Date.Year, entry.Date.Month);
+                    if (!trendMap.ContainsKey(key)) trendMap[key] = (0, 0, 0);
+
+                    var val = trendMap[key];
+                    trendMap[key] = (
+                        val.Dist + (entry.OdometerReading - prev.OdometerReading),
+                        val.Fuel + entry.FuelQuantity,
+                        val.Cost + entry.FuelCost
+                    );
+                }
+            }
+        }
+
+        foreach (var item in trendMap.OrderBy(t => t.Key.Year).ThenBy(t => t.Key.Month))
+        {
             summary.MonthlyTrend.Add(new MonthlyMileageDto
             {
-                Year = mg.Key.Year,
-                Month = mg.Key.Month,
-                Label = new DateTime(mg.Key.Year, mg.Key.Month, 1).ToString("MMM yyyy"),
-                DistanceKm = monthDist,
-                FuelSpent = monthCost,
-                AvgMileage = monthFuel > 0 ? Math.Round(monthDist / monthFuel, 2) : 0,
-                CostPerKm = monthDist > 0 ? Math.Round(monthCost / monthDist, 2) : 0
+                Year = item.Key.Year,
+                Month = item.Key.Month,
+                Label = new DateTime(item.Key.Year, item.Key.Month, 1).ToString("MMM yyyy"),
+                DistanceKm = item.Value.Dist,
+                FuelSpent = item.Value.Cost,
+                AvgMileage = item.Value.Fuel > 0 ? Math.Round(item.Value.Dist / item.Value.Fuel, 2) : 0,
+                CostPerKm = item.Value.Dist > 0 ? Math.Round(item.Value.Cost / item.Value.Dist, 2) : 0
             });
         }
 

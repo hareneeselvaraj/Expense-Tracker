@@ -223,7 +223,7 @@ export default function Goals() {
                     else if (daysLeft < 30) { deadlineClass = 'urgent'; deadlineIcon = <FiAlertCircle />; }
                     else if (daysLeft < 90) { deadlineClass = 'warning'; }
 
-                    const radius = 45; // reduced mapping radius for smaller 110px circle SVG
+                    const radius = 50; // increased for larger 140px circle SVG
                     const circumference = 2 * Math.PI * radius;
                     const strokeDashoffset = loaded ? circumference - (pct / 100) * circumference : circumference;
 
@@ -242,14 +242,14 @@ export default function Goals() {
                                 <p className="goal-desc">{goal.description}</p>
 
                                 <div className="goal-ring-container">
-                                    <svg className="goal-ring-svg" viewBox="0 0 110 110" preserveAspectRatio="xMidYMid meet">
+                                    <svg className="goal-ring-svg" viewBox="0 0 140 140" preserveAspectRatio="xMidYMid meet">
                                         <circle
                                             className="goal-ring-bg"
-                                            cx="55" cy="55" r={radius}
+                                            cx="70" cy="70" r={radius}
                                         />
                                         <circle
                                             className="goal-ring-fill"
-                                            cx="55" cy="55" r={radius}
+                                            cx="70" cy="70" r={radius}
                                             strokeDasharray={circumference}
                                             strokeDashoffset={strokeDashoffset}
                                         />

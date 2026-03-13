@@ -495,6 +495,7 @@ function PhysicalTable({ items, onEdit, onDelete }) {
                             <th className="text-right">Purchase Value</th>
                             <th className="text-right">Current Value</th>
                             <th className="text-right">ROI (%)</th>
+                            <th>Platform</th>
                             <th>Last Updated</th>
                             <th>Notes</th><th>Actions</th>
                         </tr>
@@ -514,6 +515,7 @@ function PhysicalTable({ items, onEdit, onDelete }) {
                                     <td className="text-right">{fmt(inv.investedAmount)}</td>
                                     <td className="text-right">{fmt(inv.currentValue)}</td>
                                     <td className={`text-right ${isPos ? 'text-green' : 'text-red'}`}>{isPos ? '+' : ''}{inv.roi?.toFixed(2)}%</td>
+                                    <td>{inv.platform || '—'}</td>
                                     <td>{fmtDate(inv.dateInvested)}</td>
                                     <td><span className="inv-notes-cell">{inv.notes || '—'}</span></td>
                                     <td>

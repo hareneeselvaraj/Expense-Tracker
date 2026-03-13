@@ -4830,7 +4830,7 @@ tr:hover td {
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Stat Cards Row Ã¢â€â‚¬Ã¢â€â‚¬ */
 .dash-stat-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 18px;
 }
 
@@ -7165,9 +7165,9 @@ tr:hover td {
 /* SVG Circular Progress */
 .goal-ring-container {
   position: relative;
-  width: 85px;
-  height: 85px;
-  margin-bottom: 16px;
+  width: 140px;
+  height: 140px;
+  margin-bottom: 20px;
 }
 
 .goal-ring-svg {
@@ -7205,18 +7205,18 @@ tr:hover td {
 }
 
 .goal-ring-pct {
-  font-size: 1.35rem;
+  font-size: 1.3rem;
   font-weight: 800;
   color: var(--text);
   letter-spacing: -0.5px;
 }
 
 .goal-ring-label {
-  font-size: 0.7rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
-  margin-top: -2px;
+  margin-top: -4px;
 }
 
 /* Footer Stats */
@@ -9358,15 +9358,15 @@ tr:hover td {
    Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
 
 .floating-calc-btn {
-  width: 60px;
-  height: 60px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   color: white;
-  font-size: 28px;
+  font-size: 20px;
   cursor: grab;
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 6px 18px rgba(102, 126, 234, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9899,6 +9899,100 @@ tr:hover td {
     0 10px 25px rgba(0, 0, 0, 0.4);
   outline: none;
   transform: translateY(-1px);
+}
+
+/* ── History Filter Bar (Premium Glass) ── */
+.premium-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 8px 16px;
+  backdrop-filter: blur(10px);
+}
+
+.quick-ranges {
+  display: flex;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.range-btn {
+  padding: 6px 12px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: #8b91b0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.range-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.range-btn.active {
+  background: #6366f1;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.custom-range {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #8b91b0;
+  font-size: 0.85rem;
+}
+
+.custom-range svg {
+  color: #6366f1;
+  font-size: 1.1rem;
+}
+
+.date-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.date-inputs span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #5a6078;
+  text-transform: uppercase;
+}
+
+.date-inputs input[type="date"] {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 4px 8px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.date-inputs input[type="date"]:focus {
+  border-color: #6366f1;
+}
+
+/* Chrome/Safari date picker color adjustment */
+::-webkit-calendar-picker-indicator {
+  filter: invert(0.8) sepia(100%) saturate(2000%) hue-rotate(200deg);
+  cursor: pointer;
 }
 
 /* Global Stats Grid */

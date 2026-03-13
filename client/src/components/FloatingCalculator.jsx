@@ -179,7 +179,7 @@ export default function FloatingCalculator() {
                     onMouseDown={handleMouseDown}
                     title="Open Calculator"
                 >
-                    <FiZap size={24} />
+                    <FiZap size={20} />
                 </button>
             ) : (
                 <div className="floating-calc-panel" onMouseDown={handleMouseDown}>

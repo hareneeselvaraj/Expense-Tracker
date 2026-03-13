@@ -6,6 +6,8 @@ export default function History() {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [dateRange, setDateRange] = useState({ start: '', end: '' });
+    const [activeQuickRange, setActiveQuickRange] = useState('all');
 
     useEffect(() => {
         const fetchTransactions = async () => {
@@ -22,26 +24,74 @@ export default function History() {
         fetchTransactions();
     }, []);
 
-    // Global Statistics Calculation
+    // Quick Range Helper
+    const setRange = (type) => {
+        const today = new Date();
+        let start = new Date();
+        let end = new Date();
+
+        switch (type) {
+            case '7d':
+                start.setDate(today.getDate() - 7);
+                break;
+            case '30d':
+                start.setDate(today.getDate() - 30);
+                break;
+            case 'month':
+                start = new Date(today.getFullYear(), today.getMonth(), 1);
+                break;
+            case 'year':
+                start = new Date(today.getFullYear(), 0, 1);
+                break;
+            case 'all':
+                start = null;
+                end = null;
+                break;
+            default: break;
+        }
+
+        setDateRange({
+            start: start ? start.toISOString().split('T')[0] : '',
+            end: end ? end.toISOString().split('T')[0] : ''
+        });
+        setActiveQuickRange(type);
+    };
+
+    // Filtering & Grouping Logic
+    const filteredTransactions = useMemo(() => {
+        return transactions.filter(tx => {
+            const txDate = new Date(tx.date);
+            const matchesSearch = (tx.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                  (tx.categoryName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                  (tx.accountName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                  (tx.tagName || '').toLowerCase().includes(searchQuery.toLowerCase());
+
+            let matchesDate = true;
+            if (dateRange.start) {
+                const s = new Date(dateRange.start);
+                s.setHours(0, 0, 0, 0);
+                matchesDate = matchesDate && txDate >= s;
+            }
+            if (dateRange.end) {
+                const e = new Date(dateRange.end);
+                e.setHours(23, 59, 59, 999);
+                matchesDate = matchesDate && txDate <= e;
+            }
+
+            return matchesSearch && matchesDate;
+        });
+    }, [transactions, searchQuery, dateRange]);
+
+    // Global Statistics Calculation (Based on FILTERED transactions)
     const globalStats = useMemo(() => {
-        const income = transactions
+        const income = filteredTransactions
             .filter(t => t.type?.toLowerCase() === 'income')
             .reduce((a, t) => a + (t.amount || 0), 0);
-        const expense = transactions
+        const expense = filteredTransactions
             .filter(t => t.type?.toLowerCase() === 'expense')
             .reduce((a, t) => a + Math.abs(t.amount || 0), 0);
         return { income, expense, balance: income - expense };
-    }, [transactions]);
-
-    // Filtering & Grouping
-    const filteredTransactions = useMemo(() => {
-        return transactions.filter(tx =>
-            (tx.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (tx.categoryName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (tx.accountName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (tx.tagName || '').toLowerCase().includes(searchQuery.toLowerCase())
-        );
-    }, [transactions, searchQuery]);
+    }, [filteredTransactions]);
 
     const grouped = useMemo(() => {
         return filteredTransactions.reduce((acc, tx) => {
@@ -56,47 +106,67 @@ export default function History() {
     if (loading) return <div className="page-loader">Loading History...</div>;
 
     return (
-        <div className="history-premium-page">
-            {/* Premium Header Section */}
-            <div className="premium-header-section">
-                <div className="header-top">
-                    <div>
-                        <h1 className="premium-title"><FiLayers /> Transaction History</h1>
-                        <p className="premium-subtitle">Manage and track your financial footprint across time</p>
-                    </div>
-                    <div className="premium-search-wrapper">
+        <div className="page">
+            <div className="page-header">
+                <div>
+                    <h1 className="page-title"><FiLayers /> Transaction History</h1>
+                    <p className="premium-subtitle">Manage and track your financial footprint across time</p>
+                </div>
+            </div>
+
+            {/* Advanced Filter Bar & Stats Integrated */}
+            <div className="premium-header-section" style={{ marginTop: 0, padding: '24px' }}>
+                <div className="header-top" style={{ marginBottom: '24px' }}>
+                    <div className="premium-search-wrapper" style={{ maxWidth: '400px', margin: 0 }}>
                         <FiSearch />
                         <input
                             type="text"
                             className="premium-search-input"
-                            placeholder="Search by name, category, or account..."
+                            placeholder="Search transactions..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
+                    
+                    {/* Advanced Filter Bar Inline */}
+                    <div className="premium-filter-bar">
+                        <div className="quick-ranges">
+                            <button className={`range-btn ${activeQuickRange === 'all' ? 'active' : ''}`} onClick={() => setRange('all')}>All</button>
+                            <button className={`range-btn ${activeQuickRange === '7d' ? 'active' : ''}`} onClick={() => setRange('7d')}>7D</button>
+                            <button className={`range-btn ${activeQuickRange === '30d' ? 'active' : ''}`} onClick={() => setRange('30d')}>30D</button>
+                        </div>
+                        <div className="custom-range">
+                            <FiCalendar />
+                            <div className="date-inputs">
+                                <input type="date" value={dateRange.start} onChange={(e) => { setDateRange(prev => ({ ...prev, start: e.target.value })); setActiveQuickRange('custom'); }} />
+                                <span>to</span>
+                                <input type="date" value={dateRange.end} onChange={(e) => { setDateRange(prev => ({ ...prev, end: e.target.value })); setActiveQuickRange('custom'); }} />
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Global Stats Grid */}
-                <div className="global-history-stats">
+                <div className="global-history-stats" style={{ gap: '16px' }}>
                     <div className="history-stat-card income">
                         <div className="h-stat-icon"><FiArrowUp /></div>
                         <div className="h-stat-content">
-                            <p className="h-stat-label">Total Income</p>
-                            <p className="h-stat-value">₹{globalStats.income.toLocaleString('en-IN')}</p>
+                            <p className="h-stat-label">Income</p>
+                            <p className="h-stat-value" style={{ fontSize: '1.2rem' }}>₹{globalStats.income.toLocaleString('en-IN')}</p>
                         </div>
                     </div>
                     <div className="history-stat-card expense">
                         <div className="h-stat-icon"><FiArrowDown /></div>
                         <div className="h-stat-content">
-                            <p className="h-stat-label">Total Expenses</p>
-                            <p className="h-stat-value">₹{globalStats.expense.toLocaleString('en-IN')}</p>
+                            <p className="h-stat-label">Expense</p>
+                            <p className="h-stat-value" style={{ fontSize: '1.2rem' }}>₹{globalStats.expense.toLocaleString('en-IN')}</p>
                         </div>
                     </div>
                     <div className="history-stat-card balance">
                         <div className="h-stat-icon"><FiActivity /></div>
                         <div className="h-stat-content">
-                            <p className="h-stat-label">Net Difference</p>
-                            <p className="h-stat-value">
+                            <p className="h-stat-label">Net</p>
+                            <p className="h-stat-value" style={{ fontSize: '1.2rem' }}>
                                 {globalStats.balance < 0 ? '-' : ''}₹{Math.abs(globalStats.balance).toLocaleString('en-IN')}
                             </p>
                         </div>
