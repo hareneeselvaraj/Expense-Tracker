@@ -29,6 +29,10 @@ export default function Transactions() {
     const [dlOpen, setDlOpen] = useState(false);
     const [filterMonth, setFilterMonth] = useState('');
     const [filterYear, setFilterYear] = useState('');
+    const [filterType, setFilterType] = useState('');
+    const [filterAccount, setFilterAccount] = useState('');
+    const [filterCategory, setFilterCategory] = useState('');
+    const [filterTag, setFilterTag] = useState('');
     const toast = useToast();
     const [form, setForm] = useState({
         accountId: '', categoryId: '', amount: '', type: 'Expense',
@@ -62,8 +66,12 @@ export default function Transactions() {
         let list = [...transactions];
         if (filterYear) list = list.filter(t => new Date(t.date).getFullYear() === parseInt(filterYear));
         if (filterMonth) list = list.filter(t => new Date(t.date).getMonth() + 1 === parseInt(filterMonth));
+        if (filterType) list = list.filter(t => t.type === filterType);
+        if (filterAccount) list = list.filter(t => t.accountId === filterAccount);
+        if (filterCategory) list = list.filter(t => t.categoryId === filterCategory);
+        if (filterTag) list = list.filter(t => t.tagId === filterTag);
         return list;
-    }, [transactions, filterMonth, filterYear]);
+    }, [transactions, filterMonth, filterYear, filterType, filterAccount, filterCategory, filterTag]);
 
     const resetForm = () => {
         setForm({ accountId: '', categoryId: '', amount: '', type: 'Expense', onlineOffline: 'Offline', bankMode: '', description: '', date: '', isMonitor: false, isAutoDebit: false, transferAccountId: '', tagId: '', investmentId: '' });
@@ -165,36 +173,79 @@ export default function Transactions() {
                 categories={categories}
             />
 
-            {/* Header */}
-            <div className="page-header">
+            {/* Header with Granular Filters */}
+            <div className="page-header" style={{ marginBottom: 28, flexWrap: 'wrap', gap: 20 }}>
                 <h1 className="page-title">Transactions</h1>
-                <div className="tx-header-actions">
-                    <button className="btn btn-primary" onClick={() => { resetForm(); setShowForm(!showForm); }}>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    {/* Compact Filter Group */}
+                    <div className="tx-premium-filters" style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 12, 
+                        background: 'var(--bg-card)', 
+                        padding: '6px 12px', 
+                        borderRadius: 16, 
+                        border: '1px solid var(--border)',
+                        boxShadow: 'var(--shadow-sm)',
+                        flexWrap: 'wrap'
+                    }}>
+                        {/* Month/Year Group */}
+                        <div style={{ display: 'flex', gap: 4 }}>
+                            <select className="tx-select-minimal" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} style={{ background: 'transparent', border: 'none', color: 'var(--text)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', outline: 'none' }}>
+                                {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                            </select>
+                            <select className="tx-select-minimal" value={filterYear} onChange={e => setFilterYear(e.target.value)} style={{ background: 'transparent', border: 'none', color: 'var(--text)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', outline: 'none' }}>
+                                <option value="">All Years</option>
+                                {years.map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
+                        </div>
+
+                        <div style={{ width: 1, height: 18, background: 'var(--border)' }} />
+
+                        {/* Granular Filters */}
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <select className="tx-select-minimal" value={filterType} onChange={e => setFilterType(e.target.value)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.82rem', cursor: 'pointer', outline: 'none' }}>
+                                <option value="">All Types</option>
+                                <option value="Income">Income</option>
+                                <option value="Expense">Expense</option>
+                                <option value="Transfer">Transfer</option>
+                                <option value="Investment">Investment</option>
+                            </select>
+                            <select className="tx-select-minimal" value={filterAccount} onChange={e => setFilterAccount(e.target.value)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.82rem', cursor: 'pointer', outline: 'none' }}>
+                                <option value="">All Accounts</option>
+                                {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                            </select>
+                            <select className="tx-select-minimal" value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.82rem', cursor: 'pointer', outline: 'none' }}>
+                                <option value="">All Categories</option>
+                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                            <select className="tx-select-minimal" value={filterTag} onChange={e => setFilterTag(e.target.value)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.82rem', cursor: 'pointer', outline: 'none' }}>
+                                <option value="">All Tags</option>
+                                {tags.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                            </select>
+                        </div>
+                    </div>
+
+                    <button className="btn btn-primary" onClick={() => { resetForm(); setShowForm(!showForm); }} style={{ height: 42, borderRadius: 14, padding: '0 24px', fontWeight: 700, boxShadow: '0 8px 16px var(--primary-shadow)' }}>
                         <FiPlus /> New
                     </button>
                 </div>
             </div>
 
-            {/* Toolbar — filters + downloads */}
-            <div className="tx-toolbar">
-                <div className="tx-filters">
-                    <select className="tx-select" value={filterMonth} onChange={e => setFilterMonth(e.target.value)}>
-                        {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                    </select>
-                    <select className="tx-select" value={filterYear} onChange={e => setFilterYear(e.target.value)}>
-                        <option value="">All Years</option>
-                        {years.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
-                    <span className="tx-count">{filtered.length} transactions</span>
-                </div>
-                <div className="tx-downloads">
-                    <button className="tx-dl-btn" onClick={handleQuickPDF} title="Download PDF">
+            {/* Quick Actions & Count */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, padding: '0 4px' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    Showing <strong>{filtered.length}</strong> transactions {getDateRangeLabel() !== 'All Time' ? `for ${getDateRangeLabel()}` : ''}
+                </span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn-ghost" onClick={handleQuickPDF} style={{ padding: '8px 14px', borderRadius: 10, fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 }}>
                         <FiFileText /> PDF
                     </button>
-                    <button className="tx-dl-btn" onClick={handleQuickExcel} title="Download Excel">
+                    <button className="btn-ghost" onClick={handleQuickExcel} style={{ padding: '8px 14px', borderRadius: 10, fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 }}>
                         <FiGrid /> Excel
                     </button>
-                    <button className="tx-dl-btn tx-dl-center" onClick={() => setDlOpen(true)} title="Download Center">
+                    <button className="btn btn-primary" onClick={() => setDlOpen(true)} style={{ padding: '8px 14px', borderRadius: 10, fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6, opacity: 0.9 }}>
                         <FiDownload /> Downloads
                     </button>
                 </div>
@@ -217,17 +268,17 @@ export default function Transactions() {
                             </div>
                             <div className="form-group">
                                 <label>Category</label>
-                                <select 
-                                    value={form.categoryId} 
+                                <select
+                                    value={form.categoryId}
                                     onChange={(e) => {
                                         const catId = e.target.value;
                                         const selectedCat = categories.find(c => c.id === catId);
-                                        setForm({ 
-                                            ...form, 
+                                        setForm({
+                                            ...form,
                                             categoryId: catId,
                                             type: selectedCat ? selectedCat.type : form.type
                                         });
-                                    }} 
+                                    }}
                                     required
                                 >
                                     <option value="">Select Category</option>
@@ -240,11 +291,11 @@ export default function Transactions() {
                             </div>
                             <div className="form-group">
                                 <label>Type</label>
-                                <select 
-                                    value={form.type} 
-                                    disabled 
-                                    style={{ 
-                                        cursor: 'not-allowed', 
+                                <select
+                                    value={form.type}
+                                    disabled
+                                    style={{
+                                        cursor: 'not-allowed',
                                         opacity: 0.8,
                                         background: 'var(--bg-input)'
                                     }}

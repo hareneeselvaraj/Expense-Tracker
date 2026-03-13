@@ -32,7 +32,12 @@ public class TagService : ITagService
     {
         return await _context.Tags
             .Where(t => t.UserId == userId)
-            .Select(t => new TagResponseDto { Id = t.Id, Name = t.Name })
+            .Select(t => new TagResponseDto 
+            { 
+                Id = t.Id, 
+                Name = t.Name,
+                TransactionCount = _context.Transactions.Count(tx => tx.TagId == t.Id)
+            })
             .ToListAsync();
     }
 
