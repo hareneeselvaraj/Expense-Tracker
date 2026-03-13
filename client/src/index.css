@@ -3587,6 +3587,7 @@ tr:hover td {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -5434,12 +5435,12 @@ tr:hover td {
   opacity: 0.5;
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Bottom Section: Premium 3-col Layout Ã¢â€â‚¬Ã¢â€â‚¬ */
+
 .premium-bottom-layout {
   display: grid;
-  grid-template-columns: 0.9fr 1.2fr 0.9fr;
-  /* Balance card is wider */
-  gap: 24px;
+  grid-template-columns: 1fr 1.2fr 0.9fr;
+  /* Match dash-mid-grid for alignment */
+  gap: 20px;
   align-items: stretch;
 }
 
@@ -9823,7 +9824,7 @@ tr:hover td {
   border-radius: 24px;
   padding: 28px 32px;
   margin-bottom: 32px;
-  box-shadow: 
+  box-shadow:
     0 20px 50px rgba(0, 0, 0, 0.3),
     inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
@@ -9894,7 +9895,7 @@ tr:hover td {
 .premium-search-input:focus {
   background: rgba(0, 0, 0, 0.3);
   border-color: #6366f1;
-  box-shadow: 
+  box-shadow:
     0 0 0 4px rgba(99, 102, 241, 0.15),
     0 10px 25px rgba(0, 0, 0, 0.4);
   outline: none;
@@ -10033,9 +10034,20 @@ tr:hover td {
   z-index: 1;
 }
 
-.history-stat-card.income .h-stat-icon { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-.history-stat-card.expense .h-stat-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
-.history-stat-card.balance .h-stat-icon { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+.history-stat-card.income .h-stat-icon {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.history-stat-card.expense .h-stat-icon {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.history-stat-card.balance .h-stat-icon {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+}
 
 .h-stat-label {
   font-size: 0.85rem;
@@ -10092,8 +10104,13 @@ tr:hover td {
   font-weight: 800;
 }
 
-.ms-item.income { color: #10b981; }
-.ms-item.expense { color: #ef4444; }
+.ms-item.income {
+  color: #10b981;
+}
+
+.ms-item.expense {
+  color: #ef4444;
+}
 
 /* Transaction Cards */
 .tx-card-grid {
@@ -10133,8 +10150,13 @@ tr:hover td {
   transition: 0.3s;
 }
 
-.premium-tx-card.income::before { background: #10b981; }
-.premium-tx-card.expense::before { background: #ef4444; }
+.premium-tx-card.income::before {
+  background: #10b981;
+}
+
+.premium-tx-card.expense::before {
+  background: #ef4444;
+}
 
 .tx-card-icon {
   width: 44px;
@@ -10174,8 +10196,15 @@ tr:hover td {
   letter-spacing: -0.5px;
 }
 
-.tx-card-amount.plus { color: #10b981; text-shadow: 0 0 15px rgba(16, 185, 129, 0.2); }
-.tx-card-amount.minus { color: #ef4444; text-shadow: 0 0 15px rgba(239, 68, 68, 0.2); }
+.tx-card-amount.plus {
+  color: #10b981;
+  text-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+}
+
+.tx-card-amount.minus {
+  color: #ef4444;
+  text-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+}
 
 .tx-card-bottom {
   display: flex;
@@ -10198,9 +10227,23 @@ tr:hover td {
   text-transform: uppercase;
 }
 
-.tx-tag-pill.account { background: rgba(99, 102, 241, 0.1); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.1); }
-.tx-tag-pill.category { background: rgba(255, 255, 255, 0.03); color: #8b91b0; border: 1px solid rgba(255, 255, 255, 0.05); }
-.tx-tag-pill.custom { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.1); }
+.tx-tag-pill.account {
+  background: rgba(99, 102, 241, 0.1);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.tx-tag-pill.category {
+  background: rgba(255, 255, 255, 0.03);
+  color: #8b91b0;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tx-tag-pill.custom {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.1);
+}
 
 .tx-card-date {
   font-size: 0.8rem;
@@ -10245,16 +10288,66 @@ tr:hover td {
 }
 
 /* Light Theme (Preserved for Premium) */
-[data-theme="light"] .history-premium-page { background: #f8fafc; }
-[data-theme="light"] .premium-header-section { background: #fff; border-color: #e2e8f0; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05); }
-[data-theme="light"] .premium-title { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-[data-theme="light"] .premium-subtitle { color: #64748b; }
-[data-theme="light"] .premium-search-input { background: #f1f5f9; border-color: #e2e8f0; color: #1e293b; box-shadow: none; }
-[data-theme="light"] .history-stat-card { background: #f8fafc; border-color: #e2e8f0; }
-[data-theme="light"] .h-stat-value { color: #1e293b; }
-[data-theme="light"] .month-label { color: #1e293b; }
-[data-theme="light"] .premium-tx-card { background: #fff; border-color: #e2e8f0; }
-[data-theme="light"] .premium-tx-card:hover { background: #fcfcfc; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04); }
-[data-theme="light"] .tx-card-title { color: #1e293b; }
-[data-theme="light"] .tx-card-date { color: #94a3b8; }
-[data-theme="light"] .month-quick-summary { background: #f1f5f9; border-color: #e2e8f0; }
+[data-theme="light"] .history-premium-page {
+  background: #f8fafc;
+}
+
+[data-theme="light"] .premium-header-section {
+  background: #fff;
+  border-color: #e2e8f0;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .premium-title {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme="light"] .premium-subtitle {
+  color: #64748b;
+}
+
+[data-theme="light"] .premium-search-input {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #1e293b;
+  box-shadow: none;
+}
+
+[data-theme="light"] .history-stat-card {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .h-stat-value {
+  color: #1e293b;
+}
+
+[data-theme="light"] .month-label {
+  color: #1e293b;
+}
+
+[data-theme="light"] .premium-tx-card {
+  background: #fff;
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .premium-tx-card:hover {
+  background: #fcfcfc;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .tx-card-title {
+  color: #1e293b;
+}
+
+[data-theme="light"] .tx-card-date {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .month-quick-summary {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
