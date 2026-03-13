@@ -24,6 +24,37 @@ export default function FloatingCalculator() {
         return () => window.removeEventListener('keydown', handleEscapeKey);
     }, [isOpen]);
 
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            if (!isDragging) return;
+            setPosition({
+                x: e.clientX - dragOffset.x,
+                y: e.clientY - dragOffset.y,
+            });
+        };
+
+        const handleMouseUp = () => {
+            setIsDragging(false);
+        };
+
+        if (isDragging) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+            // Prevent text selection while dragging
+            document.body.style.userSelect = 'none';
+        } else {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+            document.body.style.userSelect = '';
+        }
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+            document.body.style.userSelect = '';
+        };
+    }, [isDragging, dragOffset]);
+
     const handleMouseDown = (e) => {
         // When calculator is closed, allow dragging the floating button itself
         if (!isOpen) {
@@ -36,7 +67,7 @@ export default function FloatingCalculator() {
         }
 
         // When calculator is open, don't drag if clicking the close button or other inner buttons
-        if (e.target.closest('.calc-close-btn') || e.target.closest('.calc-btn')) return;
+        if (e.target.closest('.calc-close-btn') || e.target.closest('.calc-btn') || e.target.closest('.calc-btn-small')) return;
 
         // Allow dragging from the header area
         setIsDragging(true);
@@ -44,18 +75,6 @@ export default function FloatingCalculator() {
             x: e.clientX - position.x,
             y: e.clientY - position.y,
         });
-    };
-
-    const handleMouseMove = (e) => {
-        if (!isDragging) return;
-        setPosition({
-            x: e.clientX - dragOffset.x,
-            y: e.clientY - dragOffset.y,
-        });
-    };
-
-    const handleMouseUp = () => {
-        setIsDragging(false);
     };
 
     const handleNumber = (num) => {
@@ -144,9 +163,7 @@ export default function FloatingCalculator() {
     return (
         <div
             ref={floatingBtnRef}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
+            className={isDragging ? 'dragging' : ''}
             style={{
                 position: 'fixed',
                 left: `${position.x}px`,

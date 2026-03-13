@@ -141,35 +141,32 @@ export default function AIInsights() {
             {/* ═══════════ TAB 1: BUDGET ANALYSIS ═══════════ */}
             {tab === 'budget' && (
                 <>
-                    {/* ── Overview Cards ── */}
-                    <div className="ai-overview-grid">
-                        <div className="ai-overview-card">
-                            <div className="ai-ov-icon" style={{ color: overallCfg.color, background: overallCfg.bg }}><FiShield /></div>
-                            <div>
-                                <p className="ai-ov-label">Overall Health</p>
-                                <p className="ai-ov-value" style={{ color: overallCfg.color }}>{overallCfg.label}</p>
-                            </div>
+                    {/* ── Overview Stats ── */}
+                    <div className="ai-stat-grid">
+                        <div className="ai-stat-card ai-stat-health">
+                            <div className="ai-stat-bg-icon"><FiShield /></div>
+                            <p className="ai-stat-label">Overall Health</p>
+                            <p className="ai-stat-value" style={{ color: overallCfg.color }}>
+                                <span style={{ background: overallCfg.bg, color: overallCfg.color }} className="ai-health-badge">{overallCfg.icon} {overallCfg.label}</span>
+                            </p>
                         </div>
-                        <div className="ai-overview-card">
-                            <div className="ai-ov-icon" style={{ color: '#6366f1', background: 'rgba(99,102,241,0.08)' }}><FiTarget /></div>
-                            <div>
-                                <p className="ai-ov-label">Budget Used</p>
-                                <p className="ai-ov-value">{overallPct.toFixed(0)}% of {fmt(totalBudget)}</p>
-                            </div>
+                        <div className="ai-stat-card ai-stat-budget">
+                            <div className="ai-stat-bg-icon"><FiTarget /></div>
+                            <p className="ai-stat-label">Budget Used</p>
+                            <p className="ai-stat-value">{overallPct.toFixed(0)}%</p>
+                            <p className="ai-stat-sub">{fmt(totalSpent)} / {fmt(totalBudget)}</p>
                         </div>
-                        <div className="ai-overview-card">
-                            <div className="ai-ov-icon" style={{ color: '#10b981', background: 'rgba(16,185,129,0.08)' }}><FiDollarSign /></div>
-                            <div>
-                                <p className="ai-ov-label">Daily Limit</p>
-                                <p className="ai-ov-value">{fmt(overallDailyLimit)}<span className="ai-ov-sub">/day for {daysRemaining}d</span></p>
-                            </div>
+                        <div className="ai-stat-card ai-stat-daily">
+                            <div className="ai-stat-bg-icon"><FiDollarSign /></div>
+                            <p className="ai-stat-label">Daily Limit</p>
+                            <p className="ai-stat-value">{fmt(overallDailyLimit)}</p>
+                            <p className="ai-stat-sub">{daysRemaining} days remaining</p>
                         </div>
-                        <div className="ai-overview-card">
-                            <div className="ai-ov-icon" style={{ color: '#f59e0b', background: 'rgba(245,158,11,0.08)' }}><FiTrendingDown /></div>
-                            <div>
-                                <p className="ai-ov-label">Projected Spend</p>
-                                <p className="ai-ov-value">{fmt(overallProjected)}</p>
-                            </div>
+                        <div className="ai-stat-card ai-stat-projected">
+                            <div className="ai-stat-bg-icon"><FiTrendingDown /></div>
+                            <p className="ai-stat-label">Projected Spend</p>
+                            <p className="ai-stat-value">{fmt(overallProjected)}</p>
+                            <p className="ai-stat-sub">Based on current pace</p>
                         </div>
                     </div>
 
@@ -181,29 +178,28 @@ export default function AIInsights() {
                                 {alerts.map(a => {
                                     const cfg = RISK_CONFIG[a.projectedRisk];
                                     return (
-                                        <div key={a.id} className="ai-alert-card" style={{ borderLeftColor: cfg.color }}>
+                                        <div key={a.id} className="ai-alert-premium" style={{ borderLeftColor: cfg.color }}>
                                             <div className="ai-alert-top">
-                                                <span className="ai-alert-cat">{a.categoryName}</span>
+                                                <div>
+                                                    <span className="ai-alert-cat">{a.categoryName}</span>
+                                                    <span className="ai-alert-pct" style={{ color: cfg.color }}>{a.projectedPct.toFixed(0)}%</span>
+                                                </div>
                                                 <span className="ai-risk-badge" style={{ color: cfg.color, background: cfg.bg }}>
                                                     {cfg.icon} {cfg.label}
                                                 </span>
                                             </div>
                                             <p className="ai-alert-msg">
-                                                Projected to spend <strong>{fmt(a.projected)}</strong> against a budget of <strong>{fmt(a.amount)}</strong> ({a.projectedPct.toFixed(0)}%)
+                                                Projected to spend <strong>{fmt(a.projected)}</strong> against a budget of <strong>{fmt(a.amount)}</strong>
                                             </p>
-                                            <div className="ai-alert-bar-track">
+                                            <div className="ai-bar-track">
                                                 <div
-                                                    className="ai-alert-bar-fill"
+                                                    className="ai-bar-fill"
                                                     style={{ width: `${Math.min(a.pct, 100)}%`, background: cfg.color }}
                                                 />
-                                                <div
-                                                    className="ai-alert-bar-projected"
-                                                    style={{ width: `${Math.min(a.projectedPct, 100)}%`, borderColor: cfg.color }}
-                                                />
                                             </div>
-                                            <div className="ai-alert-meta">
-                                                <span>Spent: {fmt(a.spent)}</span>
-                                                <span>Daily limit: {fmt(a.recommendedDaily)}</span>
+                                            <div className="ai-alert-footer">
+                                                <span className="ai-alert-label">Spent: <strong>{fmt(a.spent)}</strong></span>
+                                                <span className="ai-alert-label">Daily: <strong>{fmt(a.recommendedDaily)}</strong></span>
                                             </div>
                                         </div>
                                     );
@@ -218,27 +214,48 @@ export default function AIInsights() {
                         {budgetInsights.length === 0 ? (
                             <p className="text-muted">No budgets set for this month. Create budgets to see insights.</p>
                         ) : (
-                            <div className="ai-budget-grid">
-                                {budgetInsights.map(b => {
+                            <div className="ai-budget-cards-grid">
+                                {budgetInsights.map((b, i) => {
                                     const cfg = RISK_CONFIG[b.risk];
                                     return (
-                                        <div key={b.id} className="ai-budget-card">
-                                            <div className="ai-budget-header">
-                                                <span className="ai-budget-cat">{b.categoryName}</span>
-                                                <span className="ai-risk-badge" style={{ color: cfg.color, background: cfg.bg }}>
+                                        <div key={b.id} className="ai-budget-premium" style={{ '--ai-color': cfg.color, animationDelay: `${i * 0.08}s` }}>
+                                            <div className="aibp-header">
+                                                <div className="aibp-cat-info">
+                                                    <span className="aibp-cat-icon" style={{ background: `${cfg.color}18`, color: cfg.color }}>
+                                                        <FiShield />
+                                                    </span>
+                                                    <span className="aibp-cat-name">{b.categoryName}</span>
+                                                </div>
+                                                <span className="ai-risk-badge" style={{ background: cfg.bg, color: cfg.color }}>
                                                     {cfg.icon} {cfg.label}
                                                 </span>
                                             </div>
-                                            <div className="ai-budget-nums">
-                                                <span>{fmt(b.spent)} <span className="ai-dim">/ {fmt(b.amount)}</span></span>
-                                                <span className="ai-budget-pct" style={{ color: cfg.color }}>{b.pct.toFixed(0)}%</span>
+
+                                            {/* Amount */}
+                                            <div className="aibp-amounts">
+                                                <span className="aibp-spent">{fmt(b.spent)}</span>
+                                                <span className="aibp-pct" style={{ color: cfg.color }}>{b.pct.toFixed(0)}%</span>
                                             </div>
+
+                                            {/* Progress Bar */}
                                             <div className="ai-bar-track">
                                                 <div className="ai-bar-fill" style={{ width: `${Math.min(b.pct, 100)}%`, background: cfg.color }} />
                                             </div>
-                                            <div className="ai-budget-foot">
-                                                <span className="ai-dim">Remaining: {fmt(Math.max(0, b.remaining))}</span>
-                                                <span className="ai-dim">Limit: {fmt(b.recommendedDaily)}/day</span>
+                                            <div className="aibp-bar-label">
+                                                <span className="aibp-label">Budget: {fmt(b.amount)}</span>
+                                                <span className="aibp-label">Remaining: <strong style={{ color: b.remaining < 0 ? '#ef4444' : '#10b981' }}>{fmt(Math.max(0, b.remaining))}</strong></span>
+                                            </div>
+
+                                            {/* Footer */}
+                                            <div className="aibp-footer">
+                                                <div className="aibp-foot-item">
+                                                    <span className="aibp-foot-label">Days Left</span>
+                                                    <span className="aibp-foot-val">{daysRemaining}d</span>
+                                                </div>
+                                                <div className="aibp-foot-item">
+                                                    <span className="aibp-foot-label">Daily Limit</span>
+                                                    <span className="aibp-foot-val">{fmt(b.recommendedDaily)}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     );
@@ -250,23 +267,23 @@ export default function AIInsights() {
                     {/* ── Category Spending Insights ── */}
                     {categorySpending.length > 0 && (
                         <div className="ai-section">
-                            <h3 className="ai-section-title"><FiArrowDown /> Category Spending Insights</h3>
-                            <div className="ai-cat-grid">
-                                {categorySpending.map(c => {
+                            <h3 className="ai-section-title"><FiArrowDown /> Top Spending Categories</h3>
+                            <div className="ai-cat-cards-grid">
+                                {categorySpending.slice(0, 6).map((c, i) => {
                                     const maxTotal = categorySpending[0].total;
                                     const pct = maxTotal > 0 ? (c.total / maxTotal) * 100 : 0;
                                     return (
-                                        <div key={c.name} className="ai-cat-card">
-                                            <div className="ai-cat-top">
-                                                <span className="ai-cat-name">{c.name}</span>
-                                                <span className="ai-cat-total">{fmt(c.total)}</span>
+                                        <div key={c.name} className="ai-cat-premium" style={{ animationDelay: `${i * 0.06}s` }}>
+                                            <div className="aicp-top">
+                                                <span className="aicp-name">{c.name}</span>
+                                                <span className="aicp-total">{fmt(c.total)}</span>
                                             </div>
                                             <div className="ai-bar-track">
                                                 <div className="ai-bar-fill ai-bar-indigo" style={{ width: `${pct}%` }} />
                                             </div>
-                                            <div className="ai-cat-meta">
-                                                <span>{c.count} transactions</span>
-                                                <span>Avg: {fmt(c.avg)}</span>
+                                            <div className="aicp-footer">
+                                                <span className="aicp-label">{c.count} transactions</span>
+                                                <span className="aicp-label">Avg: {fmt(c.avg)}</span>
                                             </div>
                                         </div>
                                     );

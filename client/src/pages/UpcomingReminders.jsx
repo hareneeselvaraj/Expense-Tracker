@@ -1,16 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FiBell, FiPlus, FiCalendar, FiCheck, FiClock, FiAlertCircle, FiX, FiTag, FiTrendingUp } from 'react-icons/fi';
+import api from '../services/api';
 
-const sampleReminders = [
-    { id: 1, title: 'Pay EMI - SBI Home Loan',     date: '2026-03-12', amount: 28500, category: 'Loan',         status: 'upcoming', priority: 'high'   },
-    { id: 2, title: 'Electricity Bill Due',          date: '2026-03-13', amount: 2400,  category: 'Bills',        status: 'upcoming', priority: 'high'   },
-    { id: 3, title: 'Netflix Renewal',               date: '2026-03-15', amount: 999,   category: 'Subscription', status: 'upcoming', priority: 'low'    },
-    { id: 4, title: 'Transfer Rent to Landlord',     date: '2026-03-17', amount: 32000, category: 'Transfer',     status: 'upcoming', priority: 'high'   },
-    { id: 5, title: 'Top Up Emergency Fund',         date: '2026-03-20', amount: 10000, category: 'Savings',      status: 'upcoming', priority: 'medium' },
-    { id: 6, title: 'Pay Credit Card Bill',          date: '2026-03-22', amount: 15200, category: 'Bills',        status: 'upcoming', priority: 'high'   },
-    { id: 7, title: 'Spotify Premium Renewal',       date: '2026-03-24', amount: 499,   category: 'Subscription', status: 'upcoming', priority: 'low'    },
-    { id: 8, title: 'SIP Groww Mutual Fund',         date: '2026-03-25', amount: 5000,  category: 'Investment',   status: 'upcoming', priority: 'medium' },
-];
+
 
 const priorityConfig = {
     high:   { color: '#ef4444', bg: '#fef2f2', label: 'High',   icon: <FiAlertCircle /> },
@@ -29,10 +21,23 @@ const categoryColors = {
 };
 
 export default function UpcomingReminders() {
-    const [reminders, setReminders] = useState(sampleReminders);
+    const [reminders, setReminders] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [filter, setFilter] = useState('all');
     const [form, setForm] = useState({ title: '', date: '', amount: '', category: 'General', priority: 'medium' });
+
+    const fetchReminders = () => {
+        setLoading(true);
+        api.get('/reminder').then(res => {
+            setReminders(res.data);
+            setLoading(false);
+        }).catch(() => setLoading(false));
+    };
+
+    useEffect(() => {
+        fetchReminders();
+    }, []);
 
     const upcomingCount  = reminders.filter(r => r.status !== 'completed').length;
     const completedCount = reminders.filter(r => r.status === 'completed').length;
@@ -45,21 +50,30 @@ export default function UpcomingReminders() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        setReminders([{
-            id: Date.now(),
-            title: form.title,
-            date: form.date,
+        const payload = {
+            ...form,
             amount: form.amount ? Number(form.amount) : null,
-            category: form.category,
-            status: 'upcoming',
-            priority: form.priority
-        }, ...reminders]);
-        setShowForm(false);
-        setForm({ title: '', date: '', amount: '', category: 'General', priority: 'medium' });
+            date: new Date(form.date).toISOString()
+        };
+        
+        api.post('/reminder', payload).then(res => {
+            setReminders([res.data, ...reminders]);
+            setShowForm(false);
+            setForm({ title: '', date: '', amount: '', category: 'General', priority: 'medium' });
+        });
     };
 
     const handleDone = (id) => {
-        setReminders(reminders.map(r => r.id === id ? { ...r, status: 'completed' } : r));
+        api.put(`/reminder/${id}/complete`).then(() => {
+            setReminders(reminders.map(r => r.id === id ? { ...r, status: r.status === 'completed' ? 'upcoming' : 'completed' } : r));
+        });
+    };
+
+    const handleDelete = (id) => {
+        if (!window.confirm('Are you sure you want to delete this reminder?')) return;
+        api.delete(`/reminder/${id}`).then(() => {
+            setReminders(reminders.filter(r => r.id !== id));
+        });
     };
 
     return (

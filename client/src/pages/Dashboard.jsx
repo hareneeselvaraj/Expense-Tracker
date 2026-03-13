@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import {
     FiArrowUpRight, FiArrowDownRight, FiDollarSign, FiRefreshCw,
-    FiTrendingUp, FiPlus, FiChevronRight, FiGrid,
+    FiTrendingUp, FiPlus, FiChevronRight, FiChevronLeft, FiGrid,
     FiBell, FiClock, FiBarChart2
 } from 'react-icons/fi';
 import {
@@ -24,93 +24,179 @@ ChartJS.register(
 const fmt = (n) => {
     const v = n ?? 0;
     const abs = Math.abs(v);
+    if (abs >= 10000000) return `${(v / 10000000).toFixed(1)}Cr`;
     if (abs >= 100000) return `${(v / 100000).toFixed(1)}L`;
     if (abs >= 1000) return `${(v / 1000).toFixed(1)}K`;
     return String(v);
 };
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const YEARS = ['2022', '2023', '2024', '2025', '2026'];
+
+/* ── Custom plugin for center text in Doughnut ── */
+const centerTextPlugin = {
+    id: 'centerText',
+    beforeDraw: (chart) => {
+        if (chart.config.type !== 'doughnut') return;
+        const { width, height, ctx } = chart;
+        ctx.save();
+        const fontSize = (height / 140).toFixed(1);
+        ctx.font = `900 ${fontSize}em Inter`;
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
+
+        const text = chart.config.options.plugins.centerText.text || '';
+        const label = chart.config.options.plugins.centerText.label || '';
+        const x = width / 2;
+        const y = height / 2;
+
+        ctx.fillStyle = '#8b91b0';
+        ctx.font = `600 0.8em Inter`;
+        ctx.fillText(label, x, y - 10);
+
+        ctx.fillStyle = chart.config.options.plugins.centerText.color || '#fff';
+        ctx.font = `900 1.2em Inter`;
+        ctx.fillText(text, x, y + 10);
+        ctx.restore();
+    }
+};
+
+ChartJS.register(
+    CategoryScale, LinearScale, BarElement, PointElement, LineElement,
+    ArcElement, Tooltip, Legend, Filler, centerTextPlugin
+);
+
 /* ── Circular progress ring (SVG) ── */
-function CircleRing({ pct, color, size = 60, stroke = 7 }) {
+function CircleRing({ pct, color, size = 68, stroke = 8 }) {
     const r = (size - stroke) / 2;
     const circ = 2 * Math.PI * r;
     const offset = circ - (pct / 100) * circ;
+    const gradId = `vibrant-ring-${color.replace('#', '')}`;
+
     return (
-        <svg width={size} height={size} className="circle-ring">
+        <svg width={size} height={size} className="circle-ring" style={{ overflow: 'visible' }}>
+            <defs>
+                <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor={color} />
+                    <stop offset="50%" stopColor={color} stopOpacity="0.8" />
+                    <stop offset="100%" stopColor={color} />
+                </linearGradient>
+                <filter id="ring-3d-glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="3.5" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+            </defs>
+            {/* Outer shadow path for depth */}
             <circle cx={size / 2} cy={size / 2} r={r} fill="none"
-                stroke="var(--bg-input)" strokeWidth={stroke} opacity="0.5" />
+                stroke="rgba(0,0,0,0.3)" strokeWidth={stroke + 2} filter="blur(2px)" />
+            {/* Background track */}
             <circle cx={size / 2} cy={size / 2} r={r} fill="none"
-                stroke={color} strokeWidth={stroke}
+                stroke="var(--bg-input)" strokeWidth={stroke} opacity="0.4" />
+            {/* Active progress ring with bevel/glow */}
+            <circle cx={size / 2} cy={size / 2} r={r} fill="none"
+                stroke={`url(#${gradId})`} strokeWidth={stroke}
                 strokeDasharray={circ} strokeDashoffset={offset}
                 strokeLinecap="round"
+                filter="url(#ring-3d-glow)"
                 style={{
-                    filter: `drop-shadow(0 2px 6px ${color}80)`,
-                    transition: 'stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)'
+                    transition: 'stroke-dashoffset 2s cubic-bezier(0.34, 1.56, 0.64, 1)'
                 }}
                 transform={`rotate(-90 ${size / 2} ${size / 2})`} />
+            {/* Inner highlight for 3D bevel */}
+            <circle cx={size / 2} cy={size / 2} r={r} fill="none"
+                stroke="rgba(255,255,255,0.2)" strokeWidth={stroke / 3}
+                strokeDasharray={circ} strokeDashoffset={offset}
+                strokeLinecap="round"
+                transform={`rotate(-90 ${size / 2} ${size / 2})`}
+                style={{ transition: 'stroke-dashoffset 2s cubic-bezier(0.34, 1.56, 0.64, 1)' }} />
+            {/* Percentage text */}
             <text x="50%" y="54%" dominantBaseline="middle" textAnchor="middle"
-                fill="var(--text)" fontSize="11" fontWeight="800"
-                style={{ letterSpacing: '-0.3px' }}>{pct}%</text>
+                fill="var(--text)" fontSize="14" fontWeight="900"
+                style={{ letterSpacing: '-0.5px', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
+                {pct}%
+            </text>
         </svg>
     );
 }
 
-/* ── static sample data ── */
-const SAMPLE_REMINDERS = [
-    { id: 1, title: 'Pay Monthly Loan', date: 'Today, 4 May', color: '#6366f1' },
-    { id: 2, title: 'Online Meeting with Client', date: 'Tomorrow, 5 May', color: '#818cf8' },
-    { id: 3, title: 'Send Money to Kate', date: 'Tuesday, 29 May', color: '#a5b4fc' },
-    { id: 4, title: 'Cancel Subscription', date: 'Tuesday, 29 May', color: '#a5b4fc' },
-];
 
-const SAMPLE_UPCOMING = [
-    { id: 1, title: 'Home bills', sub: '#rent', date: 'Today, 4 May', icon: '🏠', amount: -800 },
-    { id: 2, title: 'Home bills', sub: '#rent', date: 'Today, 4 May', icon: '🏠', amount: -750 },
-    { id: 3, title: 'Entertainment', sub: '#subscription', date: 'Friday, 10 May', icon: '🎮', amount: -49 },
-    { id: 4, title: 'Transport', sub: '#monthly_ticket', date: 'Friday, 10 May', icon: '🚌', amount: -120 },
-];
-
-const CATEGORY_TILES = [
-    { label: 'Food', icon: '🍽️', color: '#c084fc', share: 30 },
-    { label: 'Shopping', icon: '🛍️', color: '#818cf8', share: 20 },
-    { label: 'Home', icon: '🏠', color: '#f59e0b', share: 15 },
-    { label: 'Entertainment', icon: '🎮', color: '#ec4899', share: 10 },
-    { label: 'Gaming', icon: '🕹️', color: '#6366f1', share: 8 },
-    { label: 'Bill', icon: '💡', color: '#10b981', share: 9 },
-    { label: 'Others', icon: '➕', color: '#475569', share: 8 },
-];
-
-const WEEK_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const WEEK_EXPENSE = [12000, 8000, 5000, 18000, 6000, 9000, 4000];
-const WEEK_INCOME = [0, 0, 21800, 0, 0, 0, 0];
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const YEARS = ['2022', '2023', '2024', '2025', '2026'];
-
-const SAMPLE_TXS = [
-    { icon: '🏠', title: 'Home bills', bank: 'BNP Bank', amount: -80000, date: 'Today, 4 May' },
-    { icon: '🏠', title: 'Home bills', bank: 'BNP Bank', amount: -75000, date: 'Today, 4 May' },
-    { icon: '🛒', title: 'Grocery', bank: 'Citi Bank', amount: -23000, date: 'Sunday, 3 May' },
-    { icon: '💼', title: 'Salary', bank: 'BNP Bank', amount: 218000, date: 'Saturday, 2 May' },
-    { icon: '⚽', title: 'Sport', bank: 'Cash', amount: -3800, date: 'Saturday, 2 May' },
-];
 
 export default function Dashboard() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const { user } = useAuth();
     const { isDark } = useTheme();
-    const [chartType, setChartType] = useState('bar');
+    const [chartType, setChartType] = useState('line');
     const [balView, setBalView] = useState('pie');
     const [month, setMonth] = useState('March');
     const [year, setYear] = useState('2026');
+    const [catType, setCatType] = useState('Expense');
+    const [allCategories, setAllCategories] = useState([]);
+    const [currentCategories, setCurrentCategories] = useState([]);
     const [account, setAccount] = useState('All Accounts');
+    const [selectedCat, setSelectedCat] = useState(null);
+    const [showCatModal, setShowCatModal] = useState(false);
+    const [catModalTransactions, setCatModalTransactions] = useState([]);
+    const [catModalLoading, setCatModalLoading] = useState(false);
 
     useEffect(() => {
-        api.get('/dashboard').then((res) => {
+        const monthMap = { 'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12 };
+        const mIdx = monthMap[month];
+        
+        setLoading(true);
+        api.get('/dashboard', { params: { month: mIdx, year } }).then((res) => {
             setData(res.data);
+            if (res.data?.categoryWiseSpending) {
+                const palette = ['#c084fc', '#818cf8', '#f59e0b', '#ec4899', '#6366f1', '#10b981', '#475569', '#3b82f6', '#ef4444', '#f472b6', '#a78bfa'];
+                const mapped = res.data.categoryWiseSpending.map((c, idx) => ({
+                    label: c.categoryName,
+                    icon: c.icon || '❔',
+                    color: palette[idx % palette.length],
+                    share: c.percentage || 0,
+                    id: c.categoryId,
+                    categoryType: c.categoryType
+                }));
+                setCurrentCategories(mapped);
+            }
             setLoading(false);
         }).catch(() => setLoading(false));
-    }, []);
+
+        api.get('/category').then((res) => {
+            setAllCategories(res.data);
+        });
+    }, [month, year]);
+
+
+
+    useEffect(() => {
+        if (showCatModal && selectedCat) {
+            const monthMap = { 'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12 };
+            const mIdx = monthMap[month] - 1; // Date constructor months are 0-indexed
+            const startDate = new Date(year, mIdx, 1, 0, 0, 0, 0).toISOString();
+            const endDate = new Date(year, mIdx + 1, 0, 23, 59, 59, 999).toISOString(); 
+            
+            setCatModalLoading(true);
+            api.get('/transaction', {
+                params: {
+                    categoryId: selectedCat.id,
+                    startDate,
+                    endDate
+                }
+            }).then(res => {
+                setCatModalTransactions(res.data);
+                setCatModalLoading(false);
+            }).catch(() => setCatModalLoading(false));
+        }
+    }, [showCatModal, selectedCat, month, year]);
+
+    const catModalData = selectedCat ? {
+        transactions: catModalTransactions.map(t => ({
+            date: new Date(t.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+            desc: t.description || 'Spending',
+            amount: t.amount
+        })),
+        total: catModalTransactions.reduce((acc, curr) => acc + curr.amount, 0)
+    } : null;
 
     if (loading) return <div className="page-loader">Loading dashboard…</div>;
 
@@ -136,13 +222,17 @@ export default function Dashboard() {
         bodyFont: { size: 10, family: 'Inter' },
     };
 
-    /* ── week chart data ── */
+    /* ── week chart data (Dynamic) ── */
+    const trendLabels = data?.weeklyTrend?.map(t => t.day) || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const trendExpense = data?.weeklyTrend?.map(t => t.expense) || [0, 0, 0, 0, 0, 0, 0];
+    const trendIncome = data?.weeklyTrend?.map(t => t.income) || [0, 0, 0, 0, 0, 0, 0];
+
     const weekBarData = {
-        labels: WEEK_LABELS,
+        labels: trendLabels,
         datasets: [
             {
                 label: 'Expense',
-                data: WEEK_EXPENSE,
+                data: trendExpense,
                 backgroundColor: 'rgba(239,68,68,0.75)',
                 hoverBackgroundColor: '#ef4444',
                 borderRadius: 5,
@@ -151,7 +241,7 @@ export default function Dashboard() {
             },
             {
                 label: 'Income',
-                data: WEEK_INCOME,
+                data: trendIncome,
                 backgroundColor: 'rgba(16,185,129,0.75)',
                 hoverBackgroundColor: '#10b981',
                 borderRadius: 5,
@@ -162,11 +252,11 @@ export default function Dashboard() {
     };
 
     const weekLineData = {
-        labels: WEEK_LABELS,
+        labels: trendLabels,
         datasets: [
             {
                 label: 'Expense',
-                data: WEEK_EXPENSE,
+                data: trendExpense,
                 borderColor: '#ef4444',
                 backgroundColor: 'rgba(239,68,68,0.08)',
                 borderWidth: 2,
@@ -177,7 +267,7 @@ export default function Dashboard() {
             },
             {
                 label: 'Income',
-                data: WEEK_INCOME,
+                data: trendIncome,
                 borderColor: '#10b981',
                 backgroundColor: 'rgba(16,185,129,0.08)',
                 borderWidth: 2,
@@ -198,12 +288,16 @@ export default function Dashboard() {
         },
     };
 
-    /* ── donut / balance chart ── */
+    /* ── donut / balance chart (Account Breakdown) ── */
+    const palette = ['#6366f1', '#818cf8', '#a5b4fc', '#c084fc', '#ec4899', '#f59e0b', '#10b981'];
+    const accountBalances = data?.accounts?.map(a => a.balance) || [];
+    const accountLabels = data?.accounts?.map(a => a.name) || [];
+
     const donutData = {
-        labels: ['Balance', 'Expense', 'Income'],
+        labels: accountLabels.length ? accountLabels : ['Balance'],
         datasets: [{
-            data: [Math.max(balance, 1), expense || 1, income || 1],
-            backgroundColor: ['#6366f1', '#ef4444', '#10b981'],
+            data: accountBalances.length ? accountBalances : [balance || 1],
+            backgroundColor: (accountLabels.length ? accountLabels : ['Balance']).map((_, i) => palette[i % palette.length]),
             borderWidth: 0,
             hoverOffset: 8,
         }],
@@ -211,14 +305,20 @@ export default function Dashboard() {
 
     const donutOptions = {
         responsive: true, maintainAspectRatio: false,
-        cutout: '65%',
+        cutout: '75%',
         plugins: {
             legend: { display: false },
             tooltip: { ...baseTooltip, callbacks: { label: (c) => ` ${c.label}: ₹${(c.raw).toLocaleString('en-IN')}` } },
+            centerText: {
+                label: 'TOTAL',
+                text: `₹${fmt(balance)}`,
+                color: '#fff'
+            }
         },
     };
 
-    const recent = data?.recentTransactions ?? SAMPLE_TXS;
+    const recent = data?.recentTransactions || [];
+    const upcoming = data?.upcomingReminders || [];
 
     return (
         <div className="dash-new">
@@ -245,7 +345,7 @@ export default function Dashboard() {
                 <div className="dash-stat-card dash-stat-balance">
                     <div className="dash-stat-info">
                         <p className="dash-stat-label">Balance</p>
-                        <p className="dash-stat-sub">{data?.accounts?.length || 10} Transactions</p>
+                        <p className="dash-stat-sub">{data?.totalTransactionCount ?? 0} Transactions</p>
                         <p className="dash-stat-amount">₹{fmt(balance)}</p>
                     </div>
                     <CircleRing pct={balPct} color="#818cf8" size={80} stroke={6} />
@@ -253,7 +353,7 @@ export default function Dashboard() {
                 <div className="dash-stat-card dash-stat-expense">
                     <div className="dash-stat-info">
                         <p className="dash-stat-label">Expense</p>
-                        <p className="dash-stat-sub">9 Transactions</p>
+                        <p className="dash-stat-sub">{data?.expenseCount ?? 0} Transactions</p>
                         <p className="dash-stat-amount">-₹{fmt(expense)}</p>
                     </div>
                     <CircleRing pct={expPct} color="#ef4444" size={80} stroke={6} />
@@ -261,7 +361,7 @@ export default function Dashboard() {
                 <div className="dash-stat-card dash-stat-income">
                     <div className="dash-stat-info">
                         <p className="dash-stat-label">Income</p>
-                        <p className="dash-stat-sub">1 Transaction</p>
+                        <p className="dash-stat-sub">{data?.incomeCount ?? 0} Transactions</p>
                         <p className="dash-stat-amount">+₹{fmt(income)}</p>
                     </div>
                     <CircleRing pct={100} color="#10b981" size={80} stroke={6} />
@@ -275,22 +375,38 @@ export default function Dashboard() {
                     <div className="dash-panel-header">
                         <span className="dash-panel-title"><FiGrid /> Categories</span>
                         <div className="dash-chart-toggle">
-                            <button className="dash-toggle-btn active-toggle">Expenses</button>
-                            <button className="dash-toggle-btn">Incomes</button>
+                            <button
+                                className={`dash-toggle-btn ${catType === 'Expense' ? 'active-toggle' : ''}`}
+                                onClick={() => setCatType('Expense')}
+                            >Expenses</button>
+                            <button
+                                className={`dash-toggle-btn ${catType === 'Income' ? 'active-toggle' : ''}`}
+                                onClick={() => setCatType('Income')}
+                            >Incomes</button>
                         </div>
                     </div>
                     <div className="category-treemap">
-                        {CATEGORY_TILES.map((t) => (
-                            <div key={t.label}
-                                className="cat-tile"
-                                style={{ background: t.color + '15', borderColor: t.color + '40' }}>
-                                <span className="cat-tile-icon">{t.icon}</span>
-                                <div className="cat-tile-info">
-                                    <span className="cat-tile-label">{t.label}</span>
-                                    <span className="cat-tile-pct" style={{ color: t.color }}>{t.share}%</span>
+                        {currentCategories.filter(c => c.categoryType === catType).length === 0 ? (
+                            <p style={{ textAlign: 'center', opacity: 0.5, padding: '20px', gridColumn: '1 / -1' }}>
+                                No categories for this period
+                            </p>
+                        ) : (
+                            currentCategories.filter(c => c.categoryType === catType).map((t) => (
+                                <div key={t.label}
+                                    className="cat-tile"
+                                    onClick={() => {
+                                        setSelectedCat(t);
+                                        setShowCatModal(true);
+                                    }}
+                                    style={{ background: `linear-gradient(135deg, ${t.color}20, ${t.color}05)`, borderColor: `${t.color}40`, backdropFilter: 'blur(8px)' }}>
+                                    <span className="cat-tile-icon">{t.icon}</span>
+                                    <div className="cat-tile-info">
+                                        <span className="cat-tile-label">{t.label}</span>
+                                        <span className="cat-tile-pct" style={{ color: t.color }}>{t.share}%</span>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 </div>
 
@@ -318,136 +434,190 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                {/* Reminders */}
+                {/* Reminders & Upcoming */}
                 <div className="dash-panel">
                     <div className="dash-panel-header">
-                        <span className="dash-panel-title"><FiBell /> Reminders</span>
+                        <span className="dash-panel-title"><FiBell /> Reminders & Upcoming</span>
                         <Link to="/reminders" className="dash-see-all"><FiPlus /></Link>
                     </div>
                     <div className="reminder-list">
-                        {SAMPLE_REMINDERS.map((r, i) => (
-                            <div key={r.id} className="reminder-item">
-                                {(i === 0 || SAMPLE_REMINDERS[i - 1].date !== r.date) && (
-                                    <div className="reminder-date-label" style={{
-                                        color: i === 0 ? '#10b981' : i === 1 ? '#818cf8' : 'var(--text-muted)'
-                                    }}>{r.date}</div>
-                                )}
-                                <div className="reminder-row">
-                                    <div className="reminder-dot" style={{ background: r.color }} />
-                                    <span className="reminder-text">{r.title}</span>
-                                    <FiChevronRight className="reminder-chevron" />
+                        {/* Prioritize upcoming future reminders, fallback to recent activity if none upcoming */}
+                        {(upcoming.length > 0 ? upcoming : recent).slice(0, 4).map((item, i) => {
+                            const palette = ['#6366f1', '#818cf8', '#a5b4fc', '#ec4899'];
+                            const displayTitle = item.title || item.description || 'Activity';
+                            const displayDate = item.date ? new Date(item.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'Unknown';
+                            const amt = item.amount || 0;
+                            return (
+                                <div key={i} className="reminder-item-premium">
+                                    <div className="reminder-row-header">
+                                        <span className="reminder-dot" style={{ background: palette[i % palette.length] }} />
+                                        <span className="reminder-date-small">{displayDate}</span>
+                                    </div>
+                                    <div className="reminder-row-content">
+                                        <span className="reminder-text-bold">{displayTitle}</span>
+                                        <span className="reminder-amt-pill" style={{ 
+                                            background: (item.type === 'Income') ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', 
+                                            color: (item.type === 'Income') ? '#10b981' : '#ef4444' 
+                                        }}>
+                                            {(item.type === 'Income') ? '+' : '-'}₹{Math.abs(amt).toLocaleString('en-IN')}
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
+                        {(upcoming.length === 0 && recent.length === 0) && <p style={{ textAlign: 'center', opacity: 0.5, padding: '20px' }}>No reminders or upcoming items</p>}
                     </div>
                 </div>
             </div>
 
-            {/* ── Bottom 2-col: Transactions | Upcoming ── */}
-            <div className="dash-bottom-grid">
+            {/* ── Bottom Section: Transactions | Balance | Budgets ── */}
+            <div className="dash-bottom-row-3col premium-bottom-layout">
                 {/* Transactions */}
-                <div className="dash-panel">
+                <div className="dash-panel dash-transactions-panel">
                     <div className="dash-panel-header">
-                        <span className="dash-panel-title"><FiRefreshCw /> Transactions</span>
-                        <Link to="/transactions" className="dash-see-all">See All <FiChevronRight /></Link>
+                        <span className="dash-panel-title"><FiRefreshCw /> Recent Activity</span>
+                        <Link to="/transactions" className="dash-see-all">View All <FiChevronRight /></Link>
                     </div>
-                    <div className="dash-tx-list">
-                        {(recent.length > 0 ? recent.slice(0, 5) : SAMPLE_TXS).map((tx, i) => {
-                            const amt = tx.amount ?? tx.Amount ?? 0;
+                    <div className="dash-tx-list-slim">
+                        {recent.slice(0, 4).map((tx, i) => {
+                            const amt = tx.amount ?? 0;
+                            const displayDate = tx.date ? new Date(tx.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'Unknown';
                             return (
-                                <div key={i} className="dash-tx-row">
-                                    <div className="dash-tx-icon">{tx.icon ?? tx.category?.[0] ?? '💳'}</div>
-                                    <div className="dash-tx-info">
-                                        <p className="dash-tx-title">{tx.title ?? tx.description ?? 'Transaction'}</p>
-                                        <p className="dash-tx-sub">{tx.bank ?? tx.bankName ?? 'Account'}</p>
+                                <div key={i} className="dash-tx-row-slim">
+                                    <div className="dash-tx-icon-circle">{tx.icon || (tx.categoryName ? tx.categoryName[0] : '💳')}</div>
+                                    <div className="dash-tx-info-slim">
+                                        <p className="dash-tx-title-slim">{tx.title || tx.description || 'Transaction'}</p>
+                                        <p className="dash-tx-sub-slim">{displayDate}</p>
                                     </div>
-                                    <div className="dash-tx-right">
-                                        <p className="dash-tx-amount" style={{ color: amt >= 0 ? '#10b981' : '#ef4444' }}>
-                                            {amt >= 0 ? '+' : ''}₹{Math.abs(amt).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                        </p>
-                                        <p className="dash-tx-date">{tx.date ?? ''}</p>
+                                    <p className="dash-tx-amount-slim" style={{ color: tx.type === 'Income' ? '#10b981' : '#ef4444' }}>
+                                        {tx.type === 'Income' ? '+' : '-'}₹{Math.abs(amt).toLocaleString('en-IN')}
+                                    </p>
+                                </div>
+                            );
+                        })}
+                        {recent.length === 0 && <p style={{ textAlign: 'center', opacity: 0.5, padding: '20px' }}>No recent activity</p>}
+                    </div>
+                </div>
+
+                {/* Balance Donut Section - LARGER & CENTERED */}
+                <div className="dash-panel dash-balance-center-panel">
+                    <div className="dash-panel-header">
+                        <span className="dash-panel-title"><FiDollarSign /> Net Balance</span>
+                        <div className="dash-chart-toggle">
+                            <button className={`dash-toggle-btn ${balView === 'pie' ? 'active-toggle' : ''}`}
+                                onClick={() => setBalView('pie')}>Donut</button>
+                            <button className={`dash-toggle-btn ${balView === 'bar' ? 'active-toggle' : ''}`}
+                                onClick={() => setBalView('bar')}>Growth</button>
+                        </div>
+                    </div>
+                    <div className="dash-balance-content-maximized">
+                        <div className="dash-chart-wrapper-premium">
+                            {balView === 'pie' ? (
+                                <Doughnut data={donutData} options={{ ...donutOptions, cutout: '82%' }} />
+                            ) : (
+                                <Bar
+                                    data={{
+                                        labels: donutData.labels,
+                                        datasets: [{
+                                            ...donutData.datasets[0],
+                                            borderRadius: 12,
+                                            maxBarThickness: 50
+                                        }]
+                                    }}
+                                    options={{
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        plugins: { legend: { display: false }, tooltip: baseTooltip },
+                                        scales: {
+                                            x: { grid: { display: false }, border: { display: false }, ticks: { color: tickColor, font: { size: 11, family: 'Inter', weight: '600' } } },
+                                            y: { display: false, beginAtZero: true },
+                                        }
+                                    }}
+                                />
+                            )}
+                        </div>
+                        <div className="dash-balance-legend-premium">
+                            {donutData.labels.map((name, i) => (
+                                <div key={name} className="dash-legend-pill">
+                                    <span className="legend-dot-large" style={{ background: donutData.datasets[0].backgroundColor[i] }} />
+                                    <span className="dash-legend-text">{name}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Budgets Section */}
+                <div className="dash-panel dash-budgets-panel">
+                    <div className="dash-panel-header">
+                        <span className="dash-panel-title"><FiBarChart2 /> Budgets</span>
+                        <Link to="/budgets" className="dash-see-all">Manage <FiChevronRight /></Link>
+                    </div>
+                    <div className="dash-budget-list">
+                        {(data?.budgetVsActual || []).slice(0, 3).map((b, idx) => {
+                            const pct = Math.min(100, b.utilizationPercent || 0);
+                            const icon = b.icon || (b.categoryName ? b.categoryName[0] : '📊');
+                            const palette = ['#c084fc', '#818cf8', '#ec4899', '#f59e0b', '#6366f1'];
+                            const color = palette[idx % palette.length];
+                            return (
+                                <div key={idx} className="dash-budget-item">
+                                    <div className="dash-budget-info">
+                                        <span className="dash-budget-name">{icon} {b.categoryName}</span>
+                                        <span className="dash-budget-pct">{pct}%</span>
+                                    </div>
+                                    <div className="dash-budget-track">
+                                        <div className="dash-budget-fill" style={{ width: `${pct}%`, background: color }} />
+                                    </div>
+                                    <div className="dash-budget-amounts">
+                                        <span>₹{fmt(b.actualSpent)}</span>
+                                        <span className="dash-budget-limit">of ₹{fmt(b.budgetAmount)}</span>
                                     </div>
                                 </div>
                             );
                         })}
                     </div>
                 </div>
-
-                {/* Upcoming */}
-                <div className="dash-panel">
-                    <div className="dash-panel-header">
-                        <span className="dash-panel-title"><FiClock /> Upcoming</span>
-                        <Link to="/upcoming" className="dash-see-all"><FiPlus /></Link>
-                    </div>
-                    <p className="dash-stat-period" style={{ color: '#10b981' }}>Today, 4 May</p>
-                    <div className="dash-tx-list">
-                        {SAMPLE_UPCOMING.map((u) => (
-                            <div key={u.id} className="dash-tx-row">
-                                <div className="dash-tx-icon">{u.icon}</div>
-                                <div className="dash-tx-info">
-                                    <p className="dash-tx-title">{u.title}</p>
-                                    <p className="dash-tx-sub">{u.sub}</p>
-                                </div>
-                                <div className="dash-tx-right">
-                                    <p className="dash-tx-amount" style={{ color: '#ef4444' }}>
-                                        {u.amount.toFixed(2)}$
-                                    </p>
-                                    <p className="dash-tx-date">{u.date}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
             </div>
 
-            {/* ── Balance Donut Section ── */}
-            <div className="dash-panel">
-                <div className="dash-panel-header">
-                    <span className="dash-panel-title"><FiDollarSign /> Balance</span>
-                    <div className="dash-chart-toggle">
-                        <button className={`dash-toggle-btn ${balView === 'pie' ? 'active-toggle' : ''}`}
-                            onClick={() => setBalView('pie')}>Pie Chart</button>
-                        <button className={`dash-toggle-btn ${balView === 'bar' ? 'active-toggle' : ''}`}
-                            onClick={() => setBalView('bar')}>Bar Graph</button>
-                    </div>
-                </div>
-                <div className="dash-balance-content">
-                    <div style={{ width: '100%', height: 180, flexShrink: 0, minWidth: 180, display: 'flex', justifyContent: 'center' }}>
-                        {balView === 'pie' ? (
-                            <Doughnut data={donutData} options={donutOptions} />
-                        ) : (
-                            <Bar
-                                data={{
-                                    labels: donutData.labels,
-                                    datasets: [{
-                                        ...donutData.datasets[0],
-                                        borderRadius: 4,
-                                        maxBarThickness: 32
-                                    }]
-                                }}
-                                options={{
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    plugins: { legend: { display: false }, tooltip: baseTooltip },
-                                    scales: {
-                                        x: { grid: { display: false }, border: { display: false }, ticks: { color: tickColor, font: { size: 10, family: 'Inter' } } },
-                                        y: { display: false, beginAtZero: true },
-                                    }
-                                }}
-                            />
-                        )}
-                    </div>
-                    <div className="dash-balance-legend">
-                        {[['Balance', '#6366f1', balPct], ['Expense', '#ef4444', expPct], ['Income', '#10b981', 100]].map(([name, color, pct]) => (
-                            <div key={name} className="dash-legend-row">
-                                <span className="legend-dot" style={{ background: color }} />
-                                <span className="dash-legend-name">{name}</span>
-                                <span className="dash-legend-pct" style={{ color }}>{pct}%</span>
+            {/* ── Category Details Modal ── */}
+            {showCatModal && selectedCat && (
+                <div className="cat-modal-overlay" onClick={() => setShowCatModal(false)}>
+                    <div className="cat-modal-content" onClick={e => e.stopPropagation()}>
+                        <div className="cat-modal-header" style={{ borderBottomColor: `${selectedCat.color}30` }}>
+                            <div className="cat-header-left">
+                                <span className="cat-header-icon" style={{ background: `${selectedCat.color}20`, color: selectedCat.color }}>
+                                    {selectedCat.icon}
+                                </span>
+                                <div>
+                                    <h3 className="cat-modal-title">{selectedCat.label}</h3>
+                                    <p className="cat-modal-subtitle">{month} {year}</p>
+                                </div>
                             </div>
-                        ))}
+                            <div className="cat-header-right">
+                                <span className="cat-modal-total">₹{catModalData?.total.toLocaleString()}</span>
+                                <p className="cat-modal-total-label">Total Spent</p>
+                            </div>
+                        </div>
+
+                        <div className="cat-modal-body">
+                            <h4 className="cat-body-title">Transactions</h4>
+                            <div className="cat-tx-list">
+                                {catModalData?.transactions.map((tx, idx) => (
+                                    <div key={idx} className="cat-tx-item">
+                                        <div className="cat-tx-info">
+                                            <p className="cat-tx-desc">{tx.desc}</p>
+                                            <p className="cat-tx-date">{tx.date}</p>
+                                        </div>
+                                        <span className="cat-tx-amount">-₹{tx.amount.toLocaleString()}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <button className="cat-modal-close" onClick={() => setShowCatModal(false)}>Close</button>
                     </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

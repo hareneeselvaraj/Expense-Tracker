@@ -6,25 +6,28 @@ import ConfirmModal from '../components/ConfirmModal';
 
 /* ── palette per type ── */
 const TYPE_CONFIG = {
-    Income:     { gradient: 'linear-gradient(135deg, #10b981, #06b6d4)', icon: <FiTrendingUp />, light: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.25)', text: '#10b981' },
-    Expense:    { gradient: 'linear-gradient(135deg, #ef4444, #f59e0b)', icon: <FiDollarSign />, light: 'rgba(239,68,68,0.12)',  border: 'rgba(239,68,68,0.25)',  text: '#ef4444' },
-    Investment: { gradient: 'linear-gradient(135deg, #6366f1, #a855f7)', icon: <FiBarChart2 />,  light: 'rgba(99,102,241,0.12)', border: 'rgba(99,102,241,0.25)', text: '#6366f1' },
+    Income: { gradient: 'linear-gradient(135deg, #10b981, #06b6d4)', icon: <FiTrendingUp />, light: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.25)', text: '#10b981' },
+    Expense: { gradient: 'linear-gradient(135deg, #ef4444, #f59e0b)', icon: <FiDollarSign />, light: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.25)', text: '#ef4444' },
+    Investment: { gradient: 'linear-gradient(135deg, #6366f1, #a855f7)', icon: <FiBarChart2 />, light: 'rgba(99,102,241,0.12)', border: 'rgba(99,102,241,0.25)', text: '#6366f1' },
 };
 
 const DOT_COLORS = {
-    Income:     ['#10b981','#06b6d4','#3b82f6','#8b5cf6','#14b8a6','#6366f1'],
-    Expense:    ['#ef4444','#f59e0b','#8b5cf6','#64748b','#ec4899','#14b8a6'],
-    Investment: ['#6366f1','#a855f7','#f59e0b','#10b981','#3b82f6','#ec4899'],
+    Income: ['#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#14b8a6', '#6366f1'],
+    Expense: ['#ef4444', '#f59e0b', '#8b5cf6', '#64748b', '#ec4899', '#14b8a6'],
+    Investment: ['#6366f1', '#a855f7', '#f59e0b', '#10b981', '#3b82f6', '#ec4899'],
 };
 
 const SECTION_ORDER = ['Income', 'Expense', 'Investment'];
 
-const CATEGORY_ICONS = ['🏠','🍔','✈️','🎬','📚','🚗','💊','💪','🛍️','🎮','💡','🏋️','🎵','👗','🌿','🐾'];
+const CATEGORY_ICONS = [
+    '🏠', '🍔', '✈️', '🎬', '📚', '🚗', '💊', '💪', '🛍️', '🎮', '💡', '🏋️', '🎵', '👗', '🌿', '🐾',
+    '🏨', '⛱️', '🏦', '💰', '💳', '💎', '⛽', '🛠️', '🔩', '⛱️'
+];
 
 export default function Categories() {
     const [categories, setCategories] = useState([]);
-    const [showForm, setShowForm]     = useState(false);
-    const [loading, setLoading]       = useState(true);
+    const [showForm, setShowForm] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const toast = useToast();
     const [form, setForm] = useState({ name: '', type: 'Expense', icon: null });
@@ -34,7 +37,7 @@ export default function Categories() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        await api.post('/category', { name: form.name, type: form.type });
+        await api.post('/category', { name: form.name, type: form.type, icon: form.icon });
         setForm({ name: '', type: 'Expense', icon: null });
         setShowForm(false);
         toast.success('Category created!');
@@ -186,8 +189,8 @@ export default function Categories() {
                                 const initials = c.name.slice(0, 2).toUpperCase();
                                 return (
                                     <div key={c.id} className="cat-card" style={{ '--cat-color': color, transition: 'transform 0.2sease, box-shadow 0.2sease', cursor: 'pointer' }}
-                                         onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 6px 16px ${color}33`; }}
-                                         onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 6px 16px ${color}33`; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
                                     >
                                         <div className="cat-card-avatar" style={{ background: color + '22', border: `1px solid ${color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                             {c.icon ? (

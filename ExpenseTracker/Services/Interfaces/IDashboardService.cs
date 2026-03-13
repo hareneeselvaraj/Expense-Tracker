@@ -4,5 +4,5 @@ namespace ExpenseTracker.Services.Interfaces;
 
 public interface IDashboardService
 {
-    Task<DashboardResponseDto> GetDashboardAsync(Guid userId);
+    Task<DashboardResponseDto> GetDashboardAsync(Guid userId, int? month = null, int? year = null);
 }

@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
     public DbSet<Investment> Investments => Set<Investment>();
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
     public DbSet<FuelEntry> FuelEntries => Set<FuelEntry>();
+    public DbSet<Reminder> Reminders => Set<Reminder>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -148,6 +149,15 @@ public class AppDbContext : DbContext
             e.HasOne(f => f.Vehicle)
              .WithMany(v => v.FuelEntries)
              .HasForeignKey(f => f.VehicleId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── Reminder ──
+        modelBuilder.Entity<Reminder>(e =>
+        {
+            e.HasOne(r => r.User)
+             .WithMany()
+             .HasForeignKey(r => r.UserId)
              .OnDelete(DeleteBehavior.Cascade);
         });
     }
