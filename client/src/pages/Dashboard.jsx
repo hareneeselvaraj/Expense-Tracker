@@ -128,7 +128,7 @@ export default function Dashboard() {
     const { isDark } = useTheme();
     const [chartType, setChartType] = useState('line');
     const [balView, setBalView] = useState('pie');
-    const [month, setMonth] = useState('March');
+    const [month, setMonth] = useState('Mar');
     const [year, setYear] = useState('2026');
     const [catType, setCatType] = useState('Expense');
     const [allCategories, setAllCategories] = useState([]);
@@ -138,6 +138,8 @@ export default function Dashboard() {
     const [showCatModal, setShowCatModal] = useState(false);
     const [catModalTransactions, setCatModalTransactions] = useState([]);
     const [catModalLoading, setCatModalLoading] = useState(false);
+    const [catPage, setCatPage] = useState(0);
+    const CATS_PER_PAGE = 6;
 
     useEffect(() => {
         const monthMap = { 'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12 };
@@ -172,15 +174,20 @@ export default function Dashboard() {
         if (showCatModal && selectedCat) {
             const monthMap = { 'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12 };
             const mIdx = monthMap[month] - 1; // Date constructor months are 0-indexed
-            const startDate = new Date(year, mIdx, 1, 0, 0, 0, 0).toISOString();
-            const endDate = new Date(year, mIdx + 1, 0, 23, 59, 59, 999).toISOString(); 
+            const startDate = (year && !isNaN(mIdx)) ? new Date(year, mIdx, 1, 0, 0, 0, 0) : null;
+            const endDate = (year && !isNaN(mIdx)) ? new Date(year, mIdx + 1, 0, 23, 59, 59, 999) : null; 
             
+            if (!startDate || isNaN(startDate.getTime())) {
+                setCatModalLoading(false);
+                return;
+            }
+
             setCatModalLoading(true);
             api.get('/transaction', {
                 params: {
                     categoryId: selectedCat.id,
-                    startDate,
-                    endDate
+                    startDate: startDate.toISOString(),
+                    endDate: endDate.toISOString()
                 }
             }).then(res => {
                 setCatModalTransactions(res.data);
@@ -190,12 +197,12 @@ export default function Dashboard() {
     }, [showCatModal, selectedCat, month, year]);
 
     const catModalData = selectedCat ? {
-        transactions: catModalTransactions.map(t => ({
-            date: new Date(t.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
-            desc: t.description || 'Spending',
-            amount: t.amount
+        transactions: (catModalTransactions || []).map(t => ({
+            date: t.date ? new Date(t.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '---',
+            desc: t.description || t.title || 'Spending',
+            amount: t.amount || 0
         })),
-        total: catModalTransactions.reduce((acc, curr) => acc + curr.amount, 0)
+        total: (catModalTransactions || []).reduce((acc, curr) => acc + (curr.amount || 0), 0)
     } : null;
 
     if (loading) return <div className="page-loader">Loading dashboard…</div>;
@@ -377,36 +384,75 @@ export default function Dashboard() {
                         <div className="dash-chart-toggle">
                             <button
                                 className={`dash-toggle-btn ${catType === 'Expense' ? 'active-toggle' : ''}`}
-                                onClick={() => setCatType('Expense')}
+                                onClick={() => { setCatType('Expense'); setCatPage(0); }}
                             >Expenses</button>
                             <button
                                 className={`dash-toggle-btn ${catType === 'Income' ? 'active-toggle' : ''}`}
-                                onClick={() => setCatType('Income')}
+                                onClick={() => { setCatType('Income'); setCatPage(0); }}
                             >Incomes</button>
                         </div>
                     </div>
                     <div className="category-treemap">
-                        {currentCategories.filter(c => c.categoryType === catType).length === 0 ? (
-                            <p style={{ textAlign: 'center', opacity: 0.5, padding: '20px', gridColumn: '1 / -1' }}>
-                                No categories for this period
-                            </p>
-                        ) : (
-                            currentCategories.filter(c => c.categoryType === catType).map((t) => (
-                                <div key={t.label}
-                                    className="cat-tile"
-                                    onClick={() => {
-                                        setSelectedCat(t);
-                                        setShowCatModal(true);
-                                    }}
-                                    style={{ background: `linear-gradient(135deg, ${t.color}20, ${t.color}05)`, borderColor: `${t.color}40`, backdropFilter: 'blur(8px)' }}>
-                                    <span className="cat-tile-icon">{t.icon}</span>
-                                    <div className="cat-tile-info">
-                                        <span className="cat-tile-label">{t.label}</span>
-                                        <span className="cat-tile-pct" style={{ color: t.color }}>{t.share}%</span>
-                                    </div>
-                                </div>
-                            ))
-                        )}
+                        {(() => {
+                            const filtered = currentCategories.filter(c => c.categoryType === catType);
+                            const totalPages = Math.ceil(filtered.length / CATS_PER_PAGE);
+                            const displayCats = filtered.slice(catPage * CATS_PER_PAGE, (catPage + 1) * CATS_PER_PAGE);
+
+                            if (filtered.length === 0) {
+                                return (
+                                    <p style={{ textAlign: 'center', opacity: 0.5, padding: '20px', gridColumn: '1 / -1' }}>
+                                        No categories for this period
+                                    </p>
+                                );
+                            }
+
+                            return (
+                                <>
+                                    {displayCats.map((t) => (
+                                        <div key={t.label}
+                                            className="cat-tile"
+                                            onClick={() => {
+                                                setSelectedCat(t);
+                                                setShowCatModal(true);
+                                            }}
+                                            style={{ background: `linear-gradient(135deg, ${t.color}20, ${t.color}05)`, borderColor: `${t.color}40`, backdropFilter: 'blur(8px)' }}>
+                                            <span className="cat-tile-icon">{t.icon}</span>
+                                            <div className="cat-tile-info">
+                                                <span className="cat-tile-label">{t.label}</span>
+                                                <span className="cat-tile-pct" style={{ color: t.color }}>{t.share}%</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {totalPages > 1 && (
+                                        <div className="cat-pagination">
+                                            <button 
+                                                className="cat-nav-btn" 
+                                                disabled={catPage === 0}
+                                                onClick={() => setCatPage(prev => Math.max(0, prev - 1))}
+                                            >
+                                                <FiChevronLeft />
+                                            </button>
+                                            <div className="cat-dots">
+                                                {[...Array(totalPages)].map((_, i) => (
+                                                    <span 
+                                                        key={i} 
+                                                        className={`cat-dot ${catPage === i ? 'active' : ''}`}
+                                                        onClick={() => setCatPage(i)}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <button 
+                                                className="cat-nav-btn" 
+                                                disabled={catPage === totalPages - 1}
+                                                onClick={() => setCatPage(prev => Math.min(totalPages - 1, prev + 1))}
+                                            >
+                                                <FiChevronRight />
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
+                            );
+                        })()}
                     </div>
                 </div>
 
@@ -594,7 +640,7 @@ export default function Dashboard() {
                                 </div>
                             </div>
                             <div className="cat-header-right">
-                                <span className="cat-modal-total">₹{catModalData?.total.toLocaleString()}</span>
+                                <span className="cat-modal-total">₹{catModalData?.total?.toLocaleString()}</span>
                                 <p className="cat-modal-total-label">Total Spent</p>
                             </div>
                         </div>

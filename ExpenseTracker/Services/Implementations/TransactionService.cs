@@ -250,6 +250,7 @@ public class TransactionService : ITransactionService
         AccountName = t.Account?.Name ?? string.Empty,
         CategoryId = t.CategoryId,
         CategoryName = t.Category?.Name ?? string.Empty,
+        CategoryIcon = t.Category?.Icon,
         Amount = t.Amount,
         Type = t.Type.ToString(),
         OnlineOffline = t.OnlineOffline.ToString(),

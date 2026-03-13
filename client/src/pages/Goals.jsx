@@ -116,6 +116,8 @@ export default function Goals() {
     const totalCurrent = goals.reduce((a, g) => a + g.current, 0);
     const totalRemaining = Math.max(0, goals.reduce((a, g) => a + (g.target - g.current), 0));
 
+    const completedGoalsNum = goals.filter(g => g.current >= g.target).length;
+
     const handleAddClick = () => {
         setEditingGoal(null);
         setFormData({
@@ -200,6 +202,12 @@ export default function Goals() {
                     <FiClock className="goal-stat-bg-icon" />
                     <p className="goal-stat-label">Remaining</p>
                     <p className="goal-stat-value">₹{(totalRemaining / 1000).toFixed(0)}k</p>
+                </div>
+
+                <div className="goal-stat-card variant-cyan" style={{ animationDelay: '0.4s' }}>
+                    <FiAward className="goal-stat-bg-icon" />
+                    <p className="goal-stat-label">Goals Completed</p>
+                    <p className="goal-stat-value">{completedGoalsNum}</p>
                 </div>
             </div>
 

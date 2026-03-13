@@ -146,7 +146,7 @@ export default function UpcomingReminders() {
                                 </div>
                                 <div className="reminder-meta">
                                     <span className="reminder-meta-item"><FiCalendar /> {dateLabel}</span>
-                                    {r.amount && <span className="reminder-meta-item"><span className="reminder-rupee-icon">₹</span> {r.amount.toLocaleString()}</span>}
+                                    {r.amount && <span className="reminder-amount-badge"><span className="rupee-sym">₹</span> {r.amount.toLocaleString('en-IN')}</span>}
                                     <span className="reminder-urgency-chip" style={{ color: urgencyColor, background: `${urgencyColor}20` }}>
                                         {urgencyLabel}
                                     </span>

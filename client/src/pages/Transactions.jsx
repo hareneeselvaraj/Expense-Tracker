@@ -217,7 +217,19 @@ export default function Transactions() {
                             </div>
                             <div className="form-group">
                                 <label>Category</label>
-                                <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} required>
+                                <select 
+                                    value={form.categoryId} 
+                                    onChange={(e) => {
+                                        const catId = e.target.value;
+                                        const selectedCat = categories.find(c => c.id === catId);
+                                        setForm({ 
+                                            ...form, 
+                                            categoryId: catId,
+                                            type: selectedCat ? selectedCat.type : form.type
+                                        });
+                                    }} 
+                                    required
+                                >
                                     <option value="">Select Category</option>
                                     {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
@@ -228,7 +240,15 @@ export default function Transactions() {
                             </div>
                             <div className="form-group">
                                 <label>Type</label>
-                                <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+                                <select 
+                                    value={form.type} 
+                                    disabled 
+                                    style={{ 
+                                        cursor: 'not-allowed', 
+                                        opacity: 0.8,
+                                        background: 'var(--bg-input)'
+                                    }}
+                                >
                                     <option value="Income">Income</option>
                                     <option value="Expense">Expense</option>
                                     <option value="Transfer">Transfer</option>
