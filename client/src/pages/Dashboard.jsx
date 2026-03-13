@@ -285,9 +285,11 @@ export default function Dashboard() {
     const income = data?.totalIncome ?? 0;
     const expense = data?.totalExpense ?? 0;
     const balance = data?.currentBalance ?? 0;
-    const total = income || 1;
-    const balPct = Math.min(100, Math.round(Math.abs(balance / total) * 100)) || 72;
-    const expPct = Math.min(100, Math.round((expense / total) * 100)) || 28;
+    const total = income > 0 ? income : (expense > 0 ? expense + Math.abs(balance) : 0);
+    const hasData = total > 0;
+    const balPct  = hasData ? Math.min(100, Math.round(Math.abs(balance / total) * 100)) : 0;
+    const expPct  = hasData ? Math.min(100, Math.round((expense / total) * 100)) : 0;
+    const incPct  = hasData ? Math.min(100, Math.round((income / total) * 100)) : 0;
 
     /* chart.js color helpers */
     const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
@@ -451,7 +453,7 @@ export default function Dashboard() {
                         <p className="dash-stat-sub">{data?.incomeCount ?? 0} Transactions</p>
                         <p className="dash-stat-amount">+₹{fmt(income)}</p>
                     </div>
-                    <CircleRing pct={100} color="#10b981" size={80} stroke={6} />
+                    <CircleRing pct={incPct} color="#10b981" size={80} stroke={6} />
                 </div>
 
                 {/* Relocated Health Card at the end of Row 2 */}
@@ -764,78 +766,145 @@ export default function Dashboard() {
                 </div>
             )}
 
-            {/* ── Health Formula Customization Modal ── */}
+            {/* ── Health Formula Customization Modal (Premium) ── */}
             {showHealthModal && (
-                <div className="goal-modal-overlay" onClick={() => setShowHealthModal(false)}>
-                    <div className="goal-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '420px' }}>
-                        <div className="goal-modal-header" style={{ borderBottomColor: 'rgba(255,255,255,0.05)' }}>
-                            <div>
-                                <h2 className="goal-modal-title">Customize Health Score</h2>
-                                <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '4px' }}>
-                                    Adjust target values for calculation
-                                </p>
+                <div className="health-modal-overlay" onClick={() => setShowHealthModal(false)}>
+                    <div className="health-modal-premium" onClick={e => e.stopPropagation()}>
+                        {/* Header */}
+                        <div className="health-modal-header">
+                            <div className="health-modal-header-icon">
+                                <FiShield />
                             </div>
-                            <button className="goal-modal-close-btn" onClick={() => setShowHealthModal(false)}>
+                            <div className="health-modal-header-text">
+                                <h2>Customize Health Score</h2>
+                                <p>Fine-tune your financial wellness targets</p>
+                            </div>
+                            <button className="health-modal-close" onClick={() => setShowHealthModal(false)}>
                                 <FiPlus style={{ transform: 'rotate(45deg)' }} />
                             </button>
                         </div>
-                        <div className="goal-modal-body" style={{ padding: '24px' }}>
-                            <div className="form-group" style={{ marginBottom: '20px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                    <label className="form-label" style={{ margin: 0 }}>Target Savings Rate (%)</label>
-                                    <span style={{ color: 'var(--primary)', fontWeight: 800 }}>{tempThresholds.targetSavingsRate}%</span>
+
+                        {/* Live Score Preview */}
+                        <div className="health-modal-score-preview">
+                            <div className="health-modal-score-ring">
+                                <svg width="72" height="72" viewBox="0 0 72 72">
+                                    <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6"/>
+                                    <circle cx="36" cy="36" r="30" fill="none" stroke="url(#hms-grad)" strokeWidth="6"
+                                        strokeDasharray={`${2 * Math.PI * 30}`}
+                                        strokeDashoffset={`${2 * Math.PI * 30 * (1 - Math.min(100, (healthStats?.totalScore ?? 0)) / 100)}`}
+                                        strokeLinecap="round"
+                                        transform="rotate(-90 36 36)"
+                                        style={{ transition: 'stroke-dashoffset 0.6s ease' }}
+                                    />
+                                    <defs>
+                                        <linearGradient id="hms-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stopColor="#818cf8"/>
+                                            <stop offset="100%" stopColor="#c084fc"/>
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                                <span className="health-modal-score-num">{healthStats?.totalScore ?? 0}</span>
+                            </div>
+                            <div className="health-modal-score-meta">
+                                <span className="health-modal-score-label">Current Health Score</span>
+                                <span className="health-modal-score-status" style={{ color: healthStats?.config?.color ?? '#818cf8' }}>
+                                    {healthStats?.config?.icon} {healthStats?.config?.label ?? 'Calculating...'}
+                                </span>
+                                <p className="health-modal-score-hint">Adjust sliders to update your targets</p>
+                            </div>
+                        </div>
+
+                        {/* Sliders */}
+                        <div className="health-modal-sliders">
+                            {/* Savings Rate */}
+                            <div className="health-slider-group">
+                                <div className="health-slider-top">
+                                    <div className="health-slider-label-wrap">
+                                        <span className="health-slider-icon" style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}>💰</span>
+                                        <span className="health-slider-label">Target Savings Rate</span>
+                                    </div>
+                                    <span className="health-slider-value" style={{ color: '#818cf8' }}>{tempThresholds.targetSavingsRate}%</span>
                                 </div>
-                                <input 
-                                    type="range" min="5" max="50" step="5"
+                                <input type="range" min="5" max="50" step="5"
                                     value={tempThresholds.targetSavingsRate}
                                     onChange={(e) => setTempThresholds(p => ({ ...p, targetSavingsRate: parseInt(e.target.value) }))}
-                                    style={{ width: '100%', accentColor: 'var(--primary)' }}
+                                    className="health-range-input"
+                                    style={{ background: `linear-gradient(to right, #6366f1 0%, #818cf8 ${((tempThresholds.targetSavingsRate - 5) / 45) * 100}%, rgba(255,255,255,0.08) ${((tempThresholds.targetSavingsRate - 5) / 45) * 100}%, rgba(255,255,255,0.08) 100%)` }}
                                 />
+                                <div className="health-slider-ticks">
+                                    <span>5%</span><span>25%</span><span>50%</span>
+                                </div>
                             </div>
 
-                            <div className="form-group" style={{ marginBottom: '20px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                    <label className="form-label" style={{ margin: 0 }}>Emergency Fund (Months)</label>
-                                    <span style={{ color: 'var(--primary)', fontWeight: 800 }}>{tempThresholds.targetEFMonths}m</span>
+                            {/* Emergency Fund */}
+                            <div className="health-slider-group">
+                                <div className="health-slider-top">
+                                    <div className="health-slider-label-wrap">
+                                        <span className="health-slider-icon" style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981' }}>🛡️</span>
+                                        <span className="health-slider-label">Emergency Fund Target</span>
+                                    </div>
+                                    <span className="health-slider-value" style={{ color: '#10b981' }}>{tempThresholds.targetEFMonths}mo</span>
                                 </div>
-                                <input 
-                                    type="range" min="1" max="12" step="1"
+                                <input type="range" min="1" max="12" step="1"
                                     value={tempThresholds.targetEFMonths}
                                     onChange={(e) => setTempThresholds(p => ({ ...p, targetEFMonths: parseInt(e.target.value) }))}
-                                    style={{ width: '100%', accentColor: 'var(--primary)' }}
+                                    className="health-range-input"
+                                    style={{ background: `linear-gradient(to right, #059669 0%, #10b981 ${((tempThresholds.targetEFMonths - 1) / 11) * 100}%, rgba(255,255,255,0.08) ${((tempThresholds.targetEFMonths - 1) / 11) * 100}%, rgba(255,255,255,0.08) 100%)` }}
                                 />
+                                <div className="health-slider-ticks">
+                                    <span>1mo</span><span>6mo</span><span>12mo</span>
+                                </div>
                             </div>
 
-                            <div className="form-group" style={{ marginBottom: '20px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                    <label className="form-label" style={{ margin: 0 }}>Target Investment Ratio (%)</label>
-                                    <span style={{ color: 'var(--primary)', fontWeight: 800 }}>{tempThresholds.targetInvRatio}%</span>
+                            {/* Investment Ratio */}
+                            <div className="health-slider-group">
+                                <div className="health-slider-top">
+                                    <div className="health-slider-label-wrap">
+                                        <span className="health-slider-icon" style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b' }}>📈</span>
+                                        <span className="health-slider-label">Target Investment Ratio</span>
+                                    </div>
+                                    <span className="health-slider-value" style={{ color: '#f59e0b' }}>{tempThresholds.targetInvRatio}%</span>
                                 </div>
-                                <input 
-                                    type="range" min="5" max="30" step="5"
+                                <input type="range" min="5" max="30" step="5"
                                     value={tempThresholds.targetInvRatio}
                                     onChange={(e) => setTempThresholds(p => ({ ...p, targetInvRatio: parseInt(e.target.value) }))}
-                                    style={{ width: '100%', accentColor: 'var(--primary)' }}
+                                    className="health-range-input"
+                                    style={{ background: `linear-gradient(to right, #d97706 0%, #f59e0b ${((tempThresholds.targetInvRatio - 5) / 25) * 100}%, rgba(255,255,255,0.08) ${((tempThresholds.targetInvRatio - 5) / 25) * 100}%, rgba(255,255,255,0.08) 100%)` }}
                                 />
+                                <div className="health-slider-ticks">
+                                    <span>5%</span><span>15%</span><span>30%</span>
+                                </div>
                             </div>
 
-                            <div className="form-group" style={{ marginBottom: '32px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                    <label className="form-label" style={{ margin: 0 }}>"Excellent" Threshold</label>
-                                    <span style={{ color: '#10b981', fontWeight: 800 }}>{tempThresholds.caution} pts</span>
+                            {/* Excellent Threshold */}
+                            <div className="health-slider-group">
+                                <div className="health-slider-top">
+                                    <div className="health-slider-label-wrap">
+                                        <span className="health-slider-icon" style={{ background: 'rgba(236,72,153,0.15)', color: '#ec4899' }}>⭐</span>
+                                        <span className="health-slider-label">"Excellent" Threshold</span>
+                                    </div>
+                                    <span className="health-slider-value" style={{ color: '#ec4899' }}>{tempThresholds.caution} pts</span>
                                 </div>
-                                <input 
-                                    type="range" min="10" max="90" step="5"
+                                <input type="range" min="10" max="90" step="5"
                                     value={tempThresholds.caution}
                                     onChange={(e) => setTempThresholds(p => ({ ...p, caution: parseInt(e.target.value) }))}
-                                    style={{ width: '100%', accentColor: '#10b981' }}
+                                    className="health-range-input"
+                                    style={{ background: `linear-gradient(to right, #be185d 0%, #ec4899 ${((tempThresholds.caution - 10) / 80) * 100}%, rgba(255,255,255,0.08) ${((tempThresholds.caution - 10) / 80) * 100}%, rgba(255,255,255,0.08) 100%)` }}
                                 />
+                                <div className="health-slider-ticks">
+                                    <span>10</span><span>50</span><span>90</span>
+                                </div>
                             </div>
+                        </div>
 
-                            <div className="modal-actions" style={{ display: 'flex', gap: '12px' }}>
-                                <button className="btn-pill" style={{ flex: 1, background: 'rgba(255,255,255,0.05)', color: '#fff' }} onClick={() => setShowHealthModal(false)}>Cancel</button>
-                                <button className="btn-pill" style={{ flex: 1, background: 'linear-gradient(135deg, #6366f1, #a855f7)', color: '#fff' }} onClick={handleSaveThresholds}>Save Changes</button>
-                            </div>
+                        {/* Footer */}
+                        <div className="health-modal-footer">
+                            <button className="health-modal-btn health-modal-btn-cancel" onClick={() => setShowHealthModal(false)}>
+                                Cancel
+                            </button>
+                            <button className="health-modal-btn health-modal-btn-save" onClick={handleSaveThresholds}>
+                                <FiCheckCircle /> Save Changes
+                            </button>
                         </div>
                     </div>
                 </div>

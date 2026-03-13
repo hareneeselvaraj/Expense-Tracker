@@ -88,7 +88,7 @@
   --chart-legend: #5a6078;
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Lavender Theme Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* Lavender Theme */
 [data-theme="lavender"] {
   --bg: #f5eeff;
   /* Very Light and subtle Lavender */
@@ -10350,4 +10350,304 @@ tr:hover td {
 [data-theme="light"] .month-quick-summary {
   background: #f1f5f9;
   border-color: #e2e8f0;
+}
+
+/* ══════════════════════════════════════════════════════════
+   PREMIUM HEALTH SCORE MODAL
+══════════════════════════════════════════════════════════ */
+
+.health-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(12px);
+  animation: fadeIn 0.25s ease;
+}
+
+.health-modal-premium {
+  width: 100%;
+  max-width: 460px;
+  background: linear-gradient(145deg, rgba(20, 24, 37, 0.98), rgba(15, 18, 30, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 28px;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(129, 140, 248, 0.1);
+  animation: modalCardIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.health-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 24px 18px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(192, 132, 252, 0.06));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.health-modal-header-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #6366f1, #818cf8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+}
+
+.health-modal-header-text {
+  flex: 1;
+}
+
+.health-modal-header-text h2 {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0 0 3px;
+}
+
+.health-modal-header-text p {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.health-modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+.health-modal-close:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* ── Score Preview ── */
+.health-modal-score-preview {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 24px;
+  background: rgba(99, 102, 241, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.health-modal-score-ring {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.health-modal-score-num {
+  position: absolute;
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+
+.health-modal-score-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.health-modal-score-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+}
+
+.health-modal-score-status {
+  font-size: 0.92rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.health-modal-score-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin: 0;
+  opacity: 0.7;
+}
+
+/* ── Sliders ── */
+.health-modal-sliders {
+  padding: 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.health-slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.health-slider-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.health-slider-label-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.health-slider-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.health-slider-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.health-slider-value {
+  font-size: 0.88rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Interactive range input with inline gradient fill */
+.health-range-input {
+  width: 100%;
+  height: 6px;
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+  margin: 4px 0;
+  display: block;
+}
+
+.health-range-input::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 6px;
+  background: transparent;
+}
+
+.health-range-input::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.25), 0 3px 10px rgba(0,0,0,0.5);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  margin-top: -7px;
+}
+
+.health-range-input::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.08), 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.health-range-input::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--thumb-color, #818cf8);
+  border: 3px solid rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+.health-slider-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  opacity: 0.5;
+  margin-top: 2px;
+}
+
+/* ── Footer ── */
+.health-modal-footer {
+  display: flex;
+  gap: 10px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.health-modal-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 11px 20px;
+  border-radius: 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.health-modal-btn-cancel {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.health-modal-btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--text);
+}
+
+.health-modal-btn-save {
+  background: linear-gradient(135deg, #6366f1, #818cf8);
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(99, 102, 241, 0.4);
+}
+
+.health-modal-btn-save:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.5);
+}
+
+.health-modal-btn-save:active {
+  transform: translateY(0);
 }
