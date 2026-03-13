@@ -172,24 +172,32 @@ export default function Dashboard() {
         const balance = data.currentBalance || 0;
         const budgetData = data.budgetVsActual || [];
 
-        // 1. Savings Rate (Max 40 pts) - Target 30%
+        // 1. Savings Rate (Max 40 pts)
         const savings = netIncome - expense;
         const savingsRate = netIncome > 0 ? (savings / netIncome) : 0;
         const savingsScore = Math.min(40, Math.max(0, (savingsRate / (healthThresholds.targetSavingsRate / 100)) * 40));
 
-        // 2. Budget Adherence (Max 30 pts)
+        // 2. Budget Adherence (Max 30 pts) — 0 when no budgets (don't award free points)
         const totalBudgets = budgetData.length;
         const underBudget = budgetData.filter(b => (b.actualSpent || 0) <= (b.budgetAmount || 0)).length;
-        const budgetScore = totalBudgets > 0 ? (underBudget / totalBudgets) * 30 : 30;
+        const budgetScore = totalBudgets > 0 ? (underBudget / totalBudgets) * 30 : 0;
 
-        // 3. Emergency Fund (Max 20 pts) - Target 6 Months
-        // Use average monthly expense if available, else current month
-        const monthlyExp = expense || 1; 
+        // 3. Emergency Fund (Max 20 pts)
+        // Use rolling average of prior months when current month has no expense data
+        const monthlySummary = data.monthlySummary || [];
+        const avgFromHistory = monthlySummary.length > 0
+            ? monthlySummary.reduce((sum, m) => sum + (m.expense || 0), 0) / monthlySummary.length
+            : 0;
+        const monthlyExp = expense > 0 ? expense : (avgFromHistory > 0 ? avgFromHistory : Math.max(balance * 0.1, 1));
         const efMonths = balance / monthlyExp;
         const efScore = Math.min(20, Math.max(0, (efMonths / healthThresholds.targetEFMonths) * 20));
 
-        // 4. Investment Ratio (Max 10 pts) - Target 15%
-        const invRatio = netIncome > 0 ? (totalInvestments / netIncome) : 0;
+        // 4. Investment Ratio (Max 10 pts)
+        const avgIncomeFromHistory = monthlySummary.length > 0
+            ? monthlySummary.reduce((sum, m) => sum + (m.income || 0), 0) / monthlySummary.length
+            : 0;
+        const refIncome = netIncome > 0 ? netIncome : avgIncomeFromHistory;
+        const invRatio = refIncome > 0 ? (totalInvestments / refIncome) : 0;
         const invScore = Math.min(10, Math.max(0, (invRatio / (healthThresholds.targetInvRatio / 100)) * 10));
 
         const totalScore = Math.round(savingsScore + budgetScore + efScore + invScore);
@@ -209,6 +217,54 @@ export default function Dashboard() {
             breakdown: { savingsRate, budgetScore, efMonths, invRatio }
         };
     }, [data, loading, healthThresholds, totalInvestments]);
+
+    // Live preview score — recomputes instantly as sliders move (uses tempThresholds)
+    const previewStats = useMemo(() => {
+        if (!data || loading) return null;
+
+        const income = data.totalIncome || 0;
+        const netIncome = Math.max(0, income);
+        const expense = data.totalExpense || 0;
+        const balance = data.currentBalance || 0;
+        const budgetData = data.budgetVsActual || [];
+
+        const savings = netIncome - expense;
+        const savingsRate = netIncome > 0 ? (savings / netIncome) : 0;
+        const savingsScore = Math.min(40, Math.max(0, (savingsRate / (tempThresholds.targetSavingsRate / 100)) * 40));
+
+        const totalBudgets = budgetData.length;
+        const underBudget = budgetData.filter(b => (b.actualSpent || 0) <= (b.budgetAmount || 0)).length;
+        const budgetScore = totalBudgets > 0 ? (underBudget / totalBudgets) * 30 : 0;
+
+        const monthlySummary = data.monthlySummary || [];
+        const avgFromHistory = monthlySummary.length > 0
+            ? monthlySummary.reduce((sum, m) => sum + (m.expense || 0), 0) / monthlySummary.length
+            : 0;
+        const monthlyExp = expense > 0 ? expense : (avgFromHistory > 0 ? avgFromHistory : Math.max(balance * 0.1, 1));
+        const efMonths = balance / monthlyExp;
+        const efScore = Math.min(20, Math.max(0, (efMonths / tempThresholds.targetEFMonths) * 20));
+
+        const avgIncomeFromHistory = monthlySummary.length > 0
+            ? monthlySummary.reduce((sum, m) => sum + (m.income || 0), 0) / monthlySummary.length
+            : 0;
+        const refIncome = netIncome > 0 ? netIncome : avgIncomeFromHistory;
+        const invRatio = refIncome > 0 ? (totalInvestments / refIncome) : 0;
+        const invScore = Math.min(10, Math.max(0, (invRatio / (tempThresholds.targetInvRatio / 100)) * 10));
+
+        const totalScore = Math.round(savingsScore + budgetScore + efScore + invScore);
+
+        let riskValue = 'safe';
+        if (totalScore < tempThresholds.danger) riskValue = 'exceeded';
+        else if (totalScore < tempThresholds.caution) riskValue = 'caution';
+
+        const RISK_CONFIG = {
+            safe: { label: 'Excellent', color: '#10b981', icon: <FiCheckCircle />, bg: 'rgba(16,185,129,0.08)' },
+            caution: { label: 'Good', color: '#f59e0b', icon: <FiAlertTriangle />, bg: 'rgba(245,158,11,0.08)' },
+            exceeded: { label: 'At Risk', color: '#ef4444', icon: <FiAlertCircle />, bg: 'rgba(239,68,68,0.08)' },
+        };
+
+        return { totalScore, risk: riskValue, config: RISK_CONFIG[riskValue] };
+    }, [data, loading, tempThresholds, totalInvestments]);
 
     useEffect(() => {
         const monthMap = { 'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12 };
@@ -791,10 +847,10 @@ export default function Dashboard() {
                                     <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6"/>
                                     <circle cx="36" cy="36" r="30" fill="none" stroke="url(#hms-grad)" strokeWidth="6"
                                         strokeDasharray={`${2 * Math.PI * 30}`}
-                                        strokeDashoffset={`${2 * Math.PI * 30 * (1 - Math.min(100, (healthStats?.totalScore ?? 0)) / 100)}`}
+                                        strokeDashoffset={`${2 * Math.PI * 30 * (1 - Math.min(100, (previewStats?.totalScore ?? 0)) / 100)}`}
                                         strokeLinecap="round"
                                         transform="rotate(-90 36 36)"
-                                        style={{ transition: 'stroke-dashoffset 0.6s ease' }}
+                                        style={{ transition: 'stroke-dashoffset 0.4s ease' }}
                                     />
                                     <defs>
                                         <linearGradient id="hms-grad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -803,14 +859,14 @@ export default function Dashboard() {
                                         </linearGradient>
                                     </defs>
                                 </svg>
-                                <span className="health-modal-score-num">{healthStats?.totalScore ?? 0}</span>
+                                <span className="health-modal-score-num">{previewStats?.totalScore ?? 0}</span>
                             </div>
                             <div className="health-modal-score-meta">
-                                <span className="health-modal-score-label">Current Health Score</span>
-                                <span className="health-modal-score-status" style={{ color: healthStats?.config?.color ?? '#818cf8' }}>
-                                    {healthStats?.config?.icon} {healthStats?.config?.label ?? 'Calculating...'}
+                                <span className="health-modal-score-label">Live Score Preview</span>
+                                <span className="health-modal-score-status" style={{ color: previewStats?.config?.color ?? '#818cf8' }}>
+                                    {previewStats?.config?.icon} {previewStats?.config?.label ?? 'Calculating...'}
                                 </span>
-                                <p className="health-modal-score-hint">Adjust sliders to update your targets</p>
+                                <p className="health-modal-score-hint">Adjust sliders to see live preview</p>
                             </div>
                         </div>
 
@@ -881,7 +937,7 @@ export default function Dashboard() {
                                 <div className="health-slider-top">
                                     <div className="health-slider-label-wrap">
                                         <span className="health-slider-icon" style={{ background: 'rgba(236,72,153,0.15)', color: '#ec4899' }}>⭐</span>
-                                        <span className="health-slider-label">"Excellent" Threshold</span>
+                                        <span className="health-slider-label">"Excellent" Threshold (score ≥ this)</span>
                                     </div>
                                     <span className="health-slider-value" style={{ color: '#ec4899' }}>{tempThresholds.caution} pts</span>
                                 </div>
@@ -893,6 +949,26 @@ export default function Dashboard() {
                                 />
                                 <div className="health-slider-ticks">
                                     <span>10</span><span>50</span><span>90</span>
+                                </div>
+                            </div>
+
+                            {/* At Risk Threshold */}
+                            <div className="health-slider-group">
+                                <div className="health-slider-top">
+                                    <div className="health-slider-label-wrap">
+                                        <span className="health-slider-icon" style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}>⚠️</span>
+                                        <span className="health-slider-label">"At Risk" Threshold (score &lt; this)</span>
+                                    </div>
+                                    <span className="health-slider-value" style={{ color: '#ef4444' }}>{tempThresholds.danger} pts</span>
+                                </div>
+                                <input type="range" min="5" max="70" step="5"
+                                    value={tempThresholds.danger}
+                                    onChange={(e) => setTempThresholds(p => ({ ...p, danger: parseInt(e.target.value) }))}
+                                    className="health-range-input"
+                                    style={{ background: `linear-gradient(to right, #b91c1c 0%, #ef4444 ${((tempThresholds.danger - 5) / 65) * 100}%, rgba(255,255,255,0.08) ${((tempThresholds.danger - 5) / 65) * 100}%, rgba(255,255,255,0.08) 100%)` }}
+                                />
+                                <div className="health-slider-ticks">
+                                    <span>5</span><span>35</span><span>70</span>
                                 </div>
                             </div>
                         </div>
