@@ -5,6 +5,11 @@ using ExpenseTracker.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using ExpenseTracker.Data;
+using MiniExcelLibs;
+using iText.Kernel.Pdf;
+using iText.Kernel.Pdf.Canvas.Parser;
+using iText.Kernel.Pdf.Canvas.Parser.Listener;
+using System.Text.RegularExpressions;
 
 namespace ExpenseTracker.Services.Implementations;
 
@@ -31,6 +36,98 @@ public class TransactionService : ITransactionService
         _emailService = emailService;
         _context = context;
         _logger = logger;
+    }
+
+    public async Task<int> UploadAsync(Guid userId, Guid accountId, Stream fileStream, string fileName)
+    {
+        var extension = Path.GetExtension(fileName).ToLower();
+        var transactionsToCreate = new List<CreateTransactionDto>();
+        
+        // Load all user categories for fuzzy matching
+        var categories = await _categoryRepo.GetByUserIdAsync(userId);
+        var categoriesList = categories.ToList();
+        
+        if (extension == ".xlsx" || extension == ".xls")
+        {
+            var rows = MiniExcel.Query(fileStream).Cast<IDictionary<string, object>>().ToList();
+            foreach (var row in rows)
+            {
+                try {
+                    // Expecting headers: Date, Description, Amount, Type, Category
+                    var dateStr = GetValueOrDefault(row, "Date")?.ToString();
+                    var desc = GetValueOrDefault(row, "Description")?.ToString();
+                    var amountStr = GetValueOrDefault(row, "Amount")?.ToString();
+                    var typeStr = GetValueOrDefault(row, "Type")?.ToString();
+                    var categoryStr = GetValueOrDefault(row, "Category")?.ToString();
+
+                    if (string.IsNullOrEmpty(amountStr)) continue;
+
+                    var amount = decimal.Parse(amountStr);
+                    var date = string.IsNullOrEmpty(dateStr) ? DateTime.UtcNow : DateTime.Parse(dateStr);
+                    var type = Enum.TryParse<TransactionType>(typeStr, true, out var t) ? t : TransactionType.Expense;
+                    
+                    var category = categoriesList.FirstOrDefault(c => c.Name.Equals(categoryStr, StringComparison.OrdinalIgnoreCase)) ?? categoriesList.First();
+
+                    transactionsToCreate.Add(new CreateTransactionDto {
+                        AccountId = accountId,
+                        Amount = Math.Abs(amount),
+                        CategoryId = category.Id,
+                        Type = type,
+                        Date = date,
+                        Description = desc,
+                        OnlineOffline = OnlineOffline.Online,
+                        BankMode = BankMode.Other
+                    });
+                } catch { /* skip invalid rows */ }
+            }
+        }
+        else if (extension == ".pdf")
+        {
+            using var reader = new PdfReader(fileStream);
+            using var pdfDoc = new PdfDocument(reader);
+            var text = "";
+            for (int i = 1; i <= pdfDoc.GetNumberOfPages(); i++)
+            {
+                text += PdfTextExtractor.GetTextFromPage(pdfDoc.GetPage(i), new SimpleTextExtractionStrategy());
+            }
+
+            // Simple regex based parsing for PDF (highly dependent on format)
+            // Looking for lines like: "14/03/2026 rapido bike 130.00"
+            var matches = Regex.Matches(text, @"(\d{1,2}/\d{1,2}/\d{4})\s+(.+?)\s+(\d+\.?\d*)", RegexOptions.Multiline);
+            foreach (Match match in matches)
+            {
+                try {
+                    var date = DateTime.Parse(match.Groups[1].Value);
+                    var desc = match.Groups[2].Value;
+                    var amount = decimal.Parse(match.Groups[3].Value);
+
+                    // Default to expense and first category for PDF auto-parsing
+                    transactionsToCreate.Add(new CreateTransactionDto {
+                        AccountId = accountId,
+                        Amount = amount,
+                        CategoryId = categoriesList.First().Id,
+                        Type = TransactionType.Expense,
+                        Date = date,
+                        Description = desc,
+                        OnlineOffline = OnlineOffline.Online,
+                        BankMode = BankMode.Other
+                    });
+                } catch { }
+            }
+        }
+
+        int count = 0;
+        foreach (var dto in transactionsToCreate)
+        {
+            await CreateAsync(userId, dto);
+            count++;
+        }
+        return count;
+    }
+
+    private static object? GetValueOrDefault(IDictionary<string, object> dict, string key)
+    {
+        return dict.TryGetValue(key, out var val) ? val : null;
     }
 
     public async Task<TransactionResponseDto> CreateAsync(Guid userId, CreateTransactionDto dto)
@@ -81,14 +178,27 @@ public class TransactionService : ITransactionService
                 if (transferAccount == null || transferAccount.UserId != userId)
                     throw new InvalidOperationException("Transfer account not found.");
 
-                account.Balance -= dto.Amount;
-                transferAccount.Balance += dto.Amount;
+                // Debit source
+                if (account.Type == AccountType.CreditCard)
+                    account.Balance += dto.Amount; // Cash advance / withdrawal from credit card
+                else
+                    account.Balance -= dto.Amount;
+
+                // Credit destination
+                if (transferAccount.Type == AccountType.CreditCard)
+                    transferAccount.Balance -= dto.Amount; // Payment to credit card from another account
+                else
+                    transferAccount.Balance += dto.Amount;
+
                 await _accountRepo.UpdateAsync(account);
                 await _accountRepo.UpdateAsync(transferAccount);
                 break;
 
             case TransactionType.Income:
-                account.Balance += dto.Amount;
+                if (account.Type == AccountType.CreditCard)
+                    account.Balance -= dto.Amount; // Payment to credit card
+                else
+                    account.Balance += dto.Amount;
                 await _accountRepo.UpdateAsync(account);
                 break;
 
@@ -97,21 +207,30 @@ public class TransactionService : ITransactionService
                 if (dto.IsAutoDebit && category.Type == CategoryType.Investment)
                 {
                     // Treated as investment — deduct from account but do NOT count as expense
-                    account.Balance -= dto.Amount;
+                    if (account.Type == AccountType.CreditCard)
+                        account.Balance += dto.Amount;
+                    else
+                        account.Balance -= dto.Amount;
                     await _accountRepo.UpdateAsync(account);
                     // Override the transaction type to Investment
                     transaction.Type = TransactionType.Investment;
                 }
                 else
                 {
-                    account.Balance -= dto.Amount;
+                    if (account.Type == AccountType.CreditCard)
+                        account.Balance += dto.Amount;
+                    else
+                        account.Balance -= dto.Amount;
                     await _accountRepo.UpdateAsync(account);
                 }
                 break;
 
             case TransactionType.Investment:
             case TransactionType.Withdraw:
-                account.Balance -= dto.Amount;
+                if (account.Type == AccountType.CreditCard)
+                    account.Balance += dto.Amount;
+                else
+                    account.Balance -= dto.Amount;
                 await _accountRepo.UpdateAsync(account);
                 break;
         }
@@ -269,7 +388,7 @@ public class TransactionService : ITransactionService
 
     private async Task CheckBudgetAndNotifyAsync(Guid userId, Guid categoryId, DateTime transactionDate)
     {
-        var traceFile = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "budget_trace.log");
+        var traceFile = Path.Combine(AppContext.BaseDirectory, "budget_trace.log");
         void Trace(string msg) => File.AppendAllText(traceFile, $"[{DateTime.Now:HH:mm:ss}] {msg}\n");
         try
         {
@@ -298,13 +417,12 @@ public class TransactionService : ITransactionService
             _logger.LogInformation("[BUDGET CHECK] Found budget: id={BudgetId}, amount={Amount}, alertSentAt={AlertSentAt}",
                 budget.Id, budget.Amount, budget.AlertSentAt);
 
-            // Already sent an alert for this budget period — reset so re-alert can fire
+            // Only send if not already sent this month
             if (budget.AlertSentAt.HasValue)
             {
-                _logger.LogInformation("[BUDGET CHECK] AlertSentAt is already set — resetting to allow re-alert.");
-                budget.AlertSentAt = null;
-                _context.Budgets.Update(budget);
-                await _context.SaveChangesAsync();
+                Trace("ALERT ALREADY SENT for this budget period — skipping.");
+                _logger.LogInformation("[BUDGET CHECK] Alert already sent for this period — skipping.");
+                return;
             }
 
             // Calculate total spent — use unspecified kind for SQLite compatibility
@@ -371,7 +489,7 @@ public class TransactionService : ITransactionService
                 userId, categoryId);
             // Write to a debug file so we can easily read the full error
             var errorLog = $"[{DateTime.Now:O}] BUDGET ALERT ERROR for userId={userId}, categoryId={categoryId}\n{ex}\n\n";
-            File.AppendAllText(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "budget_error.log"), errorLog);
+            File.AppendAllText(Path.Combine(AppContext.BaseDirectory, "budget_error.log"), errorLog);
         }
     }
 

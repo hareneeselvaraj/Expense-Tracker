@@ -26,6 +26,9 @@ public interface ITransactionService
     Task<TransactionResponseDto?> UpdateAsync(Guid userId, Guid id, UpdateTransactionDto dto);
     Task<bool> DeleteAsync(Guid userId, Guid id);
 
+    /// <summary>Bulk upload transactions from a stream (Excel/PDF).</summary>
+    Task<int> UploadAsync(Guid userId, Guid accountId, Stream fileStream, string fileName);
+
     /// <summary>Manually trigger a budget check for diagnostics.</summary>
     Task<BudgetCheckResultDto> TestBudgetCheckAsync(Guid userId, Guid categoryId);
 }

@@ -20,6 +20,9 @@ public class Account
     [Column(TypeName = "decimal(18,2)")]
     public decimal Balance { get; set; }
 
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal? CreditLimit { get; set; }
+
     // Navigation
     [ForeignKey(nameof(UserId))]
     public User User { get; set; } = null!;

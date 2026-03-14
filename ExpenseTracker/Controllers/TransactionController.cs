@@ -72,6 +72,23 @@ public class TransactionController : BaseApiController
         return deleted ? NoContent() : NotFound();
     }
 
+    [HttpPost("upload")]
+    public async Task<IActionResult> Upload([FromForm] IFormFile file, [FromForm] Guid accountId)
+    {
+        if (file == null || file.Length == 0) return BadRequest("File is empty");
+        
+        try
+        {
+            using var stream = file.OpenReadStream();
+            var count = await _transactionService.UploadAsync(GetUserId(), accountId, stream, file.FileName);
+            return Ok(new { message = $"Successfully uploaded {count} transactions" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     /// <summary>Diagnostic: trigger a budget check for a category in the current month and return detailed results.</summary>
     [HttpPost("test-budget-alert/{categoryId:guid}")]
     public async Task<IActionResult> TestBudgetAlert(Guid categoryId)

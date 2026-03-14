@@ -30,12 +30,18 @@ public class DashboardService : IDashboardService
         _context = context;
     }
 
-    public async Task<DashboardResponseDto> GetDashboardAsync(Guid userId, int? month = null, int? year = null)
+    public async Task<DashboardResponseDto> GetDashboardAsync(Guid userId, int? month = null, int? year = null, Guid? accountId = null)
     {
         var transactions = (await _transactionRepo.GetByUserIdAsync(userId)).ToList();
         var accounts = (await _accountRepo.GetByUserIdAsync(userId)).ToList();
         var investments = (await _investmentRepo.GetByUserIdAsync(userId)).ToList();
         var budgets = (await _budgetRepo.GetByUserIdAsync(userId)).ToList();
+
+        // ── Filter for Account ──
+        if (accountId.HasValue)
+        {
+            transactions = transactions.Where(t => t.AccountId == accountId.Value || t.TransferAccountId == accountId.Value).ToList();
+        }
 
         // ── Filter for the selected period ──
         var filteredTx = transactions.AsEnumerable();
@@ -65,7 +71,8 @@ public class DashboardService : IDashboardService
                      && (!month.HasValue || (i.DateInvested ?? DateTime.UtcNow).Month == month.Value))
             .Sum(i => i.CurrentValue);
 
-        var currentBalance = accounts.Sum(a => a.Balance);
+        var currentBalance = accounts.Where(a => a.Type != AccountType.CreditCard).Sum(a => a.Balance) 
+                             - accounts.Where(a => a.Type == AccountType.CreditCard).Sum(a => a.Balance);
 
         // ── Monthly Summary (Keep all history for trend charts) ──
         var now = DateTime.UtcNow;

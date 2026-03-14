@@ -21,53 +21,53 @@ export default function Login() {
     };
 
     return (
-        <div className="auth-page-lavender">
-            <div className="auth-card-glass fade-in-up">
+        <div className="auth-page">
+            <div className="auth-card">
                 <div className="auth-header">
-                    <h1 style={{ fontSize: '2.8rem', fontWeight: '800', marginBottom: '30px', color: 'white' }}>Login</h1>
+                    <span className="auth-icon">💰</span>
+                    <h1>Welcome Back</h1>
+                    <p>Log in to your account</p>
                 </div>
                 
-                {error && <div className="alert alert-error" style={{ marginBottom: '20px' }}>{error}</div>}
+                {error && <div className="alert alert-error">{error}</div>}
                 
-                <form onSubmit={handleSubmit} style={{ textAlign: 'left' }}>
-                    <div className="form-group" style={{ marginBottom: '30px' }}>
-                        <label style={{ color: 'white', textTransform: 'none', fontSize: '1.2rem', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Email</label>
+                <form onSubmit={handleSubmit}>
+                    <div className="form-group">
+                        <label>Email</label>
                         <input 
                             type="email" 
-                            className="input-underlined"
                             value={email} 
                             onChange={(e) => setEmail(e.target.value)} 
-                            placeholder="" 
+                            placeholder="you@example.com" 
                             required 
                         />
                     </div>
                     
-                    <div className="form-group" style={{ marginBottom: '30px' }}>
-                        <label style={{ color: 'white', textTransform: 'none', fontSize: '1.2rem', fontWeight: '500', marginBottom: '8px', display: 'block' }}>Password</label>
+                    <div className="form-group">
+                        <label>Password</label>
                         <input 
                             type="password" 
-                            className="input-underlined"
                             value={password} 
                             onChange={(e) => setPassword(e.target.value)} 
-                            placeholder="" 
+                            placeholder="••••••••" 
                             required 
                         />
                     </div>
                     
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', color: 'white', fontSize: '1rem' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                            <input type="checkbox" style={{ accentColor: 'white' }} /> Remember Me
+                    <div className="form-group" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', textTransform: 'none' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', textTransform: 'none' }}>
+                            <input type="checkbox" style={{ width: 'auto', marginBottom: 0 }} /> Remember Me
                         </label>
-                        <Link to="/forgot-password" style={{ color: 'white', fontWeight: '600' }}>Forget Password</Link>
+                        <Link to="/forgot-password" style={{ fontSize: '0.85rem' }}>Forgot Password?</Link>
                     </div>
                     
-                    <button type="submit" className="btn-pill" disabled={loading}>
-                        {loading ? 'Logging in…' : 'Log in'}
+                    <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
+                        {loading ? 'Logging in…' : 'Sign In'}
                     </button>
                 </form>
                 
-                <p className="auth-switch" style={{ marginTop: '30px', color: 'white', fontSize: '1.1rem' }}>
-                    Don't have an account? <Link to="/register" style={{ color: 'white', fontWeight: '700', marginLeft: '5px' }}>Register</Link>
+                <p className="auth-switch">
+                    Don't have an account? <Link to="/register">Sign Up</Link>
                 </p>
             </div>
         </div>

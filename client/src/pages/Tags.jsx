@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../services/api';
-import { FiPlus, FiTrash2, FiTag, FiChevronDown, FiChevronUp, FiFolder, FiActivity, FiLayers, FiDollarSign } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiTag, FiChevronDown, FiChevronUp, FiFolder, FiActivity, FiLayers, FiDollarSign, FiArrowUpRight, FiArrowDownRight } from 'react-icons/fi';
 import { useToast } from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -95,7 +95,7 @@ export default function Tags() {
                 <div className="modal-overlay" onClick={resetForm} style={{ backdropFilter: 'blur(8px)', background: 'rgba(0,0,0,0.6)' }}>
                     <div className="modal-card" 
                         style={{ 
-                            maxWidth: 480, 
+                            maxWidth: 420, 
                             textAlign: 'left', 
                             background: 'var(--bg-card)', 
                             border: '1px solid var(--border)',
@@ -290,8 +290,8 @@ export default function Tags() {
                 <div className="modal-overlay" onClick={() => toggleExpand(null)} style={{ backdropFilter: 'blur(10px)', background: 'rgba(0,0,0,0.7)', zIndex: 1000 }}>
                     <div className="modal-card" 
                         style={{ 
-                            maxWidth: 550, 
-                            width: '100%',
+                            maxWidth: 750, 
+                            width: '90%',
                             textAlign: 'left', 
                             background: 'rgba(23, 23, 33, 0.85)',
                             backdropFilter: 'blur(20px)',
@@ -332,45 +332,68 @@ export default function Tags() {
                                 <button onClick={() => toggleExpand(null)} style={{ background: 'var(--bg-input)', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'var(--transition)' }} className="hover-scale">✕</button>
                             </div>
 
-                            <div className="tag-detail-stats" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6, fontWeight: 700 }}>Total Tracked</span>
-                                    <span style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                        <FiDollarSign size={18} style={{ color: 'var(--primary)' }} />
-                                        {tagDetail.totalSpent?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                    </span>
-                                </div>
-                                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6, fontWeight: 700 }}>Activity Count</span>
-                                    <span style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                        <FiLayers size={18} style={{ color: 'var(--primary)' }} />
-                                        {tagDetail.transactionCount} <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-muted)' }}>Trans.</span>
-                                    </span>
-                                </div>
+                            <div className="tag-detail-stats" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
+                                {(() => {
+                                    const incomeTotal = tagDetail.transactions?.filter(t => t.type === 'Income').reduce((sum, t) => sum + t.amount, 0) || 0;
+                                    const expenseTotal = tagDetail.transactions?.filter(t => t.type !== 'Income').reduce((sum, t) => sum + t.amount, 0) || 0;
+                                    const netBalance = incomeTotal - expenseTotal;
+                                    return (
+                                        <>
+                                            <div style={{ background: 'rgba(16,185,129,0.06)', padding: '24px', borderRadius: 20, border: '1px solid rgba(16,185,129,0.12)' }}>
+                                                <span style={{ display: 'block', fontSize: '0.75rem', color: '#10b981', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, fontWeight: 800 }}>Income</span>
+                                                <span style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    <FiArrowUpRight size={22} style={{ color: '#10b981' }} />
+                                                    ₹{incomeTotal.toLocaleString('en-IN', { minimumFractionDigits: 0 })}
+                                                </span>
+                                            </div>
+                                            <div style={{ background: 'rgba(239,68,68,0.06)', padding: '24px', borderRadius: 20, border: '1px solid rgba(239,68,68,0.12)' }}>
+                                                <span style={{ display: 'block', fontSize: '0.75rem', color: '#ef4444', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, fontWeight: 800 }}>Expense</span>
+                                                <span style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    <FiArrowDownRight size={22} style={{ color: '#ef4444' }} />
+                                                    ₹{expenseTotal.toLocaleString('en-IN', { minimumFractionDigits: 0 })}
+                                                </span>
+                                            </div>
+                                            <div style={{ background: netBalance >= 0 ? 'rgba(16,185,129,0.06)' : 'rgba(239,68,68,0.06)', padding: '24px', borderRadius: 20, border: `1px solid ${netBalance >= 0 ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)'}` }}>
+                                                <span style={{ display: 'block', fontSize: '0.75rem', color: netBalance >= 0 ? '#10b981' : '#ef4444', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, fontWeight: 800 }}>Net Balance</span>
+                                                <span style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    <FiActivity size={22} style={{ color: netBalance >= 0 ? '#10b981' : '#ef4444' }} />
+                                                    ₹{Math.abs(netBalance).toLocaleString('en-IN', { minimumFractionDigits: 0 })}
+                                                </span>
+                                            </div>
+                                        </>
+                                    );
+                                })()}
                             </div>
                         </div>
 
-                        {/* Recent Activity Table */}
+                        {/* Category Breakdown */}
                         <div style={{ padding: '0 32px 32px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                                 <div style={{ width: 4, height: 16, background: 'var(--primary)', borderRadius: 2 }} />
-                                <h3 style={{ fontSize: '0.9rem', fontWeight: 700, margin: 0, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: 0.5 }}>Recent Activity</h3>
+                                <h3 style={{ fontSize: '0.9rem', fontWeight: 700, margin: 0, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: 0.5 }}>Category Breakdown</h3>
                             </div>
 
                             {tagDetail.transactions?.length > 0 ? (
-                                <div className="table-wrapper" style={{ maxHeight: 350, overflowY: 'auto', borderRadius: 18, border: '1px solid var(--border)' }}>
+                                <div style={{ borderRadius: 18, border: '1px solid var(--border)', overflow: 'hidden' }}>
                                     <table className="modern-table" style={{ fontSize: '0.85rem' }}>
-                                        <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+                                        <thead>
                                             <tr>
-                                                <th style={{ background: 'var(--bg-input)' }}>Date</th>
                                                 <th style={{ background: 'var(--bg-input)' }}>Category</th>
-                                                <th style={{ background: 'var(--bg-input)', textAlign: 'right' }}>Amount</th>
+                                                <th style={{ background: 'var(--bg-input)', textAlign: 'right', color: '#10b981' }}>Income</th>
+                                                <th style={{ background: 'var(--bg-input)', textAlign: 'right', color: '#ef4444' }}>Expense</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {tagDetail.transactions.map((tx) => (
-                                                <tr key={tx.id} className="hover-row">
-                                                    <td style={{ color: 'var(--text-muted)', padding: '14px 16px' }}>{new Date(tx.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                                            {Object.entries(
+                                                tagDetail.transactions.reduce((acc, tx) => {
+                                                    const cat = tx.categoryName || 'Uncategorized';
+                                                    if (!acc[cat]) acc[cat] = { income: 0, expense: 0 };
+                                                    if (tx.type === 'Income') acc[cat].income += tx.amount;
+                                                    else acc[cat].expense += tx.amount;
+                                                    return acc;
+                                                }, {})
+                                            ).map(([category, totals]) => (
+                                                <tr key={category} className="hover-row">
                                                     <td style={{ padding: '14px 16px' }}>
                                                         <span style={{ 
                                                             padding: '4px 12px', 
@@ -380,10 +403,13 @@ export default function Tags() {
                                                             fontSize: '0.78rem',
                                                             fontWeight: 600,
                                                             border: '1px solid rgba(255,255,255,0.08)'
-                                                        }}>{tx.categoryName}</span>
+                                                        }}>{category}</span>
                                                     </td>
-                                                    <td style={{ textAlign: 'right', fontWeight: 800, padding: '14px 16px', color: tx.type === 'Income' ? '#10b981' : 'var(--text)' }}>
-                                                        {tx.type === 'Income' ? '+' : ''}₹{tx.amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                    <td style={{ textAlign: 'right', fontWeight: 800, padding: '14px 16px', color: '#10b981' }}>
+                                                        {totals.income > 0 ? `₹${totals.income.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}
+                                                    </td>
+                                                    <td style={{ textAlign: 'right', fontWeight: 800, padding: '14px 16px', color: '#ef4444' }}>
+                                                        {totals.expense > 0 ? `₹${totals.expense.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '—'}
                                                     </td>
                                                 </tr>
                                             ))}

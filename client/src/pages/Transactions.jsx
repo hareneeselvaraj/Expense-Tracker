@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import api from '../services/api';
-import { FiPlus, FiTrash2, FiEdit2, FiDownload, FiFileText, FiGrid } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiEdit2, FiDownload, FiFileText, FiGrid, FiUpload } from 'react-icons/fi';
 import { useToast } from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
 import DownloadCenter from '../components/DownloadCenter';
@@ -33,6 +33,10 @@ export default function Transactions() {
     const [filterAccount, setFilterAccount] = useState('');
     const [filterCategory, setFilterCategory] = useState('');
     const [filterTag, setFilterTag] = useState('');
+    const [showUpload, setShowUpload] = useState(false);
+    const [uploadFile, setUploadFile] = useState(null);
+    const [uploadAccount, setUploadAccount] = useState('');
+    const [uploading, setUploading] = useState(false);
     const toast = useToast();
     const [form, setForm] = useState({
         accountId: '', categoryId: '', amount: '', type: 'Expense',
@@ -227,11 +231,96 @@ export default function Transactions() {
                         </div>
                     </div>
 
-                    <button className="btn btn-primary" onClick={() => { resetForm(); setShowForm(!showForm); }} style={{ height: 42, borderRadius: 14, padding: '0 24px', fontWeight: 700, boxShadow: '0 8px 16px var(--primary-shadow)' }}>
-                        <FiPlus /> New
-                    </button>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                        <button className="btn btn-primary" onClick={() => setShowUpload(true)} style={{ height: 42, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text)', boxShadow: 'none' }}>
+                            <FiUpload /> Upload
+                        </button>
+                        <button className="btn btn-primary" onClick={() => { resetForm(); setShowForm(!showForm); }} style={{ height: 42, borderRadius: 14, padding: '0 24px', fontWeight: 700, boxShadow: '0 8px 16px var(--primary-shadow)' }}>
+                            <FiPlus /> New
+                        </button>
+                    </div>
                 </div>
             </div>
+
+            {showUpload && (
+                <div className="modal-overlay" onClick={() => { setShowUpload(false); setUploadFile(null); setUploadAccount(''); }}>
+                    <div className="modal-card" style={{ maxWidth: 450, padding: 32 }} onClick={e => e.stopPropagation()}>
+                        <h3 className="modal-title">Upload Transactions</h3>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: 24 }}>Upload Excel (.xlsx) or PDF statements.</p>
+                        
+                        <div className="form-group" style={{ marginBottom: 20 }}>
+                            <label>Select Account</label>
+                            <select className="form-input" style={{ background: 'var(--bg-card)' }} value={uploadAccount} onChange={e => setUploadAccount(e.target.value)}>
+                                <option value="">Select an account...</option>
+                                {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                            </select>
+                        </div>
+
+                        <div style={{ 
+                            border: '2px dashed rgba(255,255,255,0.1)', 
+                            borderRadius: 16, 
+                            padding: '32px 16px', 
+                            textAlign: 'center',
+                            background: uploadFile ? 'rgba(99,102,241,0.05)' : 'rgba(255,255,255,0.02)',
+                            transition: 'all 0.3s ease',
+                            cursor: 'pointer',
+                            marginBottom: 24,
+                            position: 'relative'
+                        }} onClick={() => document.getElementById('file-upload').click()}>
+                            <input 
+                                id="file-upload" 
+                                type="file" 
+                                accept=".xlsx,.xls,.pdf" 
+                                style={{ display: 'none' }} 
+                                onChange={e => setUploadFile(e.target.files[0])}
+                            />
+                            {uploadFile ? (
+                                <div>
+                                    <FiFileText style={{ fontSize: '2rem', color: 'var(--primary)', marginBottom: 12 }} />
+                                    <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text)' }}>{uploadFile.name}</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{(uploadFile.size / 1024).toFixed(1)} KB</div>
+                                </div>
+                            ) : (
+                                <div>
+                                    <FiUpload style={{ fontSize: '2rem', color: 'var(--text-muted)', marginBottom: 12 }} />
+                                    <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>Choose a file</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Excel or PDF files supported</div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: 12 }}>
+                            <button className="btn btn-full" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text)' }} onClick={() => { setShowUpload(false); setUploadFile(null); setUploadAccount(''); }}>Cancel</button>
+                            <button 
+                                className="btn btn-primary btn-full" 
+                                disabled={!uploadFile || !uploadAccount || uploading} 
+                                onClick={async () => {
+                                    setUploading(true);
+                                    const formData = new FormData();
+                                    formData.append('file', uploadFile);
+                                    formData.append('accountId', uploadAccount);
+                                    try {
+                                        await api.post('/transaction/upload', formData, {
+                                            headers: { 'Content-Type': 'multipart/form-data' }
+                                        });
+                                        toast.success('Transactions uploaded successfully!');
+                                        setShowUpload(false);
+                                        setUploadFile(null);
+                                        setUploadAccount('');
+                                        loadData();
+                                    } catch (err) {
+                                        toast.error(err.response?.data?.error || 'Upload failed');
+                                    } finally {
+                                        setUploading(false);
+                                    }
+                                }}
+                            >
+                                {uploading ? 'Uploading...' : 'Upload Now'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Quick Actions & Count */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, padding: '0 4px' }}>
@@ -253,7 +342,7 @@ export default function Transactions() {
 
             {showForm && (
                 <div className="modal-overlay" onClick={resetForm}>
-                    <div className="modal-card" style={{ maxWidth: 640, textAlign: 'left', padding: '28px 32px' }} onClick={e => e.stopPropagation()}>
+                    <div className="modal-card" style={{ maxWidth: 520, textAlign: 'left', padding: '24px 28px' }} onClick={e => e.stopPropagation()}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                             <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>{editing ? 'Edit Transaction' : 'New Transaction'}</h3>
                             <button onClick={resetForm} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1.2rem' }}>✕</button>
@@ -293,12 +382,7 @@ export default function Transactions() {
                                 <label>Type</label>
                                 <select
                                     value={form.type}
-                                    disabled
-                                    style={{
-                                        cursor: 'not-allowed',
-                                        opacity: 0.8,
-                                        background: 'var(--bg-input)'
-                                    }}
+                                    onChange={(e) => setForm({ ...form, type: e.target.value })}
                                 >
                                     <option value="Income">Income</option>
                                     <option value="Expense">Expense</option>

@@ -79,9 +79,15 @@ public class EmailService : IEmailService
         try
         {
             using var client = new SmtpClient();
+            _logger.LogInformation("[SMTP] Connecting to {Host}:{Port} with SSL/TLS...", host, port);
             await client.ConnectAsync(host, port, MailKit.Security.SecureSocketOptions.StartTls);
+
+            _logger.LogInformation("[SMTP] Authenticating as {Email}...", senderEmail);
             await client.AuthenticateAsync(senderEmail, appPassword);
+
+            _logger.LogInformation("[SMTP] Sending email message...");
             await client.SendAsync(message);
+
             await client.DisconnectAsync(true);
 
             _logger.LogInformation("Budget alert email sent to {Email} for category {Category}", recipientEmail, categoryName);

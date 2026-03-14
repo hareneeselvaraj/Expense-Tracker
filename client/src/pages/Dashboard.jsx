@@ -270,8 +270,13 @@ export default function Dashboard() {
         const monthMap = { 'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12 };
         const mIdx = monthMap[month];
         
+        const params = { month: mIdx, year };
+        if (account !== 'All Accounts') {
+            params.accountId = account;
+        }
+
         setLoading(true);
-        api.get('/dashboard', { params: { month: mIdx, year } }).then((res) => {
+        api.get('/dashboard', { params }).then((res) => {
             setData(res.data);
             if (res.data?.categoryWiseSpending) {
                 const palette = ['#c084fc', '#818cf8', '#f59e0b', '#ec4899', '#6366f1', '#10b981', '#475569', '#3b82f6', '#ef4444', '#f472b6', '#a78bfa'];
@@ -296,7 +301,7 @@ export default function Dashboard() {
             const total = res.data.reduce((acc, cur) => acc + (cur.investedAmount || 0), 0);
             setTotalInvestments(total);
         }).catch(() => {});
-    }, [month, year]);
+    }, [month, year, account]);
 
 
 
@@ -472,8 +477,8 @@ export default function Dashboard() {
                 <h1 className="dash-title">My Dashboard</h1>
                 <div className="dash-filters">
                     <select className="dash-filter-select" value={account} onChange={e => setAccount(e.target.value)}>
-                        <option>All Accounts</option>
-                        {data?.accounts?.map(a => <option key={a.id}>{a.name}</option>)}
+                        <option value="All Accounts">All Accounts</option>
+                        {data?.accounts?.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                     </select>
                     <select className="dash-filter-select" value={month} onChange={e => setMonth(e.target.value)}>
                         {MONTHS.map(m => <option key={m}>{m}</option>)}

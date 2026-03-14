@@ -21,7 +21,8 @@ public class AccountService : IAccountService
             UserId = userId,
             Name = dto.Name,
             Type = dto.Type,
-            Balance = dto.Balance
+            Balance = dto.Balance,
+            CreditLimit = dto.CreditLimit
         };
 
         await _accountRepo.AddAsync(account);
@@ -49,6 +50,7 @@ public class AccountService : IAccountService
         if (dto.Name != null) account.Name = dto.Name;
         if (dto.Type.HasValue) account.Type = dto.Type.Value;
         if (dto.Balance.HasValue) account.Balance = dto.Balance.Value;
+        if (dto.CreditLimit.HasValue) account.CreditLimit = dto.CreditLimit.Value;
 
         await _accountRepo.UpdateAsync(account);
         return MapToDto(account);
@@ -68,6 +70,7 @@ public class AccountService : IAccountService
         Id = a.Id,
         Name = a.Name,
         Type = a.Type.ToString(),
-        Balance = a.Balance
+        Balance = a.Balance,
+        CreditLimit = a.CreditLimit
     };
 }
