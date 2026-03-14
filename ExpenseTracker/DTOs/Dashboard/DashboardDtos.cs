@@ -22,6 +22,7 @@ public class DashboardResponseDto
     public List<RecentTransactionDto> RecentTransactions { get; set; } = new();
     public List<ReminderDto> UpcomingReminders { get; set; } = new();
     public List<WeeklyTrendDto> WeeklyTrend { get; set; } = new();
+    public List<DailyTrendDto> MonthlyTrend { get; set; } = new();
 }
 
 public class MonthlySummaryDto
@@ -104,6 +105,13 @@ public class RecentTransactionDto
 public class WeeklyTrendDto
 {
     public string Day { get; set; } = string.Empty;
+    public decimal Income { get; set; }
+    public decimal Expense { get; set; }
+}
+
+public class DailyTrendDto
+{
+    public int Day { get; set; }
     public decimal Income { get; set; }
     public decimal Expense { get; set; }
 }

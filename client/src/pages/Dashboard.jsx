@@ -127,10 +127,11 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const { user } = useAuth();
     const { isDark } = useTheme();
-    const [chartType, setChartType] = useState('line');
+    const [chartPeriod, setChartPeriod] = useState('monthly');
+    const [chartWeekIdx, setChartWeekIdx] = useState(0);
     const [balView, setBalView] = useState('pie');
-    const [month, setMonth] = useState('Mar');
-    const [year, setYear] = useState('2026');
+    const [month, setMonth] = useState(MONTHS[new Date().getMonth()]);
+    const [year, setYear] = useState(new Date().getFullYear().toString());
     const [catType, setCatType] = useState('Expense');
     const [allCategories, setAllCategories] = useState([]);
     const [currentCategories, setCurrentCategories] = useState([]);
@@ -146,9 +147,9 @@ export default function Dashboard() {
     // Health Formula State
     const [healthThresholds, setHealthThresholds] = useState(() => {
         const saved = localStorage.getItem('health_formula_v2');
-        return saved ? JSON.parse(saved) : { 
-            targetSavingsRate: 30, 
-            targetEFMonths: 6, 
+        return saved ? JSON.parse(saved) : {
+            targetSavingsRate: 30,
+            targetEFMonths: 6,
             targetInvRatio: 15,
             caution: 60,
             danger: 40 // Lower is worse now as it's a score out of 100
@@ -201,11 +202,11 @@ export default function Dashboard() {
         const invScore = Math.min(10, Math.max(0, (invRatio / (healthThresholds.targetInvRatio / 100)) * 10));
 
         const totalScore = Math.round(savingsScore + budgetScore + efScore + invScore);
-        
+
         let riskValue = 'safe';
         if (totalScore < healthThresholds.danger) riskValue = 'exceeded';
         else if (totalScore < healthThresholds.caution) riskValue = 'caution';
-        
+
         const RISK_CONFIG = {
             safe: { label: 'Excellent', color: '#10b981', icon: <FiCheckCircle />, bg: 'rgba(16,185,129,0.08)' },
             caution: { label: 'Good', color: '#f59e0b', icon: <FiAlertTriangle />, bg: 'rgba(245,158,11,0.08)' },
@@ -269,7 +270,7 @@ export default function Dashboard() {
     useEffect(() => {
         const monthMap = { 'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12 };
         const mIdx = monthMap[month];
-        
+
         const params = { month: mIdx, year };
         if (account !== 'All Accounts') {
             params.accountId = account;
@@ -300,7 +301,7 @@ export default function Dashboard() {
         api.get('/investment').then((res) => {
             const total = res.data.reduce((acc, cur) => acc + (cur.investedAmount || 0), 0);
             setTotalInvestments(total);
-        }).catch(() => {});
+        }).catch(() => { });
     }, [month, year, account]);
 
 
@@ -310,8 +311,8 @@ export default function Dashboard() {
             const monthMap = { 'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12 };
             const mIdx = monthMap[month] - 1; // Date constructor months are 0-indexed
             const startDate = (year && !isNaN(mIdx)) ? new Date(year, mIdx, 1, 0, 0, 0, 0) : null;
-            const endDate = (year && !isNaN(mIdx)) ? new Date(year, mIdx + 1, 0, 23, 59, 59, 999) : null; 
-            
+            const endDate = (year && !isNaN(mIdx)) ? new Date(year, mIdx + 1, 0, 23, 59, 59, 999) : null;
+
             if (!startDate || isNaN(startDate.getTime())) {
                 setCatModalLoading(false);
                 return;
@@ -322,20 +323,25 @@ export default function Dashboard() {
                 params: {
                     categoryId: selectedCat.id,
                     startDate: startDate.toISOString(),
-                    endDate: endDate.toISOString()
+                    endDate: endDate.toISOString(),
+                    type: catType
                 }
             }).then(res => {
-                setCatModalTransactions(res.data);
+                const filtered = (res.data || []).filter(t =>
+                    (t.type || '').toLowerCase() === catType.toLowerCase()
+                );
+                setCatModalTransactions(filtered);
                 setCatModalLoading(false);
             }).catch(() => setCatModalLoading(false));
         }
-    }, [showCatModal, selectedCat, month, year]);
+    }, [showCatModal, selectedCat, month, year, catType]);
 
     const catModalData = selectedCat ? {
         transactions: (catModalTransactions || []).map(t => ({
             date: t.date ? new Date(t.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '---',
             desc: t.description || t.title || 'Spending',
-            amount: t.amount || 0
+            amount: t.amount || 0,
+            type: t.type || catType
         })),
         total: (catModalTransactions || []).reduce((acc, curr) => acc + (curr.amount || 0), 0)
     } : null;
@@ -348,9 +354,9 @@ export default function Dashboard() {
     const balance = data?.currentBalance ?? 0;
     const total = income > 0 ? income : (expense > 0 ? expense + Math.abs(balance) : 0);
     const hasData = total > 0;
-    const balPct  = hasData ? Math.min(100, Math.round(Math.abs(balance / total) * 100)) : 0;
-    const expPct  = hasData ? Math.min(100, Math.round((expense / total) * 100)) : 0;
-    const incPct  = hasData ? Math.min(100, Math.round((income / total) * 100)) : 0;
+    const balPct = hasData ? Math.min(100, Math.round(Math.abs(balance / total) * 100)) : 0;
+    const expPct = hasData ? Math.min(100, Math.round((expense / total) * 100)) : 0;
+    const incPct = hasData ? Math.min(100, Math.round((income / total) * 100)) : 0;
 
     /* chart.js color helpers */
     const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
@@ -366,41 +372,36 @@ export default function Dashboard() {
         bodyFont: { size: 10, family: 'Inter' },
     };
 
-    /* ── week chart data (Dynamic) ── */
-    const trendLabels = data?.weeklyTrend?.map(t => t.day) || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const trendExpense = data?.weeklyTrend?.map(t => t.expense) || [0, 0, 0, 0, 0, 0, 0];
-    const trendIncome = data?.weeklyTrend?.map(t => t.income) || [0, 0, 0, 0, 0, 0, 0];
+    /* ── line chart data (Dynamic) ── */
+    const monthlyTrend = data?.monthlyTrend || [];
+    const weeksInMonth = Math.ceil(monthlyTrend.length / 7) || 1;
+    const validWeekIdx = Math.min(chartWeekIdx, weeksInMonth - 1);
 
-    const weekBarData = {
-        labels: trendLabels,
-        datasets: [
-            {
-                label: 'Expense',
-                data: trendExpense,
-                backgroundColor: 'rgba(239,68,68,0.75)',
-                hoverBackgroundColor: '#ef4444',
-                borderRadius: 5,
-                borderSkipped: false,
-                maxBarThickness: 12,
-            },
-            {
-                label: 'Income',
-                data: trendIncome,
-                backgroundColor: 'rgba(16,185,129,0.75)',
-                hoverBackgroundColor: '#10b981',
-                borderRadius: 5,
-                borderSkipped: false,
-                maxBarThickness: 12,
-            },
-        ],
-    };
+    let activeTrendLabels = [];
+    let activeTrendExpense = [];
+    let activeTrendIncome = [];
+    let chartTitle = 'This Month';
+
+    if (chartPeriod === 'monthly') {
+        activeTrendLabels = monthlyTrend.map(t => t.day);
+        activeTrendExpense = monthlyTrend.map(t => t.expense);
+        activeTrendIncome = monthlyTrend.map(t => t.income);
+        chartTitle = `This Month (${month})`;
+    } else {
+        const startIdx = validWeekIdx * 7;
+        const weekSlice = monthlyTrend.slice(startIdx, startIdx + 7);
+        activeTrendLabels = weekSlice.map(t => `Day ${t.day}`);
+        activeTrendExpense = weekSlice.map(t => t.expense);
+        activeTrendIncome = weekSlice.map(t => t.income);
+        chartTitle = `Week ${validWeekIdx + 1} of ${month}`;
+    }
 
     const weekLineData = {
-        labels: trendLabels,
+        labels: activeTrendLabels,
         datasets: [
             {
                 label: 'Expense',
-                data: trendExpense,
+                data: activeTrendExpense,
                 borderColor: '#ef4444',
                 backgroundColor: 'rgba(239,68,68,0.08)',
                 borderWidth: 2,
@@ -411,7 +412,7 @@ export default function Dashboard() {
             },
             {
                 label: 'Income',
-                data: trendIncome,
+                data: activeTrendIncome,
                 borderColor: '#10b981',
                 backgroundColor: 'rgba(16,185,129,0.08)',
                 borderWidth: 2,
@@ -519,8 +520,8 @@ export default function Dashboard() {
 
                 {/* Relocated Health Card at the end of Row 2 */}
                 {healthStats && (
-                    <div 
-                        className="ai-stat-card ai-stat-health" 
+                    <div
+                        className="ai-stat-card ai-stat-health"
                         style={{ cursor: 'pointer', margin: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', padding: '18px 22px', background: 'rgba(30,35,50,0.6)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.12)' }}
                         onClick={() => {
                             setTempThresholds(healthThresholds);
@@ -587,8 +588,8 @@ export default function Dashboard() {
                                     ))}
                                     {totalPages > 1 && (
                                         <div className="cat-pagination">
-                                            <button 
-                                                className="cat-nav-btn" 
+                                            <button
+                                                className="cat-nav-btn"
                                                 disabled={catPage === 0}
                                                 onClick={() => setCatPage(prev => Math.max(0, prev - 1))}
                                             >
@@ -596,15 +597,15 @@ export default function Dashboard() {
                                             </button>
                                             <div className="cat-dots">
                                                 {[...Array(totalPages)].map((_, i) => (
-                                                    <span 
-                                                        key={i} 
+                                                    <span
+                                                        key={i}
                                                         className={`cat-dot ${catPage === i ? 'active' : ''}`}
                                                         onClick={() => setCatPage(i)}
                                                     />
                                                 ))}
                                             </div>
-                                            <button 
-                                                className="cat-nav-btn" 
+                                            <button
+                                                className="cat-nav-btn"
                                                 disabled={catPage === totalPages - 1}
                                                 onClick={() => setCatPage(prev => Math.min(totalPages - 1, prev + 1))}
                                             >
@@ -623,18 +624,26 @@ export default function Dashboard() {
                     <div className="dash-panel-header">
                         <span className="dash-panel-title"><FiTrendingUp /> Statistics</span>
                         <div className="dash-chart-toggle">
-                            <button className={`dash-toggle-btn ${chartType === 'bar' ? 'active-toggle' : ''}`}
-                                onClick={() => setChartType('bar')}>Bar Graph</button>
-                            <button className={`dash-toggle-btn ${chartType === 'line' ? 'active-toggle' : ''}`}
-                                onClick={() => setChartType('line')}>Line Graph</button>
+                            <button className={`dash-toggle-btn ${chartPeriod === 'monthly' ? 'active-toggle' : ''}`}
+                                onClick={() => setChartPeriod('monthly')}>Monthly</button>
+                            <button className={`dash-toggle-btn ${chartPeriod === 'weekly' ? 'active-toggle' : ''}`}
+                                onClick={() => { setChartPeriod('weekly'); setChartWeekIdx(0); }}>Weekly</button>
                         </div>
                     </div>
-                    <p className="dash-stat-period">This Week</p>
+
+                    <div className="dash-stat-period-flex" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                        <p className="dash-stat-period" style={{ margin: 0 }}>{chartTitle}</p>
+                        {chartPeriod === 'weekly' && weeksInMonth > 1 && (
+                            <div className="chart-week-nav" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <button className="cat-nav-btn" style={{ width: 24, height: 24, padding: 0, minHeight: 24 }} disabled={validWeekIdx === 0} onClick={() => setChartWeekIdx(Math.max(0, validWeekIdx - 1))}><FiChevronLeft size={14} /></button>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>W{validWeekIdx + 1}/{weeksInMonth}</span>
+                                <button className="cat-nav-btn" style={{ width: 24, height: 24, padding: 0, minHeight: 24 }} disabled={validWeekIdx === weeksInMonth - 1} onClick={() => setChartWeekIdx(Math.min(weeksInMonth - 1, validWeekIdx + 1))}><FiChevronRight size={14} /></button>
+                            </div>
+                        )}
+                    </div>
+
                     <div style={{ height: '180px', marginTop: '10px' }}>
-                        {chartType === 'bar'
-                            ? <Bar data={weekBarData} options={weekChartOptions} />
-                            : <Line data={weekLineData} options={weekChartOptions} />
-                        }
+                        <Line data={weekLineData} options={weekChartOptions} />
                     </div>
                     <div className="dash-chart-legend">
                         <span><span className="legend-dot" style={{ background: '#ef4444' }} />Expense</span>
@@ -649,8 +658,8 @@ export default function Dashboard() {
                         <Link to="/reminders" className="dash-see-all"><FiPlus /></Link>
                     </div>
                     <div className="reminder-list">
-                        {/* Prioritize upcoming future reminders, fallback to recent activity if none upcoming */}
-                        {(upcoming.length > 0 ? upcoming : recent).slice(0, 4).map((item, i) => {
+                        {/* Only show actual reminders, not recent history */}
+                        {upcoming.slice(0, 4).map((item, i) => {
                             const palette = ['#6366f1', '#818cf8', '#a5b4fc', '#ec4899'];
                             const displayTitle = item.title || item.description || 'Activity';
                             const displayDate = item.date ? new Date(item.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'Unknown';
@@ -663,9 +672,9 @@ export default function Dashboard() {
                                     </div>
                                     <div className="reminder-row-content">
                                         <span className="reminder-text-bold">{displayTitle}</span>
-                                        <span className="reminder-amt-pill" style={{ 
-                                            background: (item.type === 'Income') ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', 
-                                            color: (item.type === 'Income') ? '#10b981' : '#ef4444' 
+                                        <span className="reminder-amt-pill" style={{
+                                            background: (item.type === 'Income') ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
+                                            color: (item.type === 'Income') ? '#10b981' : '#ef4444'
                                         }}>
                                             {(item.type === 'Income') ? '+' : '-'}₹{Math.abs(amt).toLocaleString('en-IN')}
                                         </span>
@@ -673,7 +682,7 @@ export default function Dashboard() {
                                 </div>
                             );
                         })}
-                        {(upcoming.length === 0 && recent.length === 0) && <p style={{ textAlign: 'center', opacity: 0.5, padding: '20px' }}>No reminders or upcoming items</p>}
+                        {upcoming.length === 0 && <p style={{ textAlign: 'center', opacity: 0.5, padding: '20px' }}>No reminders or upcoming items</p>}
                     </div>
                 </div>
             </div>
@@ -802,8 +811,8 @@ export default function Dashboard() {
                                 </div>
                             </div>
                             <div className="cat-header-right">
-                                <span className="cat-modal-total">₹{catModalData?.total?.toLocaleString()}</span>
-                                <p className="cat-modal-total-label">Total Spent</p>
+                                <span className="cat-modal-total">{catType === 'Income' ? '+' : '-'}₹{catModalData?.total?.toLocaleString()}</span>
+                                <p className="cat-modal-total-label">{catType === 'Income' ? 'Total Earned' : 'Total Spent'}</p>
                             </div>
                         </div>
 
@@ -816,7 +825,9 @@ export default function Dashboard() {
                                             <p className="cat-tx-desc">{tx.desc}</p>
                                             <p className="cat-tx-date">{tx.date}</p>
                                         </div>
-                                        <span className="cat-tx-amount">-₹{tx.amount.toLocaleString()}</span>
+                                        <span className="cat-tx-amount" style={{ color: tx.type === 'Income' ? '#10b981' : '#ef4444' }}>
+                                            {tx.type === 'Income' ? '+' : '-'}₹{Math.abs(tx.amount).toLocaleString()}
+                                        </span>
                                     </div>
                                 ))}
                             </div>
@@ -849,7 +860,7 @@ export default function Dashboard() {
                         <div className="health-modal-score-preview">
                             <div className="health-modal-score-ring">
                                 <svg width="72" height="72" viewBox="0 0 72 72">
-                                    <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6"/>
+                                    <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6" />
                                     <circle cx="36" cy="36" r="30" fill="none" stroke="url(#hms-grad)" strokeWidth="6"
                                         strokeDasharray={`${2 * Math.PI * 30}`}
                                         strokeDashoffset={`${2 * Math.PI * 30 * (1 - Math.min(100, (previewStats?.totalScore ?? 0)) / 100)}`}
@@ -859,8 +870,8 @@ export default function Dashboard() {
                                     />
                                     <defs>
                                         <linearGradient id="hms-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stopColor="#818cf8"/>
-                                            <stop offset="100%" stopColor="#c084fc"/>
+                                            <stop offset="0%" stopColor="#818cf8" />
+                                            <stop offset="100%" stopColor="#c084fc" />
                                         </linearGradient>
                                     </defs>
                                 </svg>

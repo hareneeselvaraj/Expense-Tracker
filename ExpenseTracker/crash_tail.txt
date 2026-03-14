@@ -1,0 +1,14 @@
+[@__userId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT "c"."Id", "c"."Icon", "c"."Name", "c"."Type", "c"."UserId"
+      FROM "Categories" AS "c"
+      WHERE "c"."UserId" = @__userId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__userId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT "i"."Id", "i"."AssetType", "i"."BuyPrice", "i"."Category", "i"."CurrentValue", "i"."DateInvested", "i"."InterestRate", "i"."InvestedAmount", "i"."InvestmentFrequency", "i"."LastProcessedDate", "i"."MonthlyAmount", "i"."MonthsCompleted", "i"."Name", "i"."Notes", "i"."Platform", "i"."ProjectedMaturityValue", "i"."Quantity", "i"."Status", "i"."TenureMonths", "i"."UserId"
+      FROM "Investments" AS "i"
+      WHERE "i"."UserId" = @__userId_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__userId_0='?' (DbType = Guid)], CommandType='Text', CommandTimeout='30']
+      SELECT "i"."Id", "i"."AssetType", "i"."BuyPrice", "i"."Category", "i"."CurrentValue", "i"."DateInvested", "i"."InterestRate", "i"."InvestedAmount", "i"."InvestmentFrequency", "i"."LastProcessedDate", "i"."MonthlyAmount", "i"."MonthsCompleted", "i"."Name", "i"."Notes", "i"."Platform", "i"."ProjectedMaturityValue", "i"."Quantity", "i"."Status", "i"."TenureMonths", "i"."UserId"
+      FROM "Investments" AS "i"
+      WHERE "i"."UserId" = @__userId_0

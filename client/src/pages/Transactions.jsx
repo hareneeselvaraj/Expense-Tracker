@@ -1,10 +1,80 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import api from '../services/api';
-import { FiPlus, FiTrash2, FiEdit2, FiDownload, FiFileText, FiGrid, FiUpload } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiEdit2, FiDownload, FiFileText, FiGrid, FiUpload, FiChevronDown } from 'react-icons/fi';
 import { useToast } from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
 import DownloadCenter from '../components/DownloadCenter';
 import { downloadPDF, downloadExcel } from '../utils/downloadUtils';
+
+const CustomFilterDropdown = ({ value, onChange, options, style }) => {
+    const [open, setOpen] = useState(false);
+    const wrapperRef = useRef(null);
+
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+                setOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [wrapperRef]);
+
+    const selected = options.find(o => String(o.value) === String(value)) || options[0];
+
+    return (
+        <div ref={wrapperRef} style={{ position: 'relative', width: 'auto', minWidth: '130px' }}>
+            <div
+                className="tx-select-minimal"
+                onClick={() => setOpen(!open)}
+                style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    ...style, userSelect: 'none', width: '100%', gap: '8px'
+                }}
+            >
+                <span style={{ flex: 1, textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {selected?.label}
+                </span>
+                <FiChevronDown style={{ flexShrink: 0, opacity: 0.7, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }} />
+            </div>
+
+            {open && (
+                <div className="custom-dropdown-menu" style={{
+                    position: 'absolute', top: '100%', left: 0, marginTop: '6px',
+                    width: '100%', minWidth: 'max-content', background: 'var(--bg-card)',
+                    border: '1px solid var(--border)', borderRadius: 12,
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.3)', zIndex: 100,
+                    maxHeight: '280px', overflowY: 'auto', padding: '6px 0',
+                    animation: 'fadeIn 0.15s ease-out'
+                }}>
+                    {options.map((opt, i) => {
+                        const isSelected = String(value) === String(opt.value);
+                        return (
+                            <div key={i}
+                                onClick={() => { onChange(opt.value); setOpen(false); }}
+                                style={{
+                                    padding: '10px 16px', fontSize: '0.85rem', fontWeight: isSelected ? 600 : 400,
+                                    color: isSelected ? 'var(--primary)' : 'var(--text)',
+                                    background: isSelected ? 'rgba(99,102,241,0.1)' : 'transparent',
+                                    cursor: 'pointer', whiteSpace: 'nowrap',
+                                    transition: 'background 0.1s'
+                                }}
+                                onMouseEnter={(e) => {
+                                    if (!isSelected) e.target.style.background = 'var(--bg-card-hover)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    if (!isSelected) e.target.style.background = 'transparent';
+                                }}
+                            >
+                                {opt.label}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const MONTHS = [
     { value: '', label: 'All Months' },
@@ -17,6 +87,7 @@ const MONTHS = [
 ];
 
 export default function Transactions() {
+    // ... skipping component body up to the JSX to use multi_replace instead
     const [transactions, setTransactions] = useState([]);
     const [accounts, setAccounts] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -37,35 +108,37 @@ export default function Transactions() {
     const [uploadFile, setUploadFile] = useState(null);
     const [uploadAccount, setUploadAccount] = useState('');
     const [uploading, setUploading] = useState(false);
-    const toast = useToast();
+    const [selectedIds, setSelectedIds] = useState(new Set());
+    const [bulkDeleteActive, setBulkDeleteActive] = useState(false);
+    const [columnSearch, setColumnSearch] = useState({ date: '', description: '', category: '', account: '', type: '', tag: '', amount: '' });
     const [form, setForm] = useState({
         accountId: '', categoryId: '', amount: '', type: 'Expense',
         onlineOffline: 'Offline', bankMode: '', description: '', date: '',
         isMonitor: false, isAutoDebit: false, transferAccountId: '', tagId: '', investmentId: '',
     });
 
+    const toast = useToast();
+
     const loadData = async () => {
         try {
-            const [txRes, accRes, catRes, tagRes, invRes] = await Promise.all([
+            const [txRes, accRes, catRes, tagRes, invRes] = await Promise.allSettled([
                 api.get('/transaction'), api.get('/account'), api.get('/category'), api.get('/tag'), api.get('/investment'),
             ]);
-            setTransactions(txRes.data);
-            setAccounts(accRes.data);
-            setCategories(catRes.data);
-            setTags(tagRes.data);
-            setInvestments(invRes.data);
+            if (txRes.status === 'fulfilled') setTransactions(txRes.value.data);
+            if (accRes.status === 'fulfilled') setAccounts(accRes.value.data);
+            if (catRes.status === 'fulfilled') setCategories(catRes.value.data);
+            if (tagRes.status === 'fulfilled') setTags(tagRes.value.data);
+            if (invRes.status === 'fulfilled') setInvestments(invRes.value.data);
         } catch { /* ignore */ } finally { setLoading(false); }
     };
 
     useEffect(() => { loadData(); }, []);
 
-    // Derive available years
     const years = useMemo(() => {
         const y = [...new Set(transactions.map(t => new Date(t.date).getFullYear()))].sort((a, b) => b - a);
         return y;
     }, [transactions]);
 
-    // Filtered transactions
     const filtered = useMemo(() => {
         let list = [...transactions];
         if (filterYear) list = list.filter(t => new Date(t.date).getFullYear() === parseInt(filterYear));
@@ -74,8 +147,16 @@ export default function Transactions() {
         if (filterAccount) list = list.filter(t => t.accountId === filterAccount);
         if (filterCategory) list = list.filter(t => t.categoryId === filterCategory);
         if (filterTag) list = list.filter(t => t.tagId === filterTag);
+        // Column-level search filters
+        if (columnSearch.date) list = list.filter(t => new Date(t.date).toLocaleDateString('en-IN').includes(columnSearch.date));
+        if (columnSearch.description) list = list.filter(t => (t.description || '').toLowerCase().includes(columnSearch.description.toLowerCase()));
+        if (columnSearch.category) list = list.filter(t => (t.categoryName || '').toLowerCase().includes(columnSearch.category.toLowerCase()));
+        if (columnSearch.account) list = list.filter(t => (t.accountName || '').toLowerCase().includes(columnSearch.account.toLowerCase()));
+        if (columnSearch.type) list = list.filter(t => (t.type || '').toLowerCase().includes(columnSearch.type.toLowerCase()));
+        if (columnSearch.tag) list = list.filter(t => (t.tagName || '').toLowerCase().includes(columnSearch.tag.toLowerCase()));
+        if (columnSearch.amount) list = list.filter(t => t.amount?.toString().includes(columnSearch.amount));
         return list;
-    }, [transactions, filterMonth, filterYear, filterType, filterAccount, filterCategory, filterTag]);
+    }, [transactions, filterMonth, filterYear, filterType, filterAccount, filterCategory, filterTag, columnSearch]);
 
     const resetForm = () => {
         setForm({ accountId: '', categoryId: '', amount: '', type: 'Expense', onlineOffline: 'Offline', bankMode: '', description: '', date: '', isMonitor: false, isAutoDebit: false, transferAccountId: '', tagId: '', investmentId: '' });
@@ -123,15 +204,40 @@ export default function Transactions() {
     };
 
     const handleDelete = async () => {
-        if (!deleteTarget) return;
+        if (!deleteTarget && !bulkDeleteActive) return;
         try {
-            await api.delete(`/transaction/${deleteTarget}`);
-            toast.success('Transaction deleted successfully');
+            if (bulkDeleteActive) {
+                const idsToDelete = Array.from(selectedIds);
+                await api.delete('/transaction/bulk', { data: { ids: idsToDelete } });
+                toast.success(`Successfully deleted ${idsToDelete.length} transactions`);
+                setSelectedIds(new Set());
+                setBulkDeleteActive(false);
+            } else {
+                await api.delete(`/transaction/${deleteTarget}`);
+                toast.success('Transaction deleted successfully');
+                setDeleteTarget(null);
+            }
             loadData();
         } catch (err) {
-            toast.error(err.response?.data?.message || 'Error deleting transaction');
+            toast.error(err.response?.data?.message || 'Error deleting transactions');
+            setDeleteTarget(null);
+            setBulkDeleteActive(false);
         }
-        setDeleteTarget(null);
+    };
+
+    const toggleSelect = (id) => {
+        const next = new Set(selectedIds);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        setSelectedIds(next);
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.size === filtered.length && filtered.length > 0) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(filtered.map(tx => tx.id)));
+        }
     };
 
     const getDateRangeLabel = () => {
@@ -162,11 +268,16 @@ export default function Transactions() {
     return (
         <div className="page">
             <ConfirmModal
-                open={!!deleteTarget}
+                open={!!deleteTarget || bulkDeleteActive}
                 title="Confirm Delete"
-                message="Are you sure you want to delete this transaction? This action cannot be undone."
+                message={bulkDeleteActive
+                    ? `Are you sure you want to delete ${selectedIds.size} transactions? This action cannot be undone.`
+                    : "Are you sure you want to delete this transaction? This action cannot be undone."}
                 onConfirm={handleDelete}
-                onCancel={() => setDeleteTarget(null)}
+                onCancel={() => {
+                    setDeleteTarget(null);
+                    setBulkDeleteActive(false);
+                }}
             />
 
             <DownloadCenter
@@ -177,60 +288,55 @@ export default function Transactions() {
                 categories={categories}
             />
 
-            {/* Header with Granular Filters */}
             <div className="page-header" style={{ marginBottom: 28, flexWrap: 'wrap', gap: 20 }}>
                 <h1 className="page-title">Transactions</h1>
-                
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                    {/* Compact Filter Group */}
-                    <div className="tx-premium-filters" style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: 12, 
-                        background: 'var(--bg-card)', 
-                        padding: '6px 12px', 
-                        borderRadius: 16, 
-                        border: '1px solid var(--border)',
-                        boxShadow: 'var(--shadow-sm)',
-                        flexWrap: 'wrap'
+                    <div className="tx-premium-filters" style={{
+                        display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg-card)', padding: '6px 12px',
+                        borderRadius: 16, border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)', flexWrap: 'wrap'
                     }}>
-                        {/* Month/Year Group */}
                         <div style={{ display: 'flex', gap: 4 }}>
-                            <select className="tx-select-minimal" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} style={{ background: 'transparent', border: 'none', color: 'var(--text)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', outline: 'none' }}>
-                                {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                            </select>
-                            <select className="tx-select-minimal" value={filterYear} onChange={e => setFilterYear(e.target.value)} style={{ background: 'transparent', border: 'none', color: 'var(--text)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', outline: 'none' }}>
-                                <option value="">All Years</option>
-                                {years.map(y => <option key={y} value={y}>{y}</option>)}
-                            </select>
+                            <CustomFilterDropdown
+                                value={filterMonth} onChange={(val) => setFilterMonth(val)} options={MONTHS}
+                                style={{ background: 'transparent', border: 'none', color: 'var(--text)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', outline: 'none' }}
+                            />
+                            <CustomFilterDropdown
+                                value={filterYear} onChange={(val) => setFilterYear(val)}
+                                options={[{ value: '', label: 'All Years' }, ...years.map(y => ({ value: y, label: String(y) }))]}
+                                style={{ background: 'transparent', border: 'none', color: 'var(--text)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', outline: 'none' }}
+                            />
                         </div>
-
                         <div style={{ width: 1, height: 18, background: 'var(--border)' }} />
-
-                        {/* Granular Filters */}
                         <div style={{ display: 'flex', gap: 8 }}>
-                            <select className="tx-select-minimal" value={filterType} onChange={e => setFilterType(e.target.value)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.82rem', cursor: 'pointer', outline: 'none' }}>
-                                <option value="">All Types</option>
-                                <option value="Income">Income</option>
-                                <option value="Expense">Expense</option>
-                                <option value="Transfer">Transfer</option>
-                                <option value="Investment">Investment</option>
-                            </select>
-                            <select className="tx-select-minimal" value={filterAccount} onChange={e => setFilterAccount(e.target.value)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.82rem', cursor: 'pointer', outline: 'none' }}>
-                                <option value="">All Accounts</option>
-                                {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                            </select>
-                            <select className="tx-select-minimal" value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.82rem', cursor: 'pointer', outline: 'none' }}>
-                                <option value="">All Categories</option>
-                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
-                            <select className="tx-select-minimal" value={filterTag} onChange={e => setFilterTag(e.target.value)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.82rem', cursor: 'pointer', outline: 'none' }}>
-                                <option value="">All Tags</option>
-                                {tags.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                            </select>
+                            <CustomFilterDropdown
+                                value={filterType} onChange={(val) => setFilterType(val)}
+                                options={[
+                                    { value: '', label: 'All Types' },
+                                    { value: 'Income', label: 'Income' },
+                                    { value: 'Expense', label: 'Expense' },
+                                    { value: 'Transfer', label: 'Transfer' },
+                                    { value: 'Investment', label: 'Investment' },
+                                    { value: 'Withdraw', label: 'Withdraw' }
+                                ]}
+                                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.82rem', cursor: 'pointer', outline: 'none' }}
+                            />
+                            <CustomFilterDropdown
+                                value={filterAccount} onChange={(val) => setFilterAccount(val)}
+                                options={[{ value: '', label: 'All Accounts' }, ...accounts.map(a => ({ value: a.id, label: a.name }))]}
+                                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.82rem', cursor: 'pointer', outline: 'none' }}
+                            />
+                            <CustomFilterDropdown
+                                value={filterCategory} onChange={(val) => setFilterCategory(val)}
+                                options={[{ value: '', label: 'All Categories' }, ...categories.map(c => ({ value: c.id, label: c.name }))]}
+                                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.82rem', cursor: 'pointer', outline: 'none' }}
+                            />
+                            <CustomFilterDropdown
+                                value={filterTag} onChange={(val) => setFilterTag(val)}
+                                options={[{ value: '', label: 'All Tags' }, ...tags.map(t => ({ value: t.id, label: t.name }))]}
+                                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.82rem', cursor: 'pointer', outline: 'none' }}
+                            />
                         </div>
                     </div>
-
                     <div style={{ display: 'flex', gap: 10 }}>
                         <button className="btn btn-primary" onClick={() => setShowUpload(true)} style={{ height: 42, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text)', boxShadow: 'none' }}>
                             <FiUpload /> Upload
@@ -242,12 +348,26 @@ export default function Transactions() {
                 </div>
             </div>
 
+            {selectedIds.size > 0 && (
+                <div className="bulk-actions-bar" style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(239, 68, 68, 0.1)',
+                    padding: '12px 20px', borderRadius: 12, marginBottom: 20, border: '1px solid rgba(239, 68, 68, 0.2)', animation: 'fadeIn 0.3s ease'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontWeight: 600, color: 'var(--danger)' }}>{selectedIds.size} items selected</span>
+                        <button className="btn btn-ghost btn-sm" onClick={() => setSelectedIds(new Set())}>Deselect All</button>
+                    </div>
+                    <button className="btn btn-danger btn-sm" onClick={() => setBulkDeleteActive(true)}>
+                        <FiTrash2 /> Delete Selected
+                    </button>
+                </div>
+            )}
+
             {showUpload && (
                 <div className="modal-overlay" onClick={() => { setShowUpload(false); setUploadFile(null); setUploadAccount(''); }}>
                     <div className="modal-card" style={{ maxWidth: 450, padding: 32 }} onClick={e => e.stopPropagation()}>
                         <h3 className="modal-title">Upload Transactions</h3>
                         <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: 24 }}>Upload Excel (.xlsx) or PDF statements.</p>
-                        
                         <div className="form-group" style={{ marginBottom: 20 }}>
                             <label>Select Account</label>
                             <select className="form-input" style={{ background: 'var(--bg-card)' }} value={uploadAccount} onChange={e => setUploadAccount(e.target.value)}>
@@ -255,25 +375,11 @@ export default function Transactions() {
                                 {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                             </select>
                         </div>
-
-                        <div style={{ 
-                            border: '2px dashed rgba(255,255,255,0.1)', 
-                            borderRadius: 16, 
-                            padding: '32px 16px', 
-                            textAlign: 'center',
-                            background: uploadFile ? 'rgba(99,102,241,0.05)' : 'rgba(255,255,255,0.02)',
-                            transition: 'all 0.3s ease',
-                            cursor: 'pointer',
-                            marginBottom: 24,
-                            position: 'relative'
+                        <div style={{
+                            border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 16, padding: '32px 16px', textAlign: 'center',
+                            background: uploadFile ? 'rgba(99,102,241,0.05)' : 'rgba(255,255,255,0.02)', transition: 'all 0.3s ease', cursor: 'pointer', marginBottom: 24, position: 'relative'
                         }} onClick={() => document.getElementById('file-upload').click()}>
-                            <input 
-                                id="file-upload" 
-                                type="file" 
-                                accept=".xlsx,.xls,.pdf" 
-                                style={{ display: 'none' }} 
-                                onChange={e => setUploadFile(e.target.files[0])}
-                            />
+                            <input id="file-upload" type="file" accept=".xlsx,.xls,.pdf" style={{ display: 'none' }} onChange={e => setUploadFile(e.target.files[0])} />
                             {uploadFile ? (
                                 <div>
                                     <FiFileText style={{ fontSize: '2rem', color: 'var(--primary)', marginBottom: 12 }} />
@@ -288,33 +394,22 @@ export default function Transactions() {
                                 </div>
                             )}
                         </div>
-
                         <div style={{ display: 'flex', gap: 12 }}>
                             <button className="btn btn-full" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text)' }} onClick={() => { setShowUpload(false); setUploadFile(null); setUploadAccount(''); }}>Cancel</button>
-                            <button 
-                                className="btn btn-primary btn-full" 
-                                disabled={!uploadFile || !uploadAccount || uploading} 
-                                onClick={async () => {
-                                    setUploading(true);
-                                    const formData = new FormData();
-                                    formData.append('file', uploadFile);
-                                    formData.append('accountId', uploadAccount);
-                                    try {
-                                        await api.post('/transaction/upload', formData, {
-                                            headers: { 'Content-Type': 'multipart/form-data' }
-                                        });
-                                        toast.success('Transactions uploaded successfully!');
-                                        setShowUpload(false);
-                                        setUploadFile(null);
-                                        setUploadAccount('');
-                                        loadData();
-                                    } catch (err) {
-                                        toast.error(err.response?.data?.error || 'Upload failed');
-                                    } finally {
-                                        setUploading(false);
-                                    }
-                                }}
-                            >
+                            <button className="btn btn-primary btn-full" disabled={!uploadFile || !uploadAccount || uploading} onClick={async () => {
+                                setUploading(true);
+                                const formData = new FormData();
+                                formData.append('file', uploadFile);
+                                formData.append('accountId', uploadAccount);
+                                try {
+                                    const res = await api.post('/transaction/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+                                    toast.success(res.data?.message || 'Transactions uploaded successfully!');
+                                    setShowUpload(false); setUploadFile(null); setUploadAccount(''); loadData();
+                                } catch (err) {
+                                    const msg = err.response?.data?.error || err.response?.data?.detail || 'Upload failed';
+                                    toast.error(`Upload failed: ${msg}`);
+                                } finally { setUploading(false); }
+                            }}>
                                 {uploading ? 'Uploading...' : 'Upload Now'}
                             </button>
                         </div>
@@ -322,7 +417,6 @@ export default function Transactions() {
                 </div>
             )}
 
-            {/* Quick Actions & Count */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, padding: '0 4px' }}>
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                     Showing <strong>{filtered.length}</strong> transactions {getDateRangeLabel() !== 'All Time' ? `for ${getDateRangeLabel()}` : ''}
@@ -357,19 +451,11 @@ export default function Transactions() {
                             </div>
                             <div className="form-group">
                                 <label>Category</label>
-                                <select
-                                    value={form.categoryId}
-                                    onChange={(e) => {
-                                        const catId = e.target.value;
-                                        const selectedCat = categories.find(c => c.id === catId);
-                                        setForm({
-                                            ...form,
-                                            categoryId: catId,
-                                            type: selectedCat ? selectedCat.type : form.type
-                                        });
-                                    }}
-                                    required
-                                >
+                                <select value={form.categoryId} onChange={(e) => {
+                                    const catId = e.target.value;
+                                    const selectedCat = categories.find(c => c.id === catId);
+                                    setForm({ ...form, categoryId: catId, type: selectedCat ? selectedCat.type : form.type });
+                                }} required>
                                     <option value="">Select Category</option>
                                     {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
@@ -380,10 +466,7 @@ export default function Transactions() {
                             </div>
                             <div className="form-group">
                                 <label>Type</label>
-                                <select
-                                    value={form.type}
-                                    onChange={(e) => setForm({ ...form, type: e.target.value })}
-                                >
+                                <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
                                     <option value="Income">Income</option>
                                     <option value="Expense">Expense</option>
                                     <option value="Transfer">Transfer</option>
@@ -459,8 +542,23 @@ export default function Transactions() {
                 <table>
                     <thead>
                         <tr>
+                            <th style={{ width: 40 }}>
+                                <input type="checkbox" checked={filtered.length > 0 && selectedIds.size === filtered.length} onChange={toggleSelectAll} />
+                            </th>
                             <th>Date</th><th>Description</th><th>Category</th><th>Account</th>
                             <th>Type</th><th>Tag</th><th>Channel</th><th className="text-right">Amount</th><th>Actions</th>
+                        </tr>
+                        <tr className="column-search-row">
+                            <th></th>
+                            <th><input type="text" placeholder="Search..." value={columnSearch.date} onChange={e => setColumnSearch({ ...columnSearch, date: e.target.value })} className="col-search-input" /></th>
+                            <th><input type="text" placeholder="Search..." value={columnSearch.description} onChange={e => setColumnSearch({ ...columnSearch, description: e.target.value })} className="col-search-input" /></th>
+                            <th><input type="text" placeholder="Search..." value={columnSearch.category} onChange={e => setColumnSearch({ ...columnSearch, category: e.target.value })} className="col-search-input" /></th>
+                            <th><input type="text" placeholder="Search..." value={columnSearch.account} onChange={e => setColumnSearch({ ...columnSearch, account: e.target.value })} className="col-search-input" /></th>
+                            <th><input type="text" placeholder="Search..." value={columnSearch.type} onChange={e => setColumnSearch({ ...columnSearch, type: e.target.value })} className="col-search-input" /></th>
+                            <th><input type="text" placeholder="Search..." value={columnSearch.tag} onChange={e => setColumnSearch({ ...columnSearch, tag: e.target.value })} className="col-search-input" /></th>
+                            <th></th>
+                            <th><input type="text" placeholder="Search..." value={columnSearch.amount} onChange={e => setColumnSearch({ ...columnSearch, amount: e.target.value })} className="col-search-input" style={{ textAlign: 'right' }} /></th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -468,7 +566,10 @@ export default function Transactions() {
                             <tr><td colSpan="10" className="text-center">No transactions found</td></tr>
                         ) : (
                             filtered.map((tx) => (
-                                <tr key={tx.id}>
+                                <tr key={tx.id} className={selectedIds.has(tx.id) ? 'row-selected' : ''}>
+                                    <td>
+                                        <input type="checkbox" checked={selectedIds.has(tx.id)} onChange={() => toggleSelect(tx.id)} />
+                                    </td>
                                     <td>{new Date(tx.date).toLocaleDateString('en-IN')}</td>
                                     <td>{tx.description || '—'}</td>
                                     <td><span className="badge">{tx.categoryName}</span></td>

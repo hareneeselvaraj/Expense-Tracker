@@ -188,12 +188,12 @@ export default function Categories() {
                                 const color = palette[idx % palette.length];
                                 const initials = c.name.slice(0, 2).toUpperCase();
                                 return (
-                                    <div key={c.id} className="cat-card" style={{ '--cat-color': color, transition: 'transform 0.2sease, box-shadow 0.2sease', cursor: 'pointer' }}
+                                    <div key={c.id} className="cat-card" style={{ '--cat-color': color, transition: 'transform 0.2s ease, box-shadow 0.2s ease', cursor: 'pointer' }}
                                         onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 6px 16px ${color}33`; }}
                                         onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
                                     >
                                         <div className="cat-card-avatar" style={{ background: color + '22', border: `1px solid ${color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            {c.icon ? (
+                                            {c.icon && c.icon.length <= 4 ? (
                                                 <span style={{ fontSize: '1.2rem' }}>{c.icon}</span>
                                             ) : (
                                                 <span style={{ color, fontSize: '1rem', fontWeight: 700 }}>{initials}</span>

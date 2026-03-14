@@ -34,7 +34,7 @@ public class DashboardController : BaseApiController
             var log = $"[{DateTime.UtcNow}] {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}\n";
             if (ex.InnerException != null)
                 log += $"INNER: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}\n{ex.InnerException.StackTrace}\n";
-            await System.IO.File.AppendAllTextAsync(@"C:\Users\HareneeS\Desktop\Expense_Tracker\dashboard_error.log", log);
+            await System.IO.File.AppendAllTextAsync("dashboard_error.log", log);
             return StatusCode(500, new { error = ex.Message, inner = ex.InnerException?.Message, stack = ex.StackTrace });
         }
     }
@@ -53,7 +53,7 @@ public class DashboardController : BaseApiController
             var log = $"[{DateTime.UtcNow}] {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}\n";
             if (ex.InnerException != null)
                 log += $"INNER: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}\n{ex.InnerException.StackTrace}\n";
-            await System.IO.File.AppendAllTextAsync(@"C:\Users\HareneeS\Desktop\Expense_Tracker\dashboard_error.log", log);
+            await System.IO.File.AppendAllTextAsync("dashboard_error.log", log);
             throw;
         }
     }

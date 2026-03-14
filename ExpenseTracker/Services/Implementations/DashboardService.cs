@@ -144,7 +144,7 @@ public class DashboardService : IDashboardService
 
         var categoryWiseSpending = nonTransferTx
             .Where(t => t.Type == TransactionType.Expense || t.Type == TransactionType.Income)
-            .GroupBy(t => new { t.CategoryId, t.Category.Name, Type = t.Category.Type.ToString(), t.Category.Icon })
+            .GroupBy(t => new { t.CategoryId, t.Category.Name, Type = t.Type.ToString(), t.Category.Icon })
             .Select(g => new CategoryWiseSpendingDto
             {
                 CategoryId = g.Key.CategoryId,
@@ -279,10 +279,31 @@ public class DashboardService : IDashboardService
             RecentTransactions = recentTransactions,
             UpcomingReminders = upcomingReminders,
             WeeklyTrend = weeklyTrend,
+            MonthlyTrend = CalculateMonthlyTrend(nonTransferTx, year, month),
             IncomeCount = nonTransferTx.Count(t => t.Type == TransactionType.Income),
             ExpenseCount = nonTransferTx.Count(t => t.Type == TransactionType.Expense),
             TotalTransactionCount = periodTx.Count
         };
+    }
+
+    private List<DailyTrendDto> CalculateMonthlyTrend(List<Transaction> transactions, int? year, int? month)
+    {
+        var trend = new List<DailyTrendDto>();
+        var currentYear = year ?? DateTime.UtcNow.Year;
+        var currentMonth = month ?? DateTime.UtcNow.Month;
+        var daysInMonth = DateTime.DaysInMonth(currentYear, currentMonth);
+
+        for (int i = 1; i <= daysInMonth; i++)
+        {
+            var dayTx = transactions.Where(t => t.Date.Year == currentYear && t.Date.Month == currentMonth && t.Date.Day == i);
+            trend.Add(new DailyTrendDto
+            {
+                Day = i,
+                Income = dayTx.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount),
+                Expense = dayTx.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount)
+            });
+        }
+        return trend;
     }
 
     private List<WeeklyTrendDto> CalculateWeeklyTrend(List<Transaction> transactions)

@@ -80,3 +80,8 @@ public class TransactionResponseDto
     public Guid? InvestmentId { get; set; }
     public string? InvestmentName { get; set; }
 }
+public class BulkDeleteDto
+{
+    [Required]
+    public List<Guid> Ids { get; set; } = new();
+}

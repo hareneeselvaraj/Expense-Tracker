@@ -1,0 +1,11 @@
+﻿MSBuild version 17.5.0-preview-23061-01+040e2a90e for .NET
+  Determining projects to restore...
+C:\Program Files (x86)\dotnet\sdk\7.0.201\Sdks\Microsoft.NET.Sdk\targets\Microsoft.NET.TargetFrameworkInference.targets(144,5): error NETSDK1045: The current .NET SDK does not support targeting .NET 8.0.  Either target .NET 7.0 or lower, or use a version of the .NET SDK that supports .NET 8.0. [C:\Users\haren\Desktop\Expense_Tracker\Expense-Tracker\ExpenseTracker\ExpenseTracker.csproj]
+
+Build FAILED.
+
+C:\Program Files (x86)\dotnet\sdk\7.0.201\Sdks\Microsoft.NET.Sdk\targets\Microsoft.NET.TargetFrameworkInference.targets(144,5): error NETSDK1045: The current .NET SDK does not support targeting .NET 8.0.  Either target .NET 7.0 or lower, or use a version of the .NET SDK that supports .NET 8.0. [C:\Users\haren\Desktop\Expense_Tracker\Expense-Tracker\ExpenseTracker\ExpenseTracker.csproj]
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:00.60

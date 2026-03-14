@@ -12,6 +12,9 @@ using ExpenseTracker.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Register encoding provider for ExcelDataReader to support old .xls format
+System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
 // ───────────────────── Database ─────────────────────
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -91,6 +94,7 @@ try
         foreach (var col in ivCols) { try { await db.Database.ExecuteSqlRawAsync($"ALTER TABLE Investments ADD COLUMN {col} TEXT NULL;"); } catch { } }
         try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Transactions ADD COLUMN InvestmentId TEXT NULL;"); } catch { }
         try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Categories ADD COLUMN Icon TEXT NULL;"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Accounts ADD COLUMN CreditLimit decimal(18,2) NULL;"); } catch { }
         
         // Create tables if they don't exist
         try { await db.Database.ExecuteSqlRawAsync("CREATE TABLE IF NOT EXISTS Vehicles (Id TEXT PRIMARY KEY, UserId TEXT NOT NULL, Name TEXT NOT NULL, VehicleType TEXT NOT NULL DEFAULT 'Car', FuelType TEXT NOT NULL DEFAULT 'Petrol', RegistrationNumber TEXT NULL, ServiceIntervalKm INTEGER NULL, CreatedAt TEXT NOT NULL, FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE);"); } catch { }
