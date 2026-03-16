@@ -66,13 +66,26 @@ public class DashboardService : IDashboardService
             .Where(t => t.Type == TransactionType.Expense)
             .Sum(t => t.Amount);
 
-        var totalInvestment = investments
-            .Where(i => (!year.HasValue || (i.DateInvested ?? DateTime.UtcNow).Year == year.Value)
-                     && (!month.HasValue || (i.DateInvested ?? DateTime.UtcNow).Month == month.Value))
-            .Sum(i => i.CurrentValue);
+        // totalInvestment:
+        //   - When a period filter is active → show InvestedAmount for that period
+        //     (i.e. "how much did they invest this month?")
+        //   - When no filter → show total CurrentValue (full portfolio snapshot)
+        var totalInvestment = (year.HasValue || month.HasValue)
+            ? investments
+                .Where(i => (!year.HasValue  || (i.DateInvested ?? DateTime.UtcNow).Year  == year.Value)
+                         && (!month.HasValue || (i.DateInvested ?? DateTime.UtcNow).Month == month.Value))
+                .Sum(i => i.InvestedAmount)                       // ← InvestedAmount for period view
+            : investments.Sum(i => i.CurrentValue);               // ← CurrentValue for all-time view
 
-        var currentBalance = accounts.Where(a => a.Type != AccountType.CreditCard).Sum(a => a.Balance) 
-                             - accounts.Where(a => a.Type == AccountType.CreditCard).Sum(a => a.Balance);
+        // currentBalance:
+        //   - When filtering by a specific account → show only that account's balance
+        //   - Otherwise → sum all accounts (non-CC positive, CC negative = outstanding debt)
+        var currentBalance = accountId.HasValue
+            ? accounts
+                .Where(a => a.Id == accountId.Value)
+                .Sum(a => a.Type == AccountType.CreditCard ? -a.Balance : a.Balance)
+            : accounts.Where(a => a.Type != AccountType.CreditCard).Sum(a => a.Balance)
+              - accounts.Where(a => a.Type == AccountType.CreditCard).Sum(a => a.Balance);
 
         // ── Monthly Summary (Keep all history for trend charts) ──
         var now = DateTime.UtcNow;

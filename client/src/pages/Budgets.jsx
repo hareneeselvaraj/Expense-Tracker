@@ -7,6 +7,7 @@ import {
 } from 'react-icons/fi';
 import { useToast } from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
+import AIBudgetSetup from '../components/AIBudgetSetup';
 
 const RISK_COLORS = {
     safe:     { color: '#10b981', label: 'Safe',      bg: 'rgba(16,185,129,0.12)',  icon: <FiCheckCircle /> },
@@ -193,6 +194,8 @@ export default function Budgets() {
                     <FiPlus /> New Budget
                 </button>
             </div>
+
+            <AIBudgetSetup onApplied={load} />
 
             {/* Stat Cards */}
             <div className="budget-stat-row">

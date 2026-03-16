@@ -1,0 +1,290 @@
+/* ══════════════════════════════════════════════════════════════════
+   AI CHAT  (add to index.css alongside other AI Insights styles)
+══════════════════════════════════════════════════════════════════ */
+
+/* "NEW" badge on the tab */
+.inv-tab-new-badge {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6366f1;
+  background: rgba(99, 102, 241, 0.12);
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+/* Root container */
+.aic-root {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 8px;
+  min-height: 500px;
+}
+
+/* ── Empty state ── */
+.aic-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 40px 20px 20px;
+  gap: 10px;
+}
+
+.aic-empty-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  margin-bottom: 4px;
+}
+
+.aic-empty-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.aic-empty-sub {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  max-width: 440px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Suggestion chips ── */
+.aic-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+  max-width: 600px;
+}
+
+.aic-suggestion-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: var(--transition);
+  line-height: 1;
+}
+
+.aic-suggestion-btn svg {
+  color: #6366f1;
+  flex-shrink: 0;
+}
+
+.aic-suggestion-btn:hover {
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.05);
+  color: #6366f1;
+}
+
+/* ── Message list ── */
+.aic-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding: 4px 2px 4px;
+  scrollbar-width: thin;
+}
+
+.aic-msg-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.aic-msg-user {
+  flex-direction: row-reverse;
+}
+
+/* ── Avatars ── */
+.aic-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.aic-avatar-ai {
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366f1;
+}
+
+.aic-avatar-user {
+  background: var(--bg-input);
+  color: var(--text-muted);
+}
+
+/* ── Bubbles ── */
+.aic-bubble {
+  max-width: 72%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.aic-bubble-ai {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+  color: var(--text);
+}
+
+.aic-bubble-user {
+  background: #6366f1;
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+/* ── Typing indicator ── */
+.aic-bubble-typing {
+  padding: 14px 16px;
+}
+
+.aic-typing {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.aic-typing span {
+  width: 7px;
+  height: 7px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  animation: aic-bounce 1.2s infinite ease-in-out;
+}
+
+.aic-typing span:nth-child(1) { animation-delay: 0s; }
+.aic-typing span:nth-child(2) { animation-delay: 0.2s; }
+.aic-typing span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes aic-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30%           { transform: translateY(-6px); opacity: 1; }
+}
+
+/* ── Error ── */
+.aic-error {
+  font-size: 0.8rem;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.07);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  border-radius: 10px;
+  padding: 8px 14px;
+  text-align: center;
+}
+
+/* ── Input bar ── */
+.aic-input-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 8px 10px;
+  transition: var(--transition);
+  position: sticky;
+  bottom: 0;
+}
+
+.aic-input-bar:focus-within {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.aic-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  resize: none;
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.5;
+  max-height: 120px;
+  outline: none;
+  font-family: inherit;
+  padding: 2px 4px;
+}
+
+.aic-input::placeholder {
+  color: var(--text-muted);
+}
+
+.aic-send-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #6366f1;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+
+.aic-send-btn:hover:not(:disabled) {
+  background: #4f46e5;
+  transform: scale(1.05);
+}
+
+.aic-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.aic-clear-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+
+.aic-clear-btn:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
+@media (max-width: 600px) {
+  .aic-bubble { max-width: 88%; }
+  .aic-suggestions { gap: 6px; }
+}

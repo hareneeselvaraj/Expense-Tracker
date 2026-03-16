@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
     FiHome, FiCreditCard, FiGrid, FiDollarSign, FiTarget,
-    FiClock, FiBell, FiList, FiLogOut, FiTrendingUp, FiBarChart2, FiCpu, FiTruck, FiChevronLeft, FiChevronRight, FiTag
+    FiClock, FiBell, FiList, FiLogOut, FiTrendingUp, FiBarChart2, FiCpu, FiTruck, FiChevronLeft, FiChevronRight, FiTag, FiZap
 } from 'react-icons/fi';
 import ThemeToggle from './ThemeToggle';
 
@@ -42,6 +42,7 @@ export default function Sidebar() {
         { to: '/budgets', icon: <FiBarChart2 />, label: 'Budgets' },
         { to: '/mileage', icon: <FiTruck />, label: 'Mileage' },
         { to: '/ai-insights', icon: <FiCpu />, label: 'AI Insights' },
+        { to: '/ai-chat', icon: <FiZap />, label: 'Ask AI' },
     ];
 
     return (

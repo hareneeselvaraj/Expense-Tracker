@@ -19,6 +19,7 @@ import MileageTracker from './pages/MileageTracker';
 import Goals from './pages/Goals';
 import UpcomingReminders from './pages/UpcomingReminders';
 import History from './pages/History';
+import AIChat from './components/AI/AIChat';
 
 export default function App() {
     return (
@@ -43,6 +44,7 @@ export default function App() {
                                 <Route path="/goals" element={<Goals />} />
                                 <Route path="/reminders" element={<UpcomingReminders />} />
                                 <Route path="/history" element={<History />} />
+                                <Route path="/ai-chat" element={<AIChat />} />
                             </Route>
                         </Routes>
                     </BrowserRouter>

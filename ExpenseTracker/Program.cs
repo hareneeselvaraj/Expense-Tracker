@@ -66,6 +66,9 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<ITagService, TagService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IMileageService, MileageService>();
+builder.Services.AddScoped<IAIChatService, AIChatService>();
+builder.Services.AddScoped<IAIFeaturesService, AIFeaturesService>();
+builder.Services.AddHttpClient("google");
 
 builder.Services.AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));

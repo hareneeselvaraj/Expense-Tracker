@@ -1070,19 +1070,129 @@ public class TransactionService : ITransactionService
         var transaction = await _transactionRepo.GetByIdWithDetailsAsync(id);
         if (transaction == null || transaction.UserId != userId) return null;
 
-        if (dto.AccountId.HasValue) transaction.AccountId = dto.AccountId.Value;
-        if (dto.CategoryId.HasValue) transaction.CategoryId = dto.CategoryId.Value;
-        if (dto.Amount.HasValue) transaction.Amount = dto.Amount.Value;
-        if (dto.Type.HasValue) transaction.Type = dto.Type.Value;
-        if (dto.OnlineOffline.HasValue) transaction.OnlineOffline = dto.OnlineOffline.Value;
-        if (dto.BankMode.HasValue) transaction.BankMode = dto.BankMode.Value;
-        if (dto.Description != null) transaction.Description = dto.Description;
-        if (dto.Date.HasValue) transaction.Date = dto.Date.Value;
-        if (dto.IsMonitor.HasValue) transaction.IsMonitor = dto.IsMonitor.Value;
-        if (dto.IsAutoDebit.HasValue) transaction.IsAutoDebit = dto.IsAutoDebit.Value;
-        if (dto.TransferAccountId.HasValue) transaction.TransferAccountId = dto.TransferAccountId.Value;
-        if (dto.TagId.HasValue) transaction.TagId = dto.TagId.Value;
-        if (dto.InvestmentId.HasValue) transaction.InvestmentId = dto.InvestmentId.Value;
+        // ── Step 1: Snapshot original values ──
+        var originalAmount    = transaction.Amount;
+        var originalType      = transaction.Type;
+        var originalAccountId = transaction.AccountId;
+        var originalTransferAccountId = transaction.TransferAccountId;
+
+        // ── Step 2: Reverse original balance effect ──
+        var originalAccount = await _accountRepo.GetByIdAsync(originalAccountId);
+        if (originalAccount != null)
+        {
+            bool isCreditCard = originalAccount.Type == AccountType.CreditCard;
+
+            switch (originalType)
+            {
+                case TransactionType.Income:
+                    // Was added to balance → subtract it back
+                    originalAccount.Balance -= originalAmount;
+                    await _accountRepo.UpdateAsync(originalAccount);
+                    break;
+
+                case TransactionType.Expense:
+                case TransactionType.Investment:
+                case TransactionType.Withdraw:
+                    // Was deducted → add it back
+                    // CreditCard: was added to outstanding (balance +=) → subtract back
+                    if (isCreditCard)
+                        originalAccount.Balance -= originalAmount;
+                    else
+                        originalAccount.Balance += originalAmount;
+                    await _accountRepo.UpdateAsync(originalAccount);
+                    break;
+
+                case TransactionType.Transfer:
+                    // Source account: deducted → add back
+                    originalAccount.Balance += originalAmount;
+                    await _accountRepo.UpdateAsync(originalAccount);
+                    // Destination account: credited → deduct back
+                    if (originalTransferAccountId.HasValue)
+                    {
+                        var origTransfer = await _accountRepo.GetByIdAsync(originalTransferAccountId.Value);
+                        if (origTransfer != null)
+                        {
+                            origTransfer.Balance -= originalAmount;
+                            await _accountRepo.UpdateAsync(origTransfer);
+                        }
+                    }
+                    break;
+            }
+        }
+
+        // ── Step 3: Apply field changes ──
+        if (dto.AccountId.HasValue)           transaction.AccountId         = dto.AccountId.Value;
+        if (dto.CategoryId.HasValue)          transaction.CategoryId        = dto.CategoryId.Value;
+        if (dto.Amount.HasValue)              transaction.Amount            = dto.Amount.Value;
+        if (dto.Type.HasValue)                transaction.Type              = dto.Type.Value;
+        if (dto.OnlineOffline.HasValue)       transaction.OnlineOffline     = dto.OnlineOffline.Value;
+        if (dto.BankMode.HasValue)            transaction.BankMode          = dto.BankMode.Value;
+        if (dto.Description != null)          transaction.Description       = dto.Description;
+        if (dto.Date.HasValue)                transaction.Date              = dto.Date.Value;
+        if (dto.IsMonitor.HasValue)           transaction.IsMonitor         = dto.IsMonitor.Value;
+        if (dto.IsAutoDebit.HasValue)         transaction.IsAutoDebit       = dto.IsAutoDebit.Value;
+        if (dto.TagId.HasValue)               transaction.TagId             = dto.TagId.Value;
+        if (dto.InvestmentId.HasValue)        transaction.InvestmentId      = dto.InvestmentId.Value;
+
+        // Clear transfer account if type changed away from Transfer
+        if (dto.Type.HasValue && dto.Type.Value != TransactionType.Transfer)
+            transaction.TransferAccountId = null;
+        else if (dto.TransferAccountId.HasValue)
+            transaction.TransferAccountId = dto.TransferAccountId.Value;
+
+        // ── Step 4: Apply NEW balance effect ──
+        var newAccount = await _accountRepo.GetByIdAsync(transaction.AccountId);
+        if (newAccount != null)
+        {
+            bool isCreditCard = newAccount.Type == AccountType.CreditCard;
+
+            // Re-fetch category for IsAutoDebit → Investment override check
+            var category = await _categoryRepo.GetByIdAsync(transaction.CategoryId);
+
+            switch (transaction.Type)
+            {
+                case TransactionType.Income:
+                    newAccount.Balance += transaction.Amount;
+                    await _accountRepo.UpdateAsync(newAccount);
+                    break;
+
+                case TransactionType.Expense:
+                    bool isAutoInvestment = transaction.IsAutoDebit && category?.Type == CategoryType.Investment;
+                    if (isAutoInvestment)
+                    {
+                        transaction.Type = TransactionType.Investment; // override
+                        if (isCreditCard) newAccount.Balance += transaction.Amount;
+                        else              newAccount.Balance -= transaction.Amount;
+                    }
+                    else
+                    {
+                        if (isCreditCard) newAccount.Balance += transaction.Amount;
+                        else              newAccount.Balance -= transaction.Amount;
+                    }
+                    await _accountRepo.UpdateAsync(newAccount);
+                    break;
+
+                case TransactionType.Investment:
+                case TransactionType.Withdraw:
+                    if (isCreditCard) newAccount.Balance += transaction.Amount;
+                    else              newAccount.Balance -= transaction.Amount;
+                    await _accountRepo.UpdateAsync(newAccount);
+                    break;
+
+                case TransactionType.Transfer:
+                    if (transaction.TransferAccountId == null)
+                        throw new InvalidOperationException("TransferAccountId is required for Transfer.");
+                    newAccount.Balance -= transaction.Amount;
+                    await _accountRepo.UpdateAsync(newAccount);
+                    var newTransfer = await _accountRepo.GetByIdAsync(transaction.TransferAccountId.Value);
+                    if (newTransfer != null)
+                    {
+                        newTransfer.Balance += transaction.Amount;
+                        await _accountRepo.UpdateAsync(newTransfer);
+                    }
+                    break;
+            }
+        }
 
         await _transactionRepo.UpdateAsync(transaction);
 
@@ -1186,82 +1296,79 @@ public class TransactionService : ITransactionService
 
     private async Task CheckBudgetAndNotifyAsync(Guid userId, Guid categoryId, DateTime transactionDate)
     {
-        var traceFile = Path.Combine(AppContext.BaseDirectory, "budget_trace.log");
-        void Trace(string msg) => File.AppendAllText(traceFile, $"[{DateTime.Now:HH:mm:ss}] {msg}\n");
         try
         {
             var month = transactionDate.Month;
-            var year = transactionDate.Year;
-
-            Trace($"START: userId={userId}, catId={categoryId}, month={month}, year={year}");
-            _logger.LogInformation("[BUDGET CHECK] userId={UserId}, categoryId={CategoryId}, txDate={TxDate}, month={Month}, year={Year}",
-                userId, categoryId, transactionDate.ToString("O"), month, year);
-
-            // Find a budget for this category + month
+            var year  = transactionDate.Year;
+    
+            _logger.LogInformation(
+                "[BUDGET CHECK] userId={UserId}, categoryId={CategoryId}, month={Month}/{Year}",
+                userId, categoryId, month, year);
+    
+            // ── 1. Find the matching budget ──
             var budget = await _context.Budgets
-                .FirstOrDefaultAsync(b => b.UserId == userId
-                    && b.CategoryId == categoryId
-                    && b.Month == month
-                    && b.Year == year);
-
+                .FirstOrDefaultAsync(b =>
+                    b.UserId     == userId     &&
+                    b.CategoryId == categoryId &&
+                    b.Month      == month      &&
+                    b.Year       == year);
+    
             if (budget == null)
             {
-                Trace($"NO BUDGET for catId={categoryId}, month={month}/{year}");
-                _logger.LogWarning("[BUDGET CHECK] No matching budget found for categoryId={CategoryId}, month={Month}/{Year} — skipping.",
+                _logger.LogInformation(
+                    "[BUDGET CHECK] No budget found for categoryId={CategoryId}, {Month}/{Year} — skipping.",
                     categoryId, month, year);
                 return;
             }
-
-            _logger.LogInformation("[BUDGET CHECK] Found budget: id={BudgetId}, amount={Amount}, alertSentAt={AlertSentAt}",
-                budget.Id, budget.Amount, budget.AlertSentAt);
-
-            // Only send if not already sent this month
-            if (budget.AlertSentAt.HasValue)
+    
+            // Only re-alert if the previous alert was at least 1 hour ago (debounce).
+            if (budget.AlertSentAt.HasValue &&
+                (DateTime.UtcNow - budget.AlertSentAt.Value).TotalHours < 1)
             {
-                Trace("ALERT ALREADY SENT for this budget period — skipping.");
-                _logger.LogInformation("[BUDGET CHECK] Alert already sent for this period — skipping.");
+                _logger.LogInformation("[BUDGET CHECK] Alert already sent recently — skipping.");
                 return;
             }
-
-            // Calculate total spent — use unspecified kind for SQLite compatibility
-            var startOfMonth = new DateTime(year, month, 1);
-            var endOfMonth = startOfMonth.AddMonths(1);
-
+    
+            // ── 2. Materialise transactions, then sum in-memory (SQLite-safe) ──
+            var startOfMonth = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var endOfMonth   = startOfMonth.AddMonths(1);
+    
+            // FIX: ToListAsync() first, then .Sum() — avoids the SumAsync SQLite crash.
             var expenses = await _context.Transactions
-                .Where(t => t.UserId == userId
-                    && t.CategoryId == categoryId
-                    && t.Type == TransactionType.Expense
-                    && t.Date >= startOfMonth
-                    && t.Date < endOfMonth)
-                .ToListAsync();
-            var totalSpent = expenses.Sum(t => t.Amount);
-            Trace($"TOTAL SPENT: {totalSpent} from {expenses.Count} txns, budget={budget.Amount}");
-
-            _logger.LogInformation("[BUDGET CHECK] Total spent this month: {TotalSpent}, budget limit: {BudgetAmount}",
-                totalSpent, budget.Amount);
-
-            // Only alert when the budget is exceeded
+                .Where(t =>
+                    t.UserId     == userId         &&
+                    t.CategoryId == categoryId     &&
+                    t.Type       == TransactionType.Expense &&
+                    t.Date       >= startOfMonth   &&
+                    t.Date       <  endOfMonth)
+                .ToListAsync();                        // ← materialise
+    
+            var totalSpent = expenses.Sum(t => t.Amount); // ← in-memory sum (safe)
+    
+            _logger.LogInformation(
+                "[BUDGET CHECK] Spent={TotalSpent}, Limit={BudgetAmount} ({Count} txns)",
+                totalSpent, budget.Amount, expenses.Count);
+    
             if (totalSpent <= budget.Amount)
             {
-                Trace($"WITHIN BUDGET — no alert. {totalSpent} <= {budget.Amount}");
-                _logger.LogInformation("[BUDGET CHECK] Spending within budget — no alert needed.");
+                _logger.LogInformation("[BUDGET CHECK] Within budget — no alert.");
                 return;
             }
-
-            // Get the user's email
-            var user = await _context.Users.FindAsync(userId);
+    
+            // ── 3. Send alert ──
+            var user     = await _context.Users.FindAsync(userId);
+            var category = await _context.Categories.FindAsync(categoryId);
+    
             if (user == null)
             {
-                _logger.LogWarning("[BUDGET CHECK] User {UserId} not found — skipping.", userId);
+                _logger.LogWarning("[BUDGET CHECK] User {UserId} not found — skipping alert.", userId);
                 return;
             }
-
-            var category = await _context.Categories.FindAsync(categoryId);
-
-            Trace($"SENDING EMAIL to {user.Email} for {category?.Name}: spent {totalSpent} / {budget.Amount}");
-            _logger.LogInformation("[BUDGET ALERT] Sending email to {Email} — {Category}: spent {Spent} / budget {BudgetAmount}",
+    
+            _logger.LogInformation(
+                "[BUDGET ALERT] Sending email to {Email}: {Category} {Spent}/{Budget}",
                 user.Email, category?.Name, totalSpent, budget.Amount);
-
+    
             await _emailService.SendBudgetAlertAsync(
                 user.Email,
                 user.Name,
@@ -1270,24 +1377,20 @@ public class TransactionService : ITransactionService
                 totalSpent,
                 month,
                 year);
-
-            // Mark alert as sent
+    
+            // Mark alert sent
             budget.AlertSentAt = DateTime.UtcNow;
             _context.Budgets.Update(budget);
             await _context.SaveChangesAsync();
-
-            Trace("EMAIL SENT SUCCESSFULLY ✅");
-            _logger.LogInformation("[BUDGET ALERT] ✅ Email sent successfully!");
+    
+            _logger.LogInformation("[BUDGET ALERT] ✅ Email sent and AlertSentAt updated.");
         }
         catch (Exception ex)
         {
-            // Email failure must not break the transaction — but log the full error
-            Trace($"EXCEPTION: {ex.Message}");
-            _logger.LogError(ex, "[BUDGET ALERT ERROR] Failed during budget check/email for userId={UserId}, categoryId={CategoryId}",
+            // Never let notification failure break the transaction itself.
+            _logger.LogError(ex,
+                "[BUDGET ALERT ERROR] userId={UserId}, categoryId={CategoryId}",
                 userId, categoryId);
-            // Write to a debug file so we can easily read the full error
-            var errorLog = $"[{DateTime.Now:O}] BUDGET ALERT ERROR for userId={userId}, categoryId={categoryId}\n{ex}\n\n";
-            File.AppendAllText(Path.Combine(AppContext.BaseDirectory, "budget_error.log"), errorLog);
         }
     }
 
