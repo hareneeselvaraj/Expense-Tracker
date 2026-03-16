@@ -5,14 +5,14 @@ import { useToast } from './Toast';
 
 export default function AIBudgetSetup({ onApplied }) {
     const toast = useToast();
-    const [open, setOpen]               = useState(false);
-    const [prompt, setPrompt]           = useState('');
-    const [loading, setLoading]         = useState(false);
-    const [applying, setApplying]       = useState(false);
-    const [result, setResult]           = useState(null);
-    const [editAmounts, setEditAmounts] = useState({});
+    const [open, setOpen]                   = useState(false);
+    const [prompt, setPrompt]               = useState('');
+    const [loading, setLoading]             = useState(false);
+    const [applying, setApplying]           = useState(false);
+    const [result, setResult]               = useState(null);
+    const [editAmounts, setEditAmounts]     = useState({});
     const [allCategories, setAllCategories] = useState([]);
-    const [excluded, setExcluded]       = useState(new Set());
+    const [excluded, setExcluded]           = useState(new Set());
     const [showCatPicker, setShowCatPicker] = useState(false);
 
     const now   = new Date();
@@ -20,17 +20,18 @@ export default function AIBudgetSetup({ onApplied }) {
     const year  = now.getFullYear();
 
     const SUGGESTIONS = [
-        "I earn ₹80,000 and want to save 20% each month",
-        "Monthly income ₹50,000, save at least ₹10,000",
-        "I earn ₹1,20,000 and want to save 30% each month",
+        'I earn ₹80,000 and want to save 20% each month',
+        'Monthly income ₹50,000, save at least ₹10,000',
+        'I earn ₹1,20,000 and want to save 30% each month',
     ];
 
+    // Fetch ALL categories — not just "Expense" typed ones
+    // (Python-imported categories may have wrong type stored in DB)
     useEffect(() => {
         if (open && allCategories.length === 0) {
-            api.get('/category').then(res => {
-                const expCats = (res.data || []).filter(c => c.type === 'Expense');
-                setAllCategories(expCats);
-            }).catch(() => {});
+            api.get('/category')
+                .then(res => setAllCategories(res.data || []))
+                .catch(() => {});
         }
     }, [open]);
 
@@ -40,28 +41,35 @@ export default function AIBudgetSetup({ onApplied }) {
             next.has(id) ? next.delete(id) : next.add(id);
             return next;
         });
-        // Clear result so user re-generates with new selection
         setResult(null);
     };
+
+    // Pre-exclude Investment-typed categories so user starts with sensible defaults
+    useEffect(() => {
+        if (allCategories.length > 0) {
+            const investmentIds = new Set(
+                allCategories
+                    .filter(c => c.type === 'Investment')
+                    .map(c => c.id)
+            );
+            setExcluded(investmentIds);
+        }
+    }, [allCategories]);
 
     const includedCount = allCategories.filter(c => !excluded.has(c.id)).length;
 
     const generate = async () => {
-        if (!prompt.trim()) return;
+        if (!prompt.trim() || includedCount === 0) return;
         setLoading(true);
         setResult(null);
         try {
-            // Send excluded IDs to backend — backend does the filtering
-            // This avoids UUID case-mismatch bugs on the frontend
             const excludedCategoryIds = Array.from(excluded);
-
             const res = await api.post('/aifeatures/budget/generate', {
                 prompt,
                 month,
                 year,
-                excludedCategoryIds   // ← backend filters these out
+                excludedCategoryIds
             });
-
             setResult(res.data);
             const amounts = {};
             (res.data.suggestions || []).forEach(s => {
@@ -101,10 +109,14 @@ export default function AIBudgetSetup({ onApplied }) {
         (s, x) => s + parseFloat(editAmounts[x.categoryId] || x.suggestedAmount), 0
     ) ?? 0;
 
+    // Group categories for display
+    const includedCats  = allCategories.filter(c => !excluded.has(c.id));
+    const excludedCats  = allCategories.filter(c => excluded.has(c.id));
+
     return (
         <div className="ai-budget-setup">
 
-            {/* ── Toggle header ── */}
+            {/* ── Toggle ── */}
             <button className="aibs-toggle" onClick={() => setOpen(o => !o)}>
                 <div className="aibs-toggle-left">
                     <div className="aibs-toggle-icon"><FiZap /></div>
@@ -138,8 +150,8 @@ export default function AIBudgetSetup({ onApplied }) {
                             {showCatPicker && (
                                 <div className="aibs-cat-picker">
                                     <p className="aibs-cat-picker-hint">
-                                        Uncheck categories you don't want to budget for
-                                        (e.g. purchases you treat as investments like Jewellery)
+                                        ✓ = included in budget &nbsp;·&nbsp; ✕ = excluded.
+                                        Investment categories are excluded by default.
                                     </p>
                                     <div className="aibs-cat-chips">
                                         {allCategories.map(c => {
@@ -152,7 +164,7 @@ export default function AIBudgetSetup({ onApplied }) {
                                                 >
                                                     {c.icon && <span>{c.icon}</span>}
                                                     {c.name}
-                                                    <span>{isExcluded ? ' ✕' : ' ✓'}</span>
+                                                    <span style={{ marginLeft: 3 }}>{isExcluded ? '✕' : '✓'}</span>
                                                 </button>
                                             );
                                         })}
@@ -162,7 +174,7 @@ export default function AIBudgetSetup({ onApplied }) {
                         </>
                     )}
 
-                    {/* ── Prompt input ── */}
+                    {/* ── Prompt ── */}
                     <div className="aibs-input-row">
                         <input
                             className="aibs-input"
@@ -187,7 +199,7 @@ export default function AIBudgetSetup({ onApplied }) {
                         <p className="aibs-warn">Please include at least one category.</p>
                     )}
 
-                    {/* ── Quick chips ── */}
+                    {/* ── Quick prompts ── */}
                     {!result && !loading && (
                         <div className="aibs-chips">
                             {SUGGESTIONS.map((s, i) => (
@@ -207,14 +219,15 @@ export default function AIBudgetSetup({ onApplied }) {
                     {/* ── Results ── */}
                     {result && !loading && (
                         <div className="aibs-results">
-                            {/* Summary */}
                             <div className="aibs-summary">
                                 <FiZap size={14} />
                                 <span>{result.summary}</span>
                             </div>
 
                             {!result.suggestions?.length ? (
-                                <p className="aibs-warn">No suggestions returned. Try different wording or include more categories.</p>
+                                <p className="aibs-warn">
+                                    No suggestions returned. Try including more categories or rephrasing your prompt.
+                                </p>
                             ) : (
                                 <>
                                     <div className="aibs-table-wrap">
@@ -259,7 +272,9 @@ export default function AIBudgetSetup({ onApplied }) {
                                             Total: <strong>{fmt(total)}</strong> / month
                                         </div>
                                         <div className="aibs-footer-actions">
-                                            <button className="btn btn-outline" onClick={() => setResult(null)}>Discard</button>
+                                            <button className="btn btn-outline" onClick={() => setResult(null)}>
+                                                Discard
+                                            </button>
                                             <button
                                                 className="btn btn-primary"
                                                 onClick={applyAll}
