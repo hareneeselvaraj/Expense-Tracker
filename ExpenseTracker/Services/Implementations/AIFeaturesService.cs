@@ -41,9 +41,15 @@ public class AIFeaturesService : IAIFeaturesService
         var now         = DateTime.UtcNow;
         var threeMonAgo = now.AddDays(-90);
 
+        // ── Step 1: Filter categories (now including backend-side exclusion filter) ──
         var categories = await _context.Categories
             .Where(c => c.UserId == userId && c.Type == CategoryType.Expense)
             .ToListAsync();
+
+        if (request.ExcludedCategoryIds.Any())
+        {
+            categories = categories.Where(c => !request.ExcludedCategoryIds.Contains(c.Id)).ToList();
+        }
 
         if (!categories.Any())
             return new AIBudgetResponseDto
@@ -58,8 +64,6 @@ public class AIFeaturesService : IAIFeaturesService
                      && t.Date   >= threeMonAgo)
             .ToListAsync();
 
-        // ── Build numbered category list — Gemini returns numbers, not names ──
-        // This completely eliminates name-matching problems
         var numberedCategories = categories
             .Select((c, idx) => new
             {
@@ -73,26 +77,21 @@ public class AIFeaturesService : IAIFeaturesService
         var categoryLines = string.Join("\n", numberedCategories.Select(c =>
             $"{c.Number}. {c.Name} (avg ₹{c.AvgMonthly:N0}/month)"));
 
-        // ── Simple, unambiguous prompt ──
+        // ── Simplified JSON keys for Gemini accuracy ──
         var prompt =
 $@"The user says: ""{request.Prompt}""
 
-Their expense categories (numbered):
+Expense categories:
 {categoryLines}
 
-Respond with ONLY a JSON object. No explanation. No markdown. Just the JSON.
-Use this exact format:
+Respond with ONLY a JSON object. No explanation.
 {{
-  ""summary"": ""one sentence here"",
-  ""budgets"": [
-    {{ ""num"": 1, ""amount"": 5000 }},
-    {{ ""num"": 2, ""amount"": 3000 }}
+  ""summary"": ""one sentence"",
+  ""b"": [
+    {{ ""n"": 1, ""a"": 5000, ""r"": ""Reason"" }},
+    {{ ""n"": 2, ""a"": 3000, ""r"": ""Reason"" }}
   ]
-}}
-
-Include a budget for every category number listed above.
-Amounts must be whole numbers in Indian Rupees.
-The amounts should match the user's stated income and savings goal.";
+}}";
 
         var raw = await CallGeminiRawAsync(prompt);
         _logger.LogInformation("[AI BUDGET] Raw response: {Raw}", raw);
@@ -100,100 +99,80 @@ The amounts should match the user's stated income and savings goal.";
         try
         {
             var json = StripToJson(raw);
-            _logger.LogInformation("[AI BUDGET] Stripped JSON: {Json}", json);
-
             using var doc = JsonDocument.Parse(json);
 
             var summary = doc.RootElement.TryGetProperty("summary", out var s)
-                ? s.GetString() ?? "AI-generated budget" : "AI-generated budget";
+                ? s.GetString() ?? "" : "";
 
             var suggestions = new List<AIBudgetSuggestionDto>();
 
-            // Try "budgets" key first, fall back to "suggestions"
+            // Handle both legacy "budgets" and new simplified "b" keys
             JsonElement arr;
-            bool hasArr = doc.RootElement.TryGetProperty("budgets", out arr)
-                       || doc.RootElement.TryGetProperty("suggestions", out arr);
+            bool hasArr = doc.RootElement.TryGetProperty("b", out arr)
+                       || doc.RootElement.TryGetProperty("budgets", out arr);
 
             if (hasArr)
             {
                 foreach (var item in arr.EnumerateArray())
                 {
-                    // Get the number
                     int num = 0;
-                    if (item.TryGetProperty("num", out var numEl))
-                        num = numEl.ValueKind == JsonValueKind.Number ? numEl.GetInt32() : 0;
-                    else if (item.TryGetProperty("number", out var numEl2))
-                        num = numEl2.ValueKind == JsonValueKind.Number ? numEl2.GetInt32() : 0;
+                    if (item.TryGetProperty("n", out var nEl)) num = nEl.GetInt32();
+                    else if (item.TryGetProperty("num", out var numEl)) num = numEl.GetInt32();
 
-                    // Get the amount
                     decimal amount = 0;
-                    if (item.TryGetProperty("amount", out var amtEl))
-                    {
-                        if (amtEl.ValueKind == JsonValueKind.Number)
-                            amount = amtEl.GetDecimal();
-                        else if (decimal.TryParse(amtEl.GetString()?.Replace(",",""), out var p))
-                            amount = p;
-                    }
+                    if (item.TryGetProperty("a", out var aEl)) amount = aEl.GetDecimal();
+                    else if (item.TryGetProperty("amount", out var amtEl)) amount = amtEl.GetDecimal();
 
-                    // Get reasoning (optional)
-                    var reason = item.TryGetProperty("reasoning", out var r) ? r.GetString() ?? "" : "";
-                    if (string.IsNullOrEmpty(reason) && item.TryGetProperty("reason", out var r2))
-                        reason = r2.GetString() ?? "";
+                    var reason = "";
+                    if (item.TryGetProperty("r", out var rEl)) reason = rEl.GetString() ?? "";
+                    else if (item.TryGetProperty("reasoning", out var rsEl)) reason = rsEl.GetString() ?? "";
 
-                    // Match by number to the real category
                     var cat = numberedCategories.FirstOrDefault(c => c.Number == num);
-                    if (cat != null && amount > 0)
+                    if (cat != null)
                     {
                         suggestions.Add(new AIBudgetSuggestionDto
                         {
                             CategoryId      = cat.Id,
                             CategoryName    = cat.Name,
-                            SuggestedAmount = amount,
+                            SuggestedAmount = Math.Round(amount),
                             Reasoning       = reason
                         });
                     }
                 }
             }
 
-            // If still empty, something unexpected — build fallback from 20/80 rule
             if (suggestions.Count == 0)
             {
-                _logger.LogWarning("[AI BUDGET] No suggestions parsed, using rule-based fallback");
                 suggestions = BuildFallbackBudget(request.Prompt, numberedCategories
                     .Select(c => (c.Id, c.Name, c.AvgMonthly)).ToList());
-                summary = "Budget generated using spending history (AI response could not be parsed).";
+                summary = "Budget generated using history/patterns (AI response was unparseable).";
             }
 
             return new AIBudgetResponseDto { Summary = summary, Suggestions = suggestions };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[AI BUDGET] Parse failed. Raw: {Raw}", raw);
-
-            // Fallback: rule-based budget from spending history
+            _logger.LogError(ex, "[AI BUDGET] Fail");
             var fallback = BuildFallbackBudget(request.Prompt, numberedCategories
                 .Select(c => (c.Id, c.Name, c.AvgMonthly)).ToList());
 
             return new AIBudgetResponseDto
             {
-                Summary     = "Budget based on your spending history (AI service unavailable).",
+                Summary     = "Budget based on history/patterns (AI unavailable).",
                 Suggestions = fallback
             };
         }
     }
 
-    // ── Rule-based fallback: extract income from prompt, distribute using averages ──
     private static List<AIBudgetSuggestionDto> BuildFallbackBudget(
         string prompt,
         List<(Guid Id, string Name, decimal AvgMonthly)> categories)
     {
-        // Try to extract income from prompt (e.g. "80,000" or "80000")
         var incomeMatch = Regex.Match(prompt, @"[\₹]?\s*([\d,]+)");
         decimal income  = 0;
         if (incomeMatch.Success)
             decimal.TryParse(incomeMatch.Groups[1].Value.Replace(",", ""), out income);
 
-        // Try to extract savings % (e.g. "20%")
         var savePctMatch = Regex.Match(prompt, @"(\d+)\s*%");
         decimal savePct  = savePctMatch.Success
             ? decimal.Parse(savePctMatch.Groups[1].Value) / 100m : 0.20m;
@@ -203,19 +182,34 @@ The amounts should match the user's stated income and savings goal.";
 
         return categories.Select(c =>
         {
-            // Scale proportionally to spendable, or use 110% of average if no income given
-            var suggested = spendable > 0 && totalAvg > 0
-                ? Math.Round(spendable * (c.AvgMonthly / totalAvg) / 100) * 100
-                : Math.Round(c.AvgMonthly * 1.1m / 100) * 100;
+            decimal weight = 0;
+            // ── Keyword-based weights for zero-history categories ──
+            var lower = c.Name.ToLower();
+            if (lower.Contains("grocer")) weight = 0.15m;
+            else if (lower.Contains("house") || lower.Contains("rent")) weight = 0.25m;
+            else if (lower.Contains("food")  || lower.Contains("dining")) weight = 0.10m;
+            else if (lower.Contains("transport") || lower.Contains("fuel") || lower.Contains("auto")) weight = 0.08m;
+            else if (lower.Contains("bill")  || lower.Contains("utilit") || lower.Contains("phone")) weight = 0.07m;
+            else weight = 0.05m;
+
+            decimal suggested;
+            if (spendable > 0)
+            {
+                // If history exists, use history proportion. Otherwise use keyword weight.
+                var proportion = totalAvg > 0 ? (c.AvgMonthly / totalAvg) : weight;
+                suggested = Math.Round(spendable * proportion / 100) * 100;
+            }
+            else
+            {
+                suggested = Math.Round(c.AvgMonthly * 1.1m / 100) * 100;
+            }
 
             return new AIBudgetSuggestionDto
             {
                 CategoryId      = c.Id,
                 CategoryName    = c.Name,
-                SuggestedAmount = Math.Max(suggested, 500), // minimum ₹500
-                Reasoning       = c.AvgMonthly > 0
-                    ? $"Based on avg ₹{c.AvgMonthly:N0}/month"
-                    : "Suggested minimum"
+                SuggestedAmount = Math.Max(suggested, 500),
+                Reasoning       = c.AvgMonthly > 0 ? "Based on your spending history" : "Based on typical monthly patterns"
             };
         }).ToList();
     }

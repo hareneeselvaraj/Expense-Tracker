@@ -14,6 +14,16 @@ public class CreateCategoryDto
     public string? Icon { get; set; }
 }
 
+public class UpdateCategoryDto
+{
+    [MaxLength(100)]
+    public string? Name { get; set; }
+
+    public string? Type { get; set; }
+
+    public string? Icon { get; set; }
+}
+
 public class CategoryResponseDto
 {
     public Guid Id { get; set; }

@@ -1,16 +1,19 @@
-import { useState } from 'react';
-import { FiZap, FiCheck, FiLoader, FiChevronDown, FiChevronUp, FiEdit3 } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
+import { FiZap, FiCheck, FiLoader, FiChevronDown, FiChevronUp, FiEdit3, FiSettings } from 'react-icons/fi';
 import api from '../services/api';
 import { useToast } from './Toast';
 
 export default function AIBudgetSetup({ onApplied }) {
     const toast = useToast();
-    const [open, setOpen] = useState(false);
-    const [prompt, setPrompt] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [applying, setApplying] = useState(false);
-    const [result, setResult] = useState(null);  // { summary, suggestions[] }
+    const [open, setOpen]               = useState(false);
+    const [prompt, setPrompt]           = useState('');
+    const [loading, setLoading]         = useState(false);
+    const [applying, setApplying]       = useState(false);
+    const [result, setResult]           = useState(null);
     const [editAmounts, setEditAmounts] = useState({});
+    const [allCategories, setAllCategories] = useState([]);
+    const [excluded, setExcluded]       = useState(new Set());
+    const [showCatPicker, setShowCatPicker] = useState(false);
 
     const now   = new Date();
     const month = now.getMonth() + 1;
@@ -19,19 +22,49 @@ export default function AIBudgetSetup({ onApplied }) {
     const SUGGESTIONS = [
         "I earn ₹80,000 and want to save 20% each month",
         "Monthly income ₹50,000, save at least ₹10,000",
-        "I earn ₹1,20,000 and want aggressive savings of 30%",
+        "I earn ₹1,20,000 and want to save 30% each month",
     ];
+
+    useEffect(() => {
+        if (open && allCategories.length === 0) {
+            api.get('/category').then(res => {
+                const expCats = (res.data || []).filter(c => c.type === 'Expense');
+                setAllCategories(expCats);
+            }).catch(() => {});
+        }
+    }, [open]);
+
+    const toggleExclude = (id) => {
+        setExcluded(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+        // Clear result so user re-generates with new selection
+        setResult(null);
+    };
+
+    const includedCount = allCategories.filter(c => !excluded.has(c.id)).length;
 
     const generate = async () => {
         if (!prompt.trim()) return;
         setLoading(true);
         setResult(null);
         try {
-            const res = await api.post('/aifeatures/budget/generate', { prompt, month, year });
+            // Send excluded IDs to backend — backend does the filtering
+            // This avoids UUID case-mismatch bugs on the frontend
+            const excludedCategoryIds = Array.from(excluded);
+
+            const res = await api.post('/aifeatures/budget/generate', {
+                prompt,
+                month,
+                year,
+                excludedCategoryIds   // ← backend filters these out
+            });
+
             setResult(res.data);
-            // Pre-populate editable amounts
             const amounts = {};
-            res.data.suggestions.forEach(s => {
+            (res.data.suggestions || []).forEach(s => {
                 amounts[s.categoryId] = s.suggestedAmount;
             });
             setEditAmounts(amounts);
@@ -43,7 +76,7 @@ export default function AIBudgetSetup({ onApplied }) {
     };
 
     const applyAll = async () => {
-        if (!result) return;
+        if (!result?.suggestions?.length) return;
         setApplying(true);
         try {
             const budgets = result.suggestions.map(s => ({
@@ -63,15 +96,15 @@ export default function AIBudgetSetup({ onApplied }) {
         }
     };
 
-    const fmt = (v) => `₹${Number(v || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
-
-    const totalSuggested = result
-        ? result.suggestions.reduce((sum, s) => sum + parseFloat(editAmounts[s.categoryId] || s.suggestedAmount), 0)
-        : 0;
+    const fmt = v => `₹${Number(v || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+    const total = result?.suggestions?.reduce(
+        (s, x) => s + parseFloat(editAmounts[x.categoryId] || x.suggestedAmount), 0
+    ) ?? 0;
 
     return (
         <div className="ai-budget-setup">
-            {/* ── Toggle Header ── */}
+
+            {/* ── Toggle header ── */}
             <button className="aibs-toggle" onClick={() => setOpen(o => !o)}>
                 <div className="aibs-toggle-left">
                     <div className="aibs-toggle-icon"><FiZap /></div>
@@ -85,7 +118,51 @@ export default function AIBudgetSetup({ onApplied }) {
 
             {open && (
                 <div className="aibs-body">
-                    {/* ── Input ── */}
+
+                    {/* ── Category picker ── */}
+                    {allCategories.length > 0 && (
+                        <>
+                            <div className="aibs-cat-row">
+                                <button
+                                    className="aibs-cat-toggle"
+                                    onClick={() => setShowCatPicker(p => !p)}
+                                >
+                                    <FiSettings size={13} />
+                                    {showCatPicker ? 'Hide' : 'Choose'} categories
+                                    <span className="aibs-cat-count">
+                                        {includedCount}/{allCategories.length} selected
+                                    </span>
+                                </button>
+                            </div>
+
+                            {showCatPicker && (
+                                <div className="aibs-cat-picker">
+                                    <p className="aibs-cat-picker-hint">
+                                        Uncheck categories you don't want to budget for
+                                        (e.g. purchases you treat as investments like Jewellery)
+                                    </p>
+                                    <div className="aibs-cat-chips">
+                                        {allCategories.map(c => {
+                                            const isExcluded = excluded.has(c.id);
+                                            return (
+                                                <button
+                                                    key={c.id}
+                                                    className={`aibs-cat-chip ${isExcluded ? 'excluded' : 'included'}`}
+                                                    onClick={() => toggleExclude(c.id)}
+                                                >
+                                                    {c.icon && <span>{c.icon}</span>}
+                                                    {c.name}
+                                                    <span>{isExcluded ? ' ✕' : ' ✓'}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {/* ── Prompt input ── */}
                     <div className="aibs-input-row">
                         <input
                             className="aibs-input"
@@ -98,102 +175,104 @@ export default function AIBudgetSetup({ onApplied }) {
                         <button
                             className="btn btn-primary aibs-gen-btn"
                             onClick={generate}
-                            disabled={!prompt.trim() || loading}
+                            disabled={!prompt.trim() || loading || includedCount === 0}
                         >
-                            {loading ? <><FiLoader className="spin" /> Analysing…</> : <><FiZap /> Generate</>}
+                            {loading
+                                ? <><FiLoader className="spin" /> Analysing…</>
+                                : <><FiZap /> Generate</>}
                         </button>
                     </div>
 
-                    {/* ── Quick suggestions ── */}
+                    {includedCount === 0 && (
+                        <p className="aibs-warn">Please include at least one category.</p>
+                    )}
+
+                    {/* ── Quick chips ── */}
                     {!result && !loading && (
                         <div className="aibs-chips">
                             {SUGGESTIONS.map((s, i) => (
-                                <button key={i} className="aibs-chip" onClick={() => setPrompt(s)}>
-                                    {s}
-                                </button>
+                                <button key={i} className="aibs-chip" onClick={() => setPrompt(s)}>{s}</button>
                             ))}
                         </div>
                     )}
 
-                    {/* ── Loading state ── */}
+                    {/* ── Loading ── */}
                     {loading && (
                         <div className="aibs-loading">
                             <FiLoader className="spin" size={20} />
-                            <span>Analysing your spending history and generating budgets…</span>
+                            <span>Generating budgets for {includedCount} categories…</span>
                         </div>
                     )}
 
                     {/* ── Results ── */}
                     {result && !loading && (
                         <div className="aibs-results">
-                            {/* Summary banner */}
+                            {/* Summary */}
                             <div className="aibs-summary">
                                 <FiZap size={14} />
                                 <span>{result.summary}</span>
                             </div>
 
-                            {/* Editable suggestion table */}
-                            <div className="aibs-table-wrap">
-                                <table className="aibs-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Category</th>
-                                            <th>Suggested Amount</th>
-                                            <th>Why</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {result.suggestions.map(s => (
-                                            <tr key={s.categoryId}>
-                                                <td className="aibs-cat-cell">
-                                                    <span className="aibs-cat-dot" />
-                                                    {s.categoryName}
-                                                </td>
-                                                <td className="aibs-amount-cell">
-                                                    <div className="aibs-amount-input-wrap">
-                                                        <span className="aibs-rupee">₹</span>
-                                                        <input
-                                                            type="number"
-                                                            className="aibs-amount-input"
-                                                            value={editAmounts[s.categoryId] ?? s.suggestedAmount}
-                                                            onChange={e => setEditAmounts(prev => ({
-                                                                ...prev,
-                                                                [s.categoryId]: e.target.value
-                                                            }))}
-                                                        />
-                                                        <FiEdit3 size={11} className="aibs-edit-icon" />
-                                                    </div>
-                                                </td>
-                                                <td className="aibs-reason-cell">{s.reasoning}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            {/* Footer */}
-                            <div className="aibs-footer">
-                                <div className="aibs-total">
-                                    Total budget: <strong>{fmt(totalSuggested)}</strong> / month
-                                </div>
-                                <div className="aibs-footer-actions">
-                                    <button
-                                        className="btn btn-outline"
-                                        onClick={() => setResult(null)}
-                                    >
-                                        Discard
-                                    </button>
-                                    <button
-                                        className="btn btn-primary"
-                                        onClick={applyAll}
-                                        disabled={applying}
-                                    >
-                                        {applying
-                                            ? <><FiLoader className="spin" /> Applying…</>
-                                            : <><FiCheck /> Apply {result.suggestions.length} Budgets</>}
-                                    </button>
-                                </div>
-                            </div>
+                            {!result.suggestions?.length ? (
+                                <p className="aibs-warn">No suggestions returned. Try different wording or include more categories.</p>
+                            ) : (
+                                <>
+                                    <div className="aibs-table-wrap">
+                                        <table className="aibs-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Category</th>
+                                                    <th>Suggested Amount</th>
+                                                    <th>Why</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {result.suggestions.map(s => (
+                                                    <tr key={s.categoryId}>
+                                                        <td className="aibs-cat-cell">
+                                                            <span className="aibs-cat-dot" />
+                                                            {s.categoryName}
+                                                        </td>
+                                                        <td className="aibs-amount-cell">
+                                                            <div className="aibs-amount-input-wrap">
+                                                                <span className="aibs-rupee">₹</span>
+                                                                <input
+                                                                    type="number"
+                                                                    className="aibs-amount-input"
+                                                                    value={editAmounts[s.categoryId] ?? s.suggestedAmount}
+                                                                    onChange={e => setEditAmounts(prev => ({
+                                                                        ...prev,
+                                                                        [s.categoryId]: e.target.value
+                                                                    }))}
+                                                                />
+                                                                <FiEdit3 size={11} className="aibs-edit-icon" />
+                                                            </div>
+                                                        </td>
+                                                        <td className="aibs-reason-cell">{s.reasoning}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div className="aibs-footer">
+                                        <div className="aibs-total">
+                                            Total: <strong>{fmt(total)}</strong> / month
+                                        </div>
+                                        <div className="aibs-footer-actions">
+                                            <button className="btn btn-outline" onClick={() => setResult(null)}>Discard</button>
+                                            <button
+                                                className="btn btn-primary"
+                                                onClick={applyAll}
+                                                disabled={applying}
+                                            >
+                                                {applying
+                                                    ? <><FiLoader className="spin" /> Applying…</>
+                                                    : <><FiCheck /> Apply {result.suggestions.length} Budgets</>}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>

@@ -8,14 +8,20 @@ public class AIBudgetRequestDto
     public string Prompt { get; set; } = string.Empty;
     public int Month { get; set; }
     public int Year  { get; set; }
+
+    /// <summary>
+    /// Category IDs the user wants to EXCLUDE from budget generation.
+    /// Backend filters these out before processing — avoids frontend UUID case-mismatch bugs.
+    /// </summary>
+    public List<Guid> ExcludedCategoryIds { get; set; } = new();
 }
 
 public class AIBudgetSuggestionDto
 {
-    public Guid   CategoryId   { get; set; }
-    public string CategoryName { get; set; } = string.Empty;
+    public Guid   CategoryId      { get; set; }
+    public string CategoryName    { get; set; } = string.Empty;
     public decimal SuggestedAmount { get; set; }
-    public string Reasoning   { get; set; } = string.Empty;
+    public string Reasoning       { get; set; } = string.Empty;
 }
 
 public class AIBudgetResponseDto

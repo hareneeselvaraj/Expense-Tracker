@@ -698,7 +698,7 @@ public class TransactionService : ITransactionService
             UserId = userId,
             Name = categoryName,
             Type = catType == TransactionType.Withdraw ? CategoryType.Expense : (CategoryType)Enum.Parse(typeof(CategoryType), catType.ToString()),
-            Icon = "HelpCircle"
+            Icon = "🏷️"
         };
         _context.Categories.Add(newCat);
         await _context.SaveChangesAsync();

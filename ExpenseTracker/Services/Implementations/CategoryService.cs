@@ -34,6 +34,21 @@ public class CategoryService : ICategoryService
         return categories.Select(MapToDto);
     }
 
+    public async Task<CategoryResponseDto?> UpdateAsync(Guid userId, Guid id, UpdateCategoryDto dto)
+    {
+        var category = await _categoryRepo.GetByIdAsync(id);
+        if (category == null || category.UserId != userId) return null;
+
+        if (!string.IsNullOrWhiteSpace(dto.Name)) category.Name = dto.Name.Trim();
+        if (!string.IsNullOrWhiteSpace(dto.Type) &&
+            Enum.TryParse<CategoryType>(dto.Type, true, out var parsed))
+            category.Type = parsed;
+        if (dto.Icon != null) category.Icon = dto.Icon == "" ? null : dto.Icon;
+
+        await _categoryRepo.UpdateAsync(category);
+        return MapToDto(category);
+    }
+
     public async Task<bool> DeleteAsync(Guid userId, Guid id)
     {
         var category = await _categoryRepo.GetByIdAsync(id);
