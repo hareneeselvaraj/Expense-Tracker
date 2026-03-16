@@ -66,10 +66,16 @@ public class DashboardService : IDashboardService
             .Where(t => t.Type == TransactionType.Expense)
             .Sum(t => t.Amount);
 
-        var totalInvestment = investments
+        var totalInvestmentPortfolio = investments
             .Where(i => (!year.HasValue || (i.DateInvested ?? DateTime.UtcNow).Year == year.Value)
                      && (!month.HasValue || (i.DateInvested ?? DateTime.UtcNow).Month == month.Value))
             .Sum(i => i.CurrentValue);
+
+        var totalInvestmentTx = nonTransferTx
+            .Where(t => t.Type == TransactionType.Investment)
+            .Sum(t => t.Amount);
+
+        var totalInvestment = totalInvestmentPortfolio + totalInvestmentTx;
 
         var currentBalance = accounts.Where(a => a.Type != AccountType.CreditCard).Sum(a => a.Balance) 
                              - accounts.Where(a => a.Type == AccountType.CreditCard).Sum(a => a.Balance);
@@ -107,6 +113,7 @@ public class DashboardService : IDashboardService
                     Month = key.Month,
                     Income = income,
                     Expense = expense,
+                    Investment = investment,
                     Net = income - expense - investment
                 };
             })
@@ -142,8 +149,12 @@ public class DashboardService : IDashboardService
             .Where(t => t.Type == TransactionType.Income)
             .Sum(t => t.Amount);
 
+        var totalInvestmentSpend = nonTransferTx
+            .Where(t => t.Type == TransactionType.Investment)
+            .Sum(t => t.Amount);
+
         var categoryWiseSpending = nonTransferTx
-            .Where(t => t.Type == TransactionType.Expense || t.Type == TransactionType.Income)
+            .Where(t => t.Type == TransactionType.Expense || t.Type == TransactionType.Income || t.Type == TransactionType.Investment)
             .GroupBy(t => new { t.CategoryId, t.Category.Name, Type = t.Type.ToString(), t.Category.Icon })
             .Select(g => new CategoryWiseSpendingDto
             {
@@ -152,9 +163,11 @@ public class DashboardService : IDashboardService
                 CategoryType = g.Key.Type,
                 Icon = g.Key.Icon,
                 Total = g.Sum(t => t.Amount),
-                Percentage = g.Key.Type == TransactionType.Expense.ToString()
+                Percentage = g.Key.Type == "Expense"
                     ? (totalExpenseSpend > 0 ? Math.Round(g.Sum(t => t.Amount) / totalExpenseSpend * 100, 2) : 0)
-                    : (totalIncomeSpend > 0 ? Math.Round(g.Sum(t => t.Amount) / totalIncomeSpend * 100, 2) : 0)
+                    : g.Key.Type == "Income"
+                        ? (totalIncomeSpend > 0 ? Math.Round(g.Sum(t => t.Amount) / totalIncomeSpend * 100, 2) : 0)
+                        : (totalInvestmentTx > 0 ? Math.Round(g.Sum(t => t.Amount) / totalInvestmentTx * 100, 2) : 0)
             })
             .OrderByDescending(c => c.Total)
             .ToList();
@@ -282,6 +295,130 @@ public class DashboardService : IDashboardService
             MonthlyTrend = CalculateMonthlyTrend(nonTransferTx, year, month),
             IncomeCount = nonTransferTx.Count(t => t.Type == TransactionType.Income),
             ExpenseCount = nonTransferTx.Count(t => t.Type == TransactionType.Expense),
+            InvestmentCount = nonTransferTx.Count(t => t.Type == TransactionType.Investment),
+            TotalTransactionCount = periodTx.Count
+        };
+    }
+
+    public async Task<DashboardResponseDto> GetYearlyDashboardAsync(Guid userId, int year, Guid? accountId = null)
+    {
+        var transactions = (await _transactionRepo.GetByUserIdAsync(userId)).ToList();
+        var accounts = (await _accountRepo.GetByUserIdAsync(userId)).ToList();
+        var investments = (await _investmentRepo.GetByUserIdAsync(userId)).ToList();
+        var budgets = (await _budgetRepo.GetByUserIdAsync(userId)).ToList();
+
+        // ── Filter for Account ──
+        if (accountId.HasValue)
+        {
+            transactions = transactions.Where(t => t.AccountId == accountId.Value || t.TransferAccountId == accountId.Value).ToList();
+        }
+
+        // ── Filter for the selected year ──
+        var periodTx = transactions.Where(t => t.Date.Year == year).ToList();
+        var nonTransferTx = periodTx.Where(t => t.Type != TransactionType.Transfer).ToList();
+
+        // ── Totals (Yearly) ──
+        var totalIncome = nonTransferTx.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount);
+        var totalExpense = nonTransferTx.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount);
+        
+        var totalInvestmentPortfolio = investments
+            .Where(i => (i.DateInvested ?? DateTime.UtcNow).Year == year)
+            .Sum(i => i.CurrentValue);
+
+        var totalInvestmentTx = nonTransferTx
+            .Where(t => t.Type == TransactionType.Investment)
+            .Sum(t => t.Amount);
+
+        var totalInvestment = totalInvestmentPortfolio + totalInvestmentTx;
+
+        var currentBalance = accounts.Where(a => a.Type != AccountType.CreditCard).Sum(a => a.Balance) 
+                             - accounts.Where(a => a.Type == AccountType.CreditCard).Sum(a => a.Balance);
+
+        // ── 12-Month Trend (Jan - Dec) ──
+        var monthlySummary = new List<MonthlySummaryDto>();
+        for (int m = 1; m <= 12; m++)
+        {
+            var monthTx = nonTransferTx.Where(t => t.Date.Month == m).ToList();
+            var mIncome = monthTx.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount);
+            var mExpense = monthTx.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount);
+            var mInvestTx = monthTx.Where(t => t.Type == TransactionType.Investment).Sum(t => t.Amount);
+            var mPortfolioInvest = investments.Where(i => (i.DateInvested ?? DateTime.UtcNow).Year == year && (i.DateInvested ?? DateTime.UtcNow).Month == m).Sum(i => i.InvestedAmount);
+            
+            monthlySummary.Add(new MonthlySummaryDto
+            {
+                Year = year,
+                Month = m,
+                Income = mIncome,
+                Expense = mExpense,
+                Investment = mInvestTx + mPortfolioInvest,
+                Net = mIncome - mExpense - (mInvestTx + mPortfolioInvest)
+            });
+        }
+
+        // ── Category-Wise Spending (Yearly) ──
+        var categoryWiseSpending = nonTransferTx
+            .Where(t => t.Type == TransactionType.Expense || t.Type == TransactionType.Income || t.Type == TransactionType.Investment)
+            .GroupBy(t => new { t.CategoryId, t.Category.Name, Type = t.Type.ToString(), t.Category.Icon })
+            .Select(g => new CategoryWiseSpendingDto
+            {
+                CategoryId = g.Key.CategoryId,
+                CategoryName = g.Key.Name,
+                CategoryType = g.Key.Type,
+                Icon = g.Key.Icon,
+                Total = g.Sum(t => t.Amount),
+                Percentage = g.Key.Type == "Expense"
+                    ? (totalExpense > 0 ? Math.Round(g.Sum(t => t.Amount) / totalExpense * 100, 2) : 0)
+                    : g.Key.Type == "Income"
+                        ? (totalIncome > 0 ? Math.Round(g.Sum(t => t.Amount) / totalIncome * 100, 2) : 0)
+                        : (totalInvestment > 0 ? Math.Round(g.Sum(t => t.Amount) / totalInvestment * 100, 2) : 0)
+            })
+            .OrderByDescending(c => c.Total)
+            .ToList();
+
+        // ── Bank-Wise Spending (Yearly) - Expenses Only ──
+        var bankWiseSpending = nonTransferTx
+            .Where(t => t.Type == TransactionType.Expense && t.BankMode != null)
+            .GroupBy(t => t.BankMode!.Value.ToString())
+            .Select(g => new BankWiseSpendingDto
+            {
+                BankMode = g.Key,
+                Total = g.Sum(t => t.Amount),
+                TransactionCount = g.Count()
+            })
+            .OrderByDescending(b => b.Total)
+            .ToList();
+
+        // ── Online vs Offline Summary (Yearly) - Expenses Only ──
+        var onlineTx = nonTransferTx.Where(t => t.Type == TransactionType.Expense && t.OnlineOffline == OnlineOffline.Online).ToList();
+        var offlineTx = nonTransferTx.Where(t => t.Type == TransactionType.Expense && t.OnlineOffline == OnlineOffline.Offline).ToList();
+        var onlineVsOffline = new OnlineVsOfflineSummaryDto
+        {
+            OnlineTotal = onlineTx.Sum(t => t.Amount),
+            OnlineCount = onlineTx.Count,
+            OfflineTotal = offlineTx.Sum(t => t.Amount),
+            OfflineCount = offlineTx.Count
+        };
+
+        return new DashboardResponseDto
+        {
+            TotalIncome = totalIncome,
+            TotalExpense = totalExpense,
+            TotalInvestment = totalInvestment,
+            CurrentBalance = currentBalance,
+            MonthlySummary = monthlySummary,
+            YearlyTrend = new List<YearlyTrendDto>(),
+            CategoryWiseSpending = categoryWiseSpending,
+            BankWiseSpending = bankWiseSpending,
+            OnlineVsOfflineSummary = onlineVsOffline,
+            BudgetVsActual = new List<BudgetVsActualDto>(),
+            Accounts = accounts.Select(a => new AccountSummaryDto { Id = a.Id, Name = a.Name, Type = a.Type.ToString(), Balance = a.Balance }).ToList(),
+            RecentTransactions = new List<RecentTransactionDto>(),
+            UpcomingReminders = new List<ReminderDto>(),
+            WeeklyTrend = new List<WeeklyTrendDto>(),
+            MonthlyTrend = new List<DailyTrendDto>(),
+            IncomeCount = nonTransferTx.Count(t => t.Type == TransactionType.Income),
+            ExpenseCount = nonTransferTx.Count(t => t.Type == TransactionType.Expense),
+            InvestmentCount = nonTransferTx.Count(t => t.Type == TransactionType.Investment),
             TotalTransactionCount = periodTx.Count
         };
     }

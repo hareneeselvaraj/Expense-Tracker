@@ -10,6 +10,7 @@ public class DashboardResponseDto
     public decimal CurrentBalance { get; set; }
     public int IncomeCount { get; set; }
     public int ExpenseCount { get; set; }
+    public int InvestmentCount { get; set; }
     public int TotalTransactionCount { get; set; }
 
     public List<MonthlySummaryDto> MonthlySummary { get; set; } = new();

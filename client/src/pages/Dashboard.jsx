@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import {
     FiArrowUpRight, FiArrowDownRight, FiDollarSign, FiRefreshCw,
     FiTrendingUp, FiPlus, FiChevronRight, FiChevronLeft, FiGrid,
-    FiBell, FiClock, FiBarChart2,
+    FiBell, FiClock, FiBarChart2, FiArrowRight,
     FiShield, FiTarget, FiTrendingDown, FiCheckCircle, FiAlertTriangle, FiAlertCircle, FiXCircle, FiSettings
 } from 'react-icons/fi';
 import {
@@ -123,6 +123,7 @@ function CircleRing({ pct, color, size = 68, stroke = 8 }) {
 
 
 export default function Dashboard() {
+    const navigate = useNavigate();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const { user } = useAuth();
@@ -517,12 +518,20 @@ export default function Dashboard() {
                     </div>
                     <CircleRing pct={incPct} color="#10b981" size={80} stroke={6} />
                 </div>
+                <div className="dash-stat-card dash-stat-investment" style={{ background: 'rgba(192, 132, 252, 0.08)', border: '1px solid rgba(192, 132, 252, 0.2)' }}>
+                    <div className="dash-stat-info">
+                        <p className="dash-stat-label">Investment</p>
+                        <p className="dash-stat-sub">{data?.investmentCount ?? 0} Transactions</p>
+                        <p className="dash-stat-amount">₹{fmt(data?.totalInvestment)}</p>
+                    </div>
+                    <CircleRing pct={Math.min(100, Math.round((data?.totalInvestment / (total || 1)) * 100))} color="#c084fc" size={80} stroke={6} />
+                </div>
 
                 {/* Relocated Health Card at the end of Row 2 */}
                 {healthStats && (
                     <div
                         className="ai-stat-card ai-stat-health"
-                        style={{ cursor: 'pointer', margin: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', padding: '18px 22px', background: 'rgba(30,35,50,0.6)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.12)' }}
+                        style={{ cursor: 'pointer', margin: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', padding: '18px 22px', background: 'rgba(30,35,50,0.6)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.12)', flex: '0 0 200px' }}
                         onClick={() => {
                             setTempThresholds(healthThresholds);
                             setShowHealthModal(true);
@@ -543,7 +552,7 @@ export default function Dashboard() {
                 {/* Categories */}
                 <div className="dash-panel">
                     <div className="dash-panel-header">
-                        <span className="dash-panel-title"><FiGrid /> Categories</span>
+                        <span className="dash-panel-title"><FiGrid /> {catType} Breakdown</span>
                         <div className="dash-chart-toggle">
                             <button
                                 className={`dash-toggle-btn ${catType === 'Expense' ? 'active-toggle' : ''}`}
@@ -553,11 +562,15 @@ export default function Dashboard() {
                                 className={`dash-toggle-btn ${catType === 'Income' ? 'active-toggle' : ''}`}
                                 onClick={() => { setCatType('Income'); setCatPage(0); }}
                             >Incomes</button>
+                            <button
+                                className={`dash-toggle-btn ${catType === 'Investment' ? 'active-toggle' : ''}`}
+                                onClick={() => { setCatType('Investment'); setCatPage(0); }}
+                            >Investments</button>
                         </div>
                     </div>
                     <div className="category-treemap">
                         {(() => {
-                            const filtered = currentCategories.filter(c => c.categoryType === catType);
+                            const filtered = currentCategories.filter(c => (c.categoryType || '').toLowerCase() === catType.toLowerCase());
                             const totalPages = Math.ceil(filtered.length / CATS_PER_PAGE);
                             const displayCats = filtered.slice(catPage * CATS_PER_PAGE, (catPage + 1) * CATS_PER_PAGE);
 
@@ -1001,6 +1014,36 @@ export default function Dashboard() {
                     </div>
                 </div>
             )}
+            {/* YEARLY DASHBOARD LINK BUTTON */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '40px', paddingBottom: '20px' }}>
+                <button
+                    onClick={() => navigate('/yearly-dashboard')}
+                    className="btn-primary"
+                    style={{
+                        padding: '16px 32px',
+                        fontSize: '1.1rem',
+                        borderRadius: '16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        background: 'linear-gradient(135deg, #6366f1, #c084fc)',
+                        boxShadow: '0 8px 32px rgba(99, 102, 241, 0.3)',
+                        border: 'none',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }}
+                    onMouseOver={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)';
+                        e.currentTarget.style.boxShadow = '0 12px 40px rgba(99, 102, 241, 0.4)';
+                    }}
+                    onMouseOut={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                        e.currentTarget.style.boxShadow = '0 8px 32px rgba(99, 102, 241, 0.3)';
+                    }}
+                >
+                    <span style={{ fontWeight: 800, letterSpacing: '0.5px' }}>Explore Yearly Insights</span>
+                    <FiArrowRight size={22} style={{ transition: 'transform 0.3s ease' }} />
+                </button>
+            </div>
         </div>
     );
 }

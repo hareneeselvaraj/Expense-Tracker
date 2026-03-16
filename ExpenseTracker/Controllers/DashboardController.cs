@@ -57,4 +57,23 @@ public class DashboardController : BaseApiController
             throw;
         }
     }
+
+    /// <summary>Get yearly summary dashboard.</summary>
+    [HttpGet("yearly")]
+    public async Task<IActionResult> GetYearlyDashboard([FromQuery] int year, [FromQuery] Guid? accountId = null)
+    {
+        try
+        {
+            var result = await _dashboardService.GetYearlyDashboardAsync(GetUserId(), year, accountId);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            var log = $"[{DateTime.UtcNow}] {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}\n";
+            if (ex.InnerException != null)
+                log += $"INNER: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}\n{ex.InnerException.StackTrace}\n";
+            await System.IO.File.AppendAllTextAsync("dashboard_error.log", log);
+            throw;
+        }
+    }
 }
