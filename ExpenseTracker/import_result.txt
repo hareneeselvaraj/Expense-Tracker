@@ -1,0 +1,29 @@
+
+======================================================================
+  Transaction Importer with AI Categorization
+======================================================================
+  File:    c:\Users\haren\Desktop\Expense_Tracker\Expense-Tracker\ExpenseTracker\sample.csv
+  Account: 8772FE4A-A1C1-4759-A07E-BD42DA22D2D5
+  User:    Harenee (BC4C63CB...)
+======================================================================
+
+[1/3] Parsing CSV file...
+  CSV Headers: ['Date', 'Cheque Number', 'Transaction Remarks', 'Withdrawal Amount (INR)', 'Deposit Amount (INR)', 'Balance (INR)']
+  Found 4 valid transactions.
+
+[2/3] AI Categorization Summary:
+  Total Expenses:    Rs.365.00
+  Total Income:      Rs.2,000.00
+  Total Investments: Rs.7.22
+
+[3/3] Inserting into database...
+  [OK] 2026-02-01  Rs.      7.22  Investment  Food             Equity Trade on 01FEB
+  [OK] 2026-02-01  Rs.    300.00  Expense     Food             UPI Payment to Yaseen Ahm - Liver
+  [OK] 2026-02-01  Rs.     65.00  Expense     Food             UPI Payment to Bengaluru - Egg
+  [OK] 2026-02-01  Rs.  2,000.00  Income      Salary           Salary Credit
+
+======================================================================
+  SUCCESS: Imported 4/4 transactions!
+  Refresh your browser to see the updates.
+======================================================================
+

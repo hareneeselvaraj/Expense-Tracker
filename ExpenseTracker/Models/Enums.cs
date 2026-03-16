@@ -4,7 +4,9 @@ public enum AccountType
 {
     Bank,
     CreditCard,
-    Wallet
+    Wallet,
+    Cash,
+    Investment
 }
 
 public enum CategoryType
@@ -34,5 +36,6 @@ public enum BankMode
     GPay,
     NetBanking,
     Debit,
-    Credit
+    Credit,
+    Other
 }

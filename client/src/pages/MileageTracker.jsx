@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import { useToast } from '../components/Toast';
-import { FiTruck, FiPlus, FiTrash2, FiEdit2, FiDroplet, FiMapPin, FiDollarSign, FiTrendingUp, FiAlertTriangle, FiChevronDown, FiX, FiActivity } from 'react-icons/fi';
+import { FiTruck, FiPlus, FiTrash2, FiEdit2, FiDroplet, FiMapPin, FiDollarSign, FiTrendingUp, FiAlertTriangle, FiChevronDown, FiX, FiActivity, FiBarChart2, FiZap, FiCalendar } from 'react-icons/fi';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler } from 'chart.js';
+import { useTheme } from '../context/ThemeContext';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
 
 export default function MileageTracker() {
+    const { theme } = useTheme();
     const toast = useToast();
     const [vehicles, setVehicles] = useState([]);
     const [entries, setEntries] = useState([]);
@@ -133,36 +135,78 @@ export default function MileageTracker() {
             {
                 label: 'Avg Mileage (km/L)',
                 data: summary.monthlyTrend.map(m => m.avgMileage),
-                borderColor: '#818cf8',
-                backgroundColor: 'rgba(129,140,248,0.08)',
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
                 fill: true,
-                tension: 0.35,
-                pointRadius: 3,
-                pointBackgroundColor: '#818cf8',
+                tension: 0.4,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#6366f1',
+                borderWidth: 3,
             },
             {
                 label: 'Fuel Spent (₹)',
                 data: summary.monthlyTrend.map(m => m.fuelSpent),
                 borderColor: '#f59e0b',
-                backgroundColor: 'rgba(245,158,11,0.08)',
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
                 fill: true,
-                tension: 0.35,
-                pointRadius: 3,
+                tension: 0.4,
+                pointRadius: 4,
+                pointHoverRadius: 6,
                 pointBackgroundColor: '#f59e0b',
+                borderWidth: 3,
                 yAxisID: 'y1',
             }
         ]
     } : null;
 
+    const isDark = theme === 'dark';
+    const labelColor = isDark ? '#ffffff' : '#5a6078';
+    const tickColor = isDark ? '#e8eaf0' : '#7c8298';
+
     const trendOptions = {
         responsive: true,
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { position: 'top', labels: { usePointStyle: true, padding: 16, font: { size: 11 } } } },
+        plugins: { 
+            legend: { 
+                position: 'top', 
+                align: 'end',
+                labels: { 
+                    usePointStyle: true, 
+                    padding: 20, 
+                    font: { size: 12, weight: '600', family: "'Inter', sans-serif" },
+                    color: labelColor
+                } 
+            },
+            tooltip: {
+                backgroundColor: 'var(--bg-card)',
+                titleColor: 'var(--text)',
+                bodyColor: 'var(--text-secondary)',
+                borderColor: 'var(--border)',
+                borderWidth: 1,
+                padding: 12,
+                boxPadding: 6,
+                usePointStyle: true,
+                titleFont: { size: 14, weight: '700' },
+                bodyFont: { size: 13 }
+            }
+        },
         scales: {
-            y: { position: 'left', grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 } } },
-            y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { font: { size: 10 } } },
-            x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+            y: { 
+                position: 'left', 
+                grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', drawBorder: false }, 
+                ticks: { color: tickColor, font: { size: 11, weight: '500' } } 
+            },
+            y1: { 
+                position: 'right', 
+                grid: { display: false }, 
+                ticks: { color: tickColor, font: { size: 11, weight: '500' } } 
+            },
+            x: { 
+                grid: { display: false }, 
+                ticks: { color: tickColor, font: { size: 11, weight: '500' } } 
+            }
         }
     };
 
@@ -170,28 +214,32 @@ export default function MileageTracker() {
 
     return (
         <div className="page mil-page">
-            <div className="page-header" style={{ marginBottom: '1.5rem' }}>
-                <h1><FiTruck style={{ marginRight: 8 }} /> Mileage Tracker</h1>
+            <div className="page-header" style={{ marginBottom: '2rem' }}>
+                <h1><FiTruck style={{ marginRight: 12, color: 'var(--primary)' }} /> Mileage Tracker</h1>
             </div>
 
-            {/* ── Summary Cards ── */}
+            {/* ── Summary Stats (Budget Style) ── */}
             {summary && (
-                <div className="mil-stats">
-                    <div className="mil-stat-card">
-                        <FiMapPin className="mil-stat-icon" />
-                        <div><span className="mil-stat-label">Total Distance</span><span className="mil-stat-value">{summary.totalDistanceKm.toLocaleString('en-IN')} km</span></div>
+                <div className="budget-stat-row">
+                    <div className="budget-stat-card bsc-rose">
+                        <FiBarChart2 className="bsc-bg-icon" />
+                        <span className="bsc-label">Total Distance</span>
+                        <span className="bsc-value">{summary.totalDistanceKm.toLocaleString('en-IN')} km</span>
                     </div>
-                    <div className="mil-stat-card">
-                        <FiDroplet className="mil-stat-icon" />
-                        <div><span className="mil-stat-label">Fuel Spent</span><span className="mil-stat-value">₹{summary.totalFuelSpent.toLocaleString('en-IN', { minimumFractionDigits: 0 })}</span></div>
+                    <div className="budget-stat-card bsc-amber">
+                        <FiDroplet className="bsc-bg-icon" />
+                        <span className="bsc-label">Fuel Spent</span>
+                        <span className="bsc-value">₹{summary.totalFuelSpent.toLocaleString('en-IN')}</span>
                     </div>
-                    <div className="mil-stat-card">
-                        <FiTrendingUp className="mil-stat-icon" />
-                        <div><span className="mil-stat-label">Avg Mileage</span><span className="mil-stat-value">{summary.avgMileage} km/L</span></div>
+                    <div className="budget-stat-card bsc-emerald">
+                        <FiZap className="bsc-bg-icon" />
+                        <span className="bsc-label">Avg Efficiency</span>
+                        <span className="bsc-value">{summary.avgMileage} km/L</span>
                     </div>
-                    <div className="mil-stat-card">
-                        <FiDollarSign className="mil-stat-icon" />
-                        <div><span className="mil-stat-label">Cost / km</span><span className="mil-stat-value">₹{summary.costPerKm}</span></div>
+                    <div className="budget-stat-card bsc-indigo">
+                        <FiDollarSign className="bsc-bg-icon" />
+                        <span className="bsc-label">Cost per km</span>
+                        <span className="bsc-value">₹{summary.costPerKm}</span>
                     </div>
                 </div>
             )}
@@ -209,32 +257,36 @@ export default function MileageTracker() {
                 </div>
             )}
 
-            {/* ── Content Grid: Vehicles + Chart ── */}
+            {/* ── Content Grid ── */}
             <div className="mil-content-grid">
                 {/* Vehicles Panel */}
                 <div className="mil-panel">
                     <div className="mil-panel-header">
                         <h3>Vehicles</h3>
-                        <button className="btn btn-sm btn-primary" onClick={() => openVehicleForm()}><FiPlus /> Add</button>
+                        <button className="btn btn-sm btn-primary" onClick={() => openVehicleForm()}><FiPlus /> Add Vehicle</button>
                     </div>
+                    <button className={`mil-vehicle-chip-all ${!activeVehicle ? 'active' : ''}`} onClick={() => setActiveVehicle(null)}>
+                        Show All Vehicles
+                    </button>
                     {vehicles.length === 0 ? (
-                        <p className="mil-empty">No vehicles yet. Add one to start tracking.</p>
+                        <p className="mil-empty">No vehicles tracked yet.</p>
                     ) : (
                         <div className="mil-vehicle-list">
-                            <button className={`mil-vehicle-chip ${!activeVehicle ? 'active' : ''}`} onClick={() => setActiveVehicle(null)}>All</button>
                             {vehicles.map(v => (
-                                <div key={v.id} className={`mil-vehicle-card ${activeVehicle === v.id ? 'active' : ''}`}>
-                                    <div className="mil-vehicle-main" onClick={() => setActiveVehicle(activeVehicle === v.id ? null : v.id)}>
-                                        <span className="mil-vehicle-emoji">{v.vehicleType === 'Car' ? '🚗' : '🏍️'}</span>
+                                <div key={v.id} className={`mil-vehicle-card ${activeVehicle === v.id ? 'active' : ''}`} onClick={() => setActiveVehicle(activeVehicle === v.id ? null : v.id)}>
+                                    <div className="mil-vehicle-main">
+                                        <div className="mil-vehicle-avatar">
+                                            {v.vehicleType === 'Car' ? '🚗' : '🏍️'}
+                                        </div>
                                         <div className="mil-vehicle-info">
                                             <strong>{v.name}</strong>
-                                            <span className="mil-vehicle-sub">{v.fuelType}{v.registrationNumber ? ` · ${v.registrationNumber}` : ''}</span>
+                                            <span className="mil-vehicle-sub">{v.registrationNumber || v.fuelType}</span>
                                         </div>
                                     </div>
                                     {summary?.vehicles?.find(sv => sv.vehicleId === v.id) && (
                                         <div className="mil-vehicle-stats">
                                             <span>{summary.vehicles.find(sv => sv.vehicleId === v.id).avgMileage} km/L</span>
-                                            <span>{summary.vehicles.find(sv => sv.vehicleId === v.id).entryCount} entries</span>
+                                            <span style={{ color: 'var(--text-muted)' }}>{summary.vehicles.find(sv => sv.vehicleId === v.id).entryCount} logs</span>
                                         </div>
                                     )}
                                     <div className="mil-vehicle-actions">
@@ -250,14 +302,14 @@ export default function MileageTracker() {
                 {/* Trend Chart Panel */}
                 <div className="mil-panel mil-chart-panel">
                     <div className="mil-panel-header">
-                        <h3><FiActivity style={{ marginRight: 6 }} /> Mileage Trend</h3>
+                        <h3><FiActivity style={{ color: 'var(--primary)' }} /> Efficiency & Spend Trends</h3>
                     </div>
                     {trendData ? (
                         <div className="mil-chart-wrap">
                             <Line data={trendData} options={trendOptions} />
                         </div>
                     ) : (
-                        <p className="mil-empty">Add at least 2 fuel entries to see trends.</p>
+                        <p className="mil-empty">Add fuel entries to see trends.</p>
                     )}
                 </div>
             </div>
@@ -265,11 +317,11 @@ export default function MileageTracker() {
             {/* ── Fuel Entries Table ── */}
             <div className="mil-panel mil-entries-panel">
                 <div className="mil-panel-header">
-                    <h3><FiDroplet style={{ marginRight: 6 }} /> Fuel Log</h3>
-                    <button className="btn btn-sm btn-primary" onClick={() => openEntryForm()} disabled={vehicles.length === 0}><FiPlus /> Add Entry</button>
+                    <h3><FiDroplet style={{ color: '#f59e0b' }} /> Fuel Entry Log</h3>
+                    <button className="btn btn-sm btn-primary" onClick={() => openEntryForm()} disabled={vehicles.length === 0}><FiPlus /> Add Log</button>
                 </div>
                 {entries.length === 0 ? (
-                    <p className="mil-empty">No fuel entries yet.</p>
+                    <p className="mil-empty">No fuel entries logged yet.</p>
                 ) : (
                     <div className="mil-table-wrap">
                         <table className="mil-table">
@@ -280,23 +332,25 @@ export default function MileageTracker() {
                                     <th>Odometer</th>
                                     <th>Fuel (L)</th>
                                     <th>Cost (₹)</th>
-                                    <th>₹/L</th>
+                                    <th>₹/Liter</th>
                                     <th>Distance</th>
                                     <th>Mileage</th>
-                                    <th></th>
+                                    <th style={{ textAlign: 'right' }}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {entries.map(e => (
                                     <tr key={e.id}>
-                                        <td>{new Date(e.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
-                                        <td>{e.vehicleName}</td>
+                                        <td>{new Date(e.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                                        <td><span style={{ fontWeight: 700 }}>{e.vehicleName}</span></td>
                                         <td>{e.odometerReading.toLocaleString('en-IN')} km</td>
-                                        <td>{e.fuelQuantity}</td>
+                                        <td><span style={{ color: 'var(--text-secondary)' }}>{e.fuelQuantity} L</span></td>
                                         <td>₹{e.fuelCost.toLocaleString('en-IN')}</td>
                                         <td>₹{e.pricePerLiter?.toFixed(2) ?? '—'}</td>
                                         <td>{e.distanceKm != null ? `${e.distanceKm} km` : '—'}</td>
-                                        <td className={e.mileage ? 'mil-mileage-cell' : ''}>{e.mileage != null ? `${e.mileage} km/L` : '—'}</td>
+                                        <td className={e.mileage ? 'mil-mileage-cell' : ''}>
+                                            {e.mileage != null ? `${e.mileage} km/L` : '—'}
+                                        </td>
                                         <td className="mil-actions-cell">
                                             <button className="btn-icon" onClick={() => openEntryForm(e)}><FiEdit2 /></button>
                                             <button className="btn-icon btn-icon-danger" onClick={() => deleteEntry(e.id)}><FiTrash2 /></button>
@@ -309,26 +363,51 @@ export default function MileageTracker() {
                 )}
             </div>
 
-            {/* ── Per-vehicle Summary Cards ── */}
+            {/* ── Per-vehicle Summary View ── */}
             {summary?.vehicles?.length > 0 && (
-                <div className="mil-vehicle-summary-grid">
-                    {summary.vehicles.map(vs => (
-                        <div key={vs.vehicleId} className="mil-vsummary-card">
-                            <div className="mil-vsummary-header">
-                                <span className="mil-vehicle-emoji">{vs.vehicleType === 'Car' ? '🚗' : '🏍️'}</span>
-                                <strong>{vs.vehicleName}</strong>
-                                <span className="mil-vsummary-type">{vs.fuelType}</span>
+                <div style={{ marginTop: '2rem' }}>
+                    <div className="mil-panel-header" style={{ marginBottom: '1.5rem' }}>
+                        <h3 style={{ fontSize: '1.2rem' }}>Vehicle Performance Breakdown</h3>
+                    </div>
+                    <div className="mil-vehicle-summary-grid">
+                        {summary.vehicles.map(vs => (
+                            <div key={vs.vehicleId} className="mil-vsummary-card">
+                                <div className="mil-vsummary-header">
+                                    <div className="mil-vehicle-avatar" style={{ transform: 'scale(1.1)' }}>
+                                        {vs.vehicleType === 'Car' ? '🚗' : '🏍️'}
+                                    </div>
+                                    <strong>{vs.vehicleName}</strong>
+                                    <span className="mil-vsummary-type">{vs.fuelType}</span>
+                                </div>
+                                <div className="mil-vsummary-stats">
+                                    <div className="mil-vsummary-stat-item">
+                                        <span className="mil-vsummary-stat-label">Total Distance</span>
+                                        <span className="mil-vsummary-stat-value">{vs.totalDistanceKm.toLocaleString('en-IN')} km</span>
+                                    </div>
+                                    <div className="mil-vsummary-stat-item">
+                                        <span className="mil-vsummary-stat-label">Avg Mileage</span>
+                                        <span className="mil-vsummary-stat-value" style={{ color: 'var(--primary)' }}>{vs.avgMileage} km/L</span>
+                                    </div>
+                                    <div className="mil-vsummary-stat-item">
+                                        <span className="mil-vsummary-stat-label">Fuel Spent</span>
+                                        <span className="mil-vsummary-stat-value">₹{vs.totalFuelSpent.toLocaleString('en-IN')}</span>
+                                    </div>
+                                    <div className="mil-vsummary-stat-item">
+                                        <span className="mil-vsummary-stat-label">Cost / km</span>
+                                        <span className="mil-vsummary-stat-value">₹{vs.costPerKm}</span>
+                                    </div>
+                                    <div className="mil-vsummary-stat-item">
+                                        <span className="mil-vsummary-stat-label">Odometer</span>
+                                        <span className="mil-vsummary-stat-value">{vs.latestOdometer.toLocaleString('en-IN')} km</span>
+                                    </div>
+                                    <div className="mil-vsummary-stat-item">
+                                        <span className="mil-vsummary-stat-label">Logs</span>
+                                        <span className="mil-vsummary-stat-value">{vs.entryCount}</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="mil-vsummary-stats">
-                                <div><span>Distance</span><strong>{vs.totalDistanceKm.toLocaleString('en-IN')} km</strong></div>
-                                <div><span>Fuel Spent</span><strong>₹{vs.totalFuelSpent.toLocaleString('en-IN')}</strong></div>
-                                <div><span>Avg Mileage</span><strong>{vs.avgMileage} km/L</strong></div>
-                                <div><span>Cost/km</span><strong>₹{vs.costPerKm}</strong></div>
-                                <div><span>Odometer</span><strong>{vs.latestOdometer.toLocaleString('en-IN')} km</strong></div>
-                                <div><span>Entries</span><strong>{vs.entryCount}</strong></div>
-                            </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             )}
 
@@ -337,28 +416,29 @@ export default function MileageTracker() {
                 <div className="mil-modal-overlay" onClick={() => setShowVehicleForm(false)}>
                     <div className="mil-modal" onClick={e => e.stopPropagation()}>
                         <div className="mil-modal-header">
-                            <h3>{editingVehicle ? 'Edit Vehicle' : 'Add Vehicle'}</h3>
-                            <button className="btn-icon" onClick={() => setShowVehicleForm(false)}><FiX /></button>
+                            <h3>{editingVehicle ? 'Edit Vehicle Profile' : 'Add New Vehicle'}</h3>
+                            <button className="btn-icon" onClick={() => setShowVehicleForm(false)} style={{ border: 'none', background: 'var(--bg-card-hover)', borderRadius: '50%', width: 32, height: 32 }}><FiX /></button>
                         </div>
                         <form onSubmit={saveVehicle} className="mil-form">
                             <div className="mil-form-row">
-                                <label>Vehicle Name *</label>
-                                <input required value={vehicleForm.name} onChange={e => setVehicleForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. My Car" />
+                                <label>Vehicle Name</label>
+                                <input required value={vehicleForm.name} onChange={e => setVehicleForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Blue Sedan" />
                             </div>
                             <div className="mil-form-row mil-form-row-2col">
                                 <div>
-                                    <label>Type *</label>
+                                    <label>Type</label>
                                     <select value={vehicleForm.vehicleType} onChange={e => setVehicleForm(f => ({ ...f, vehicleType: e.target.value }))}>
-                                        <option value="Car">🚗 Car</option>
-                                        <option value="Bike">🏍️ Bike</option>
+                                        <option value="Car">🚗 Passenger Car</option>
+                                        <option value="Bike">🏍️ Motorbike</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label>Fuel *</label>
+                                    <label>Fuel Type</label>
                                     <select value={vehicleForm.fuelType} onChange={e => setVehicleForm(f => ({ ...f, fuelType: e.target.value }))}>
-                                        <option value="Petrol">Petrol</option>
-                                        <option value="Diesel">Diesel</option>
-                                        <option value="Electric">Electric</option>
+                                        <option value="Petrol">⛽ Petrol</option>
+                                        <option value="Diesel">🛢️ Diesel</option>
+                                        <option value="Electric">⚡ Electric</option>
+                                        <option value="CNG">🟢 CNG</option>
                                     </select>
                                 </div>
                             </div>
@@ -368,13 +448,13 @@ export default function MileageTracker() {
                                     <input value={vehicleForm.registrationNumber} onChange={e => setVehicleForm(f => ({ ...f, registrationNumber: e.target.value }))} placeholder="KA 01 AB 1234" />
                                 </div>
                                 <div>
-                                    <label>Service Interval (km)</label>
-                                    <input type="number" value={vehicleForm.serviceIntervalKm} onChange={e => setVehicleForm(f => ({ ...f, serviceIntervalKm: e.target.value }))} placeholder="e.g. 5000" />
+                                    <label>Service Every (km)</label>
+                                    <input type="number" value={vehicleForm.serviceIntervalKm} onChange={e => setVehicleForm(f => ({ ...f, serviceIntervalKm: e.target.value }))} placeholder="e.g. 10000" />
                                 </div>
                             </div>
                             <div className="mil-form-actions">
-                                <button type="button" className="btn btn-outline" onClick={() => setShowVehicleForm(false)}>Cancel</button>
-                                <button type="submit" className="btn btn-primary">{editingVehicle ? 'Update' : 'Add Vehicle'}</button>
+                                <button type="button" className="btn btn-outline" onClick={() => setShowVehicleForm(false)} style={{ padding: '12px 24px' }}>Cancel</button>
+                                <button type="submit" className="btn btn-primary" style={{ padding: '12px 32px' }}>{editingVehicle ? 'Update Vehicle' : 'Save Vehicle'}</button>
                             </div>
                         </form>
                     </div>
@@ -386,51 +466,51 @@ export default function MileageTracker() {
                 <div className="mil-modal-overlay" onClick={() => setShowEntryForm(false)}>
                     <div className="mil-modal" onClick={e => e.stopPropagation()}>
                         <div className="mil-modal-header">
-                            <h3>{editingEntry ? 'Edit Fuel Entry' : 'Log Fuel Entry'}</h3>
-                            <button className="btn-icon" onClick={() => setShowEntryForm(false)}><FiX /></button>
+                            <h3>{editingEntry ? 'Edit Log Entry' : 'New Fuel Entry'}</h3>
+                            <button className="btn-icon" onClick={() => setShowEntryForm(false)} style={{ border: 'none', background: 'var(--bg-card-hover)', borderRadius: '50%', width: 32, height: 32 }}><FiX /></button>
                         </div>
                         <form onSubmit={saveEntry} className="mil-form">
                             {!editingEntry && (
                                 <div className="mil-form-row">
-                                    <label>Vehicle *</label>
+                                    <label>Select Vehicle</label>
                                     <select required value={entryForm.vehicleId} onChange={e => setEntryForm(f => ({ ...f, vehicleId: e.target.value }))}>
-                                        <option value="">Select vehicle</option>
+                                        <option value="">Choose vehicle...</option>
                                         {vehicles.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
                                     </select>
                                 </div>
                             )}
                             <div className="mil-form-row mil-form-row-2col">
                                 <div>
-                                    <label>Date *</label>
+                                    <label>Filling Date</label>
                                     <input type="date" required value={entryForm.date} onChange={e => setEntryForm(f => ({ ...f, date: e.target.value }))} />
                                 </div>
                                 <div>
-                                    <label>Odometer (km) *</label>
-                                    <input type="number" step="0.01" required value={entryForm.odometerReading} onChange={e => setEntryForm(f => ({ ...f, odometerReading: e.target.value }))} placeholder="e.g. 15230" />
+                                    <label>Odometer (km)</label>
+                                    <input type="number" step="0.01" required value={entryForm.odometerReading} onChange={e => setEntryForm(f => ({ ...f, odometerReading: e.target.value }))} placeholder="Current reading" />
                                 </div>
                             </div>
                             <div className="mil-form-row mil-form-row-2col">
                                 <div>
-                                    <label>Fuel Quantity (L) *</label>
-                                    <input type="number" step="0.01" required value={entryForm.fuelQuantity} onChange={e => setEntryForm(f => ({ ...f, fuelQuantity: e.target.value }))} placeholder="e.g. 30" />
+                                    <label>Quantity (Liters)</label>
+                                    <input type="number" step="0.01" required value={entryForm.fuelQuantity} onChange={e => setEntryForm(f => ({ ...f, fuelQuantity: e.target.value }))} placeholder="e.g. 40" />
                                 </div>
                                 <div>
-                                    <label>Fuel Cost (₹) *</label>
-                                    <input type="number" step="0.01" required value={entryForm.fuelCost} onChange={e => setEntryForm(f => ({ ...f, fuelCost: e.target.value }))} placeholder="e.g. 3000" />
+                                    <label>Total Cost (₹)</label>
+                                    <input type="number" step="0.01" required value={entryForm.fuelCost} onChange={e => setEntryForm(f => ({ ...f, fuelCost: e.target.value }))} placeholder="Amount paid" />
                                 </div>
                             </div>
                             {entryForm.fuelQuantity > 0 && entryForm.fuelCost > 0 && (
                                 <div className="mil-form-computed">
-                                    Price per liter: <strong>₹{calcPPL}</strong>
+                                    Calculated Price: <strong>₹{calcPPL} per liter</strong>
                                 </div>
                             )}
                             <div className="mil-form-row">
-                                <label>Notes</label>
-                                <input value={entryForm.notes} onChange={e => setEntryForm(f => ({ ...f, notes: e.target.value }))} placeholder="Optional notes" />
+                                <label>Notes & Location</label>
+                                <input value={entryForm.notes} onChange={e => setEntryForm(f => ({ ...f, notes: e.target.value }))} placeholder="Station name, fuel type, etc." />
                             </div>
                             <div className="mil-form-actions">
-                                <button type="button" className="btn btn-outline" onClick={() => setShowEntryForm(false)}>Cancel</button>
-                                <button type="submit" className="btn btn-primary">{editingEntry ? 'Update' : 'Log Entry'}</button>
+                                <button type="button" className="btn btn-outline" onClick={() => setShowEntryForm(false)} style={{ padding: '12px 24px' }}>Discard</button>
+                                <button type="submit" className="btn btn-primary" style={{ padding: '12px 32px' }}>{editingEntry ? 'Update Log' : 'Save Entry'}</button>
                             </div>
                         </form>
                     </div>

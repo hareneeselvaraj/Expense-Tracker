@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import api from '../services/api';
-import { FiPlus, FiTrash2, FiEdit2, FiTrendingUp, FiX, FiZap } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiEdit2, FiTrendingUp, FiX, FiZap, FiRefreshCw } from 'react-icons/fi';
 import { useToast } from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -13,6 +13,8 @@ const CATEGORY_TYPES = {
 };
 
 const ALL_TYPES = [...CATEGORY_TYPES.Market, ...CATEGORY_TYPES.Deposit, ...CATEGORY_TYPES.Physical];
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // ── Category helpers ──
 function getCategory(type) {
@@ -493,6 +495,7 @@ function PhysicalTable({ items, onEdit, onDelete }) {
                             <th className="text-right">Purchase Value</th>
                             <th className="text-right">Current Value</th>
                             <th className="text-right">ROI (%)</th>
+                            <th>Platform</th>
                             <th>Last Updated</th>
                             <th>Notes</th><th>Actions</th>
                         </tr>
@@ -512,6 +515,7 @@ function PhysicalTable({ items, onEdit, onDelete }) {
                                     <td className="text-right">{fmt(inv.investedAmount)}</td>
                                     <td className="text-right">{fmt(inv.currentValue)}</td>
                                     <td className={`text-right ${isPos ? 'text-green' : 'text-red'}`}>{isPos ? '+' : ''}{inv.roi?.toFixed(2)}%</td>
+                                    <td>{inv.platform || '—'}</td>
                                     <td>{fmtDate(inv.dateInvested)}</td>
                                     <td><span className="inv-notes-cell">{inv.notes || '—'}</span></td>
                                     <td>
@@ -543,8 +547,51 @@ export default function Investments() {
     const [deleteTarget, setDeleteTarget] = useState(null);
     const toast = useToast();
 
+    const [filterMonth, setFilterMonth] = useState('All Months');
+    const [filterYear, setFilterYear] = useState('All Years');
+    const [filterPlatform, setFilterPlatform] = useState('All Platforms');
+
     const load = () => api.get('/investment').then((res) => { setInvestments(res.data); setLoading(false); });
     useEffect(() => { load(); }, []);
+
+    // Extract dynamic options
+    const availablePlatforms = useMemo(() => {
+        return [...new Set(investments.map(i => i.platform).filter(Boolean))].sort();
+    }, [investments]);
+
+    const availableYears = useMemo(() => {
+        return [...new Set(investments.map(i => i.dateInvested ? new Date(i.dateInvested).getFullYear() : null).filter(Boolean))]
+            .sort((a, b) => b - a).map(String);
+    }, [investments]);
+
+    const handleClearFilters = () => {
+        setFilterMonth('All Months');
+        setFilterYear('All Years');
+        setFilterPlatform('All Platforms');
+    };
+
+    // Filter logic
+    const filteredInvestments = useMemo(() => {
+        let list = [...investments];
+        if (filterPlatform !== 'All Platforms') {
+            list = list.filter(i => i.platform === filterPlatform);
+        }
+        if (filterYear !== 'All Years') {
+            list = list.filter(i => i.dateInvested && new Date(i.dateInvested).getFullYear() === parseInt(filterYear));
+        }
+        if (filterMonth !== 'All Months') {
+            const mIdx = MONTHS.indexOf(filterMonth);
+            list = list.filter(i => i.dateInvested && new Date(i.dateInvested).getMonth() === mIdx);
+        }
+        return list;
+    }, [investments, filterPlatform, filterYear, filterMonth]);
+
+    // Portfolio summary stats
+    const totalInvested  = filteredInvestments.reduce((s, i) => s + (i.investedAmount || 0), 0);
+    const totalCurrent   = filteredInvestments.reduce((s, i) => s + (i.currentValue   || 0), 0);
+    const totalGain      = totalCurrent - totalInvested;
+    const totalGainPct   = totalInvested > 0 ? ((totalGain / totalInvested) * 100) : 0;
+    const isGain         = totalGain >= 0;
 
     const resetForm = () => { setEditing(null); setShowForm(false); };
 
@@ -566,14 +613,14 @@ export default function Investments() {
     // ── Split data by category ──
     const byCategory = useMemo(() => {
         const market = [], deposit = [], physical = [];
-        investments.forEach(inv => {
+        filteredInvestments.forEach(inv => {
             const cat = inv.category || getCategory(inv.assetType);
             if (cat === 'Market') market.push(inv);
             else if (cat === 'Deposit') deposit.push(inv);
             else physical.push(inv);
         });
         return { Market: market, Deposit: deposit, Physical: physical };
-    }, [investments]);
+    }, [filteredInvestments]);
 
     const currentItems = byCategory[tab] || [];
 
@@ -595,10 +642,50 @@ export default function Investments() {
                 onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)}
             />
 
-            <div className="page-header">
+            <div className="dash-top-bar" style={{ marginBottom: 24, marginTop: 8 }}>
                 <div>
-                    <h1 className="page-title"><FiTrendingUp /> Investment Transactions</h1>
-                    <p className="inv-subtitle">Add, edit, and manage your investments by category</p>
+                    <h1 className="dash-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <FiTrendingUp style={{ color: 'var(--primary)' }} /> Investments
+                    </h1>
+                </div>
+                <div className="dash-filters">
+                    <select className="dash-filter-select" value={filterPlatform} onChange={e => setFilterPlatform(e.target.value)}>
+                        <option>All Platforms</option>
+                        {availablePlatforms.map(p => <option key={p}>{p}</option>)}
+                    </select>
+                    <select className="dash-filter-select" value={filterMonth} onChange={e => setFilterMonth(e.target.value)}>
+                        <option>All Months</option>
+                        {MONTHS.map(m => <option key={m}>{m}</option>)}
+                    </select>
+                    <select className="dash-filter-select" value={filterYear} onChange={e => setFilterYear(e.target.value)}>
+                        <option>All Years</option>
+                        {availableYears.map(y => <option key={y}>{y}</option>)}
+                    </select>
+                    <button className="dash-filter-icon-btn" onClick={handleClearFilters} title="Clear Filters"><FiRefreshCw /></button>
+                </div>
+            </div>
+
+            {/* Portfolio Summary Cards */}
+            <div className="inv-stat-row">
+                <div className="inv-stat-card" style={{ background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
+                    <FiTrendingUp className="isc-bg-icon" />
+                    <p className="isc-label">Total Invested</p>
+                    <p className="isc-value">{fmt(totalInvested)}</p>
+                </div>
+                <div className="inv-stat-card" style={{ background: 'linear-gradient(135deg, #06b6d4, #0891b2)' }}>
+                    <FiTrendingUp className="isc-bg-icon" />
+                    <p className="isc-label">Current Value</p>
+                    <p className="isc-value">{fmt(totalCurrent)}</p>
+                </div>
+                <div className="inv-stat-card" style={{ background: isGain ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #ef4444, #dc2626)' }}>
+                    <FiTrendingUp className="isc-bg-icon" />
+                    <p className="isc-label">Total {isGain ? 'Gain' : 'Loss'}</p>
+                    <p className="isc-value">{isGain ? '+' : ''}{fmt(totalGain)}</p>
+                </div>
+                <div className="inv-stat-card" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
+                    <FiTrendingUp className="isc-bg-icon" />
+                    <p className="isc-label">Return</p>
+                    <p className="isc-value">{isGain ? '+' : ''}{totalGainPct.toFixed(1)}%</p>
                 </div>
             </div>
 

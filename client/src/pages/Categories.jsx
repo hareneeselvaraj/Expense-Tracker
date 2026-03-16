@@ -1,17 +1,28 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import { FiPlus, FiX, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiTag, FiTrendingUp, FiDollarSign, FiBarChart2 } from 'react-icons/fi';
 import { useToast } from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
 
-/* ── colour dot per category (cycles through a palette) ── */
+/* ── palette per type ── */
+const TYPE_CONFIG = {
+    Income: { gradient: 'linear-gradient(135deg, #10b981, #06b6d4)', icon: <FiTrendingUp />, light: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.25)', text: '#10b981' },
+    Expense: { gradient: 'linear-gradient(135deg, #ef4444, #f59e0b)', icon: <FiDollarSign />, light: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.25)', text: '#ef4444' },
+    Investment: { gradient: 'linear-gradient(135deg, #6366f1, #a855f7)', icon: <FiBarChart2 />, light: 'rgba(99,102,241,0.12)', border: 'rgba(99,102,241,0.25)', text: '#6366f1' },
+};
+
 const DOT_COLORS = {
     Income: ['#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#14b8a6', '#6366f1'],
-    Expense: ['#ef4444', '#f59e0b', '#8b5cf6', '#64748b', '#ec4899', '#14b8a6', '#a855f7'],
-    Investment: ['#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#06b6d4', '#6366f1'],
+    Expense: ['#ef4444', '#f59e0b', '#8b5cf6', '#64748b', '#ec4899', '#14b8a6'],
+    Investment: ['#6366f1', '#a855f7', '#f59e0b', '#10b981', '#3b82f6', '#ec4899'],
 };
 
 const SECTION_ORDER = ['Income', 'Expense', 'Investment'];
+
+const CATEGORY_ICONS = [
+    '🏠', '🍔', '✈️', '🎬', '📚', '🚗', '💊', '💪', '🛍️', '🎮', '💡', '🏋️', '🎵', '👗', '🌿', '🐾',
+    '🏨', '⛱️', '🏦', '💰', '💳', '💎', '⛽', '🛠️', '🔩', '🎁', '🛒', '📱', '💻', '🏥', '⚽', '🍷', '👶', '🐶', '🎨', '🚀'
+];
 
 export default function Categories() {
     const [categories, setCategories] = useState([]);
@@ -19,17 +30,17 @@ export default function Categories() {
     const [loading, setLoading] = useState(true);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const toast = useToast();
-    const [form, setForm] = useState({ name: '', type: 'Expense' });
+    const [form, setForm] = useState({ name: '', type: 'Expense', icon: null });
 
     const load = () => api.get('/category').then((res) => { setCategories(res.data); setLoading(false); });
     useEffect(() => { load(); }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        await api.post('/category', form);
-        setForm({ name: '', type: 'Expense' });
+        await api.post('/category', { name: form.name, type: form.type, icon: form.icon });
+        setForm({ name: '', type: 'Expense', icon: null });
         setShowForm(false);
-        toast.success('Category created successfully');
+        toast.success('Category created!');
         load();
     };
 
@@ -37,7 +48,7 @@ export default function Categories() {
         if (!deleteTarget) return;
         try {
             await api.delete(`/category/${deleteTarget}`);
-            toast.success('Category deleted successfully');
+            toast.success('Category deleted');
             load();
         } catch (err) {
             toast.error(err.response?.data?.message || 'Cannot delete: category has linked transactions.');
@@ -45,12 +56,12 @@ export default function Categories() {
         setDeleteTarget(null);
     };
 
-    /* ── group categories by type ── */
+    /* group */
     const grouped = {};
     SECTION_ORDER.forEach((t) => { grouped[t] = []; });
     categories.forEach((c) => {
         if (grouped[c.type]) grouped[c.type].push(c);
-        else grouped[c.type] = [c];            // fallback for unknown types
+        else grouped[c.type] = [c];
     });
 
     if (loading) return <div className="page-loader">Loading…</div>;
@@ -59,82 +70,158 @@ export default function Categories() {
         <div className="page">
             <ConfirmModal
                 open={!!deleteTarget}
-                title="Confirm Delete"
+                title="Delete Category"
                 message="Are you sure you want to delete this category?"
                 onConfirm={handleDelete}
                 onCancel={() => setDeleteTarget(null)}
             />
 
-            {/* ── Header ── */}
-            <div className="cat-page-header">
-                <div>
-                    <h1 className="cat-page-title">Categories</h1>
-                    <p className="cat-page-subtitle">Organize your transactions by categories</p>
+            {/* ── Add Category Modal ── */}
+            {showForm && (
+                <div className="modal-overlay" onClick={() => setShowForm(false)}>
+                    <div className="modal-card" style={{ maxWidth: 460, textAlign: 'left' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>New Category</h3>
+                            <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1.2rem' }}>✕</button>
+                        </div>
+                        <form onSubmit={handleSubmit}>
+                            <div className="form-group" style={{ marginBottom: 14 }}>
+                                <label>Category Name</label>
+                                <input
+                                    value={form.name}
+                                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                                    placeholder="e.g. Food, Travel, Salary"
+                                    required
+                                />
+                            </div>
+                            <div className="form-group" style={{ marginBottom: 14 }}>
+                                <label>Type</label>
+                                <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+                                    <option value="Income">Income</option>
+                                    <option value="Expense">Expense</option>
+                                    <option value="Investment">Investment</option>
+                                </select>
+                            </div>
+                            <div className="form-group" style={{ marginBottom: 20 }}>
+                                <label>Pick an Icon (Optional)</label>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                                    {CATEGORY_ICONS.map(ic => (
+                                        <button
+                                            key={ic}
+                                            type="button"
+                                            onClick={() => setForm({ ...form, icon: form.icon === ic ? null : ic })}
+                                            style={{
+                                                width: 38, height: 38, fontSize: '1.2rem',
+                                                border: form.icon === ic ? '2px solid var(--primary)' : '1px solid var(--border)',
+                                                borderRadius: 10, background: form.icon === ic ? 'rgba(99,102,241,0.1)' : 'transparent',
+                                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                            }}
+                                        >{ic}</button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="form-actions">
+                                <button type="submit" className="btn btn-primary">Create</button>
+                                <button type="button" className="btn btn-ghost" onClick={() => setShowForm(false)}>Cancel</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                <button className="btn btn-primary cat-add-btn" onClick={() => setShowForm(!showForm)}>
+            )}
+
+            {/* ── Header ── */}
+            <div className="page-header">
+                <div>
+                    <h1 className="page-title"><FiTag /> Categories</h1>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                        Organize your transactions by category
+                    </p>
+                </div>
+                <button className="btn btn-primary" onClick={() => setShowForm(true)}>
                     <FiPlus /> Add Category
                 </button>
             </div>
 
-            {/* ── Add Category Form ── */}
-            {showForm && (
-                <div className="cat-form-card">
-                    <form onSubmit={handleSubmit} className="cat-form">
-                        <div className="form-group">
-                            <label>Category Name</label>
-                            <input
-                                value={form.name}
-                                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                placeholder="e.g. Food, Travel, Salary"
-                                required
-                            />
+            {/* ── Stats Row ── */}
+            <div className="cat-stats-row">
+                {SECTION_ORDER.map((type) => {
+                    const cfg = TYPE_CONFIG[type];
+                    const count = grouped[type]?.length ?? 0;
+                    return (
+                        <div key={type} className="cat-stat-card" style={{ background: cfg.gradient }}>
+                            <div className="cat-stat-icon">{cfg.icon}</div>
+                            <div>
+                                <div className="cat-stat-count">{count}</div>
+                                <div className="cat-stat-label">{type}</div>
+                            </div>
                         </div>
-                        <div className="form-group">
-                            <label>Type</label>
-                            <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-                                <option value="Income">Income</option>
-                                <option value="Expense">Expense</option>
-                                <option value="Investment">Investment</option>
-                            </select>
-                        </div>
-                        <div className="cat-form-actions">
-                            <button type="submit" className="btn btn-primary">Create</button>
-                            <button type="button" className="btn btn-ghost" onClick={() => setShowForm(false)}>Cancel</button>
-                        </div>
-                    </form>
+                    );
+                })}
+                <div className="cat-stat-card" style={{ background: 'linear-gradient(135deg, #1e293b, #334155)' }}>
+                    <div className="cat-stat-icon"><FiTag /></div>
+                    <div>
+                        <div className="cat-stat-count">{categories.length}</div>
+                        <div className="cat-stat-label">Total</div>
+                    </div>
                 </div>
-            )}
+            </div>
 
             {/* ── Grouped Sections ── */}
             {SECTION_ORDER.map((type) => {
                 const items = grouped[type];
                 if (!items || items.length === 0) return null;
-                const palette = DOT_COLORS[type] || DOT_COLORS.Expense;
+                const cfg = TYPE_CONFIG[type];
+                const palette = DOT_COLORS[type];
 
                 return (
-                    <div key={type} className="cat-section">
-                        <h2 className="cat-section-title">{type}</h2>
-                        <div className="cat-chips-wrap">
-                            {items.map((c, idx) => (
-                                <div key={c.id} className="cat-chip" title="Right-click or hover to delete">
-                                    <span className="cat-dot" style={{ background: palette[idx % palette.length] }} />
-                                    <span className="cat-chip-label">{c.name}</span>
-                                    <button
-                                        className="cat-chip-delete"
-                                        onClick={() => setDeleteTarget(c.id)}
-                                        title="Delete category"
+                    <div key={type} className="cat-section-block">
+                        <div className="cat-section-header">
+                            <div className="cat-section-badge" style={{ background: cfg.gradient }}>
+                                {cfg.icon}
+                            </div>
+                            <h2 className="cat-section-heading" style={{ marginRight: 8 }}>{type}</h2>
+                            <span className="cat-section-count" style={{ background: 'var(--bg-light)', color: 'var(--text-muted)', padding: '2px 8px', borderRadius: 12, fontSize: '0.8rem', fontWeight: 600 }}>{items.length}</span>
+                        </div>
+
+                        <div className="cat-cards-grid">
+                            {items.map((c, idx) => {
+                                const color = palette[idx % palette.length];
+                                const initials = c.name.slice(0, 2).toUpperCase();
+                                return (
+                                    <div key={c.id} className="cat-card" style={{ '--cat-color': color, transition: 'transform 0.2s ease, box-shadow 0.2s ease', cursor: 'pointer' }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 6px 16px ${color}33`; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
                                     >
-                                        <FiX />
-                                    </button>
-                                </div>
-                            ))}
+                                        <div className="cat-card-avatar" style={{ background: color + '22', border: `1px solid ${color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            {c.icon && c.icon.length <= 4 ? (
+                                                <span style={{ fontSize: '1.2rem' }}>{c.icon}</span>
+                                            ) : (
+                                                <span style={{ color, fontSize: '1rem', fontWeight: 700 }}>{initials}</span>
+                                            )}
+                                        </div>
+                                        <div className="cat-card-info">
+                                            <p className="cat-card-name" style={{ margin: 0, fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-main)' }}>{c.name}</p>
+                                        </div>
+                                        <button
+                                            className="cat-card-delete"
+                                            onClick={() => setDeleteTarget(c.id)}
+                                            title="Delete"
+                                        >
+                                            <FiTrash2 />
+                                        </button>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 );
             })}
 
             {categories.length === 0 && (
-                <p className="text-muted" style={{ marginTop: 32 }}>No categories yet. Create some to start tracking!</p>
+                <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
+                    <FiTag style={{ fontSize: '3rem', marginBottom: 12, opacity: 0.3 }} />
+                    <p style={{ fontSize: '1rem' }}>No categories yet. Add one to get started!</p>
+                </div>
             )}
         </div>
     );

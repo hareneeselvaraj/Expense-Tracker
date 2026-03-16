@@ -1,0 +1,35 @@
+Headers: ['S No.', 'Transaction Date', 'Cheque Number', 'Transaction Remarks', 'Withdrawal Amount (INR)', 'Deposit Amount (INR)', 'Balance (INR)']
+
+Fuzzy 'Date': ['Transaction Date']
+Fuzzy 'Remarks': ['Transaction Remarks']
+Fuzzy 'Withdrawal': ['Withdrawal Amount (INR)']
+Fuzzy 'Deposit': ['Deposit Amount (INR)']
+
+--- First 3 data rows ---
+
+Row 2:
+  S No.: 1 (type: int)
+  Transaction Date: '01.02.2026' (type: str)
+  Cheque Number: None (type: NoneType)
+  Transaction Remarks: 'EBA/EQ Trade 01FEB/20260201055243' (type: str)
+  Withdrawal Amount (INR): 7.22 (type: float)
+  Deposit Amount (INR): None (type: NoneType)
+  Balance (INR): 53056.54 (type: float)
+
+Row 3:
+  S No.: 2 (type: int)
+  Transaction Date: '01.02.2026' (type: str)
+  Cheque Number: None (type: NoneType)
+  Transaction Remarks: 'UPI/YASEEN AHM/Q461543179@ybl/Liver/YES\nBANK\nL/080046819664/UPI875b2d52fe0c58b789863ed3 d71d5bd4/' (type: str)
+  Withdrawal Amount (INR): 300 (type: int)
+  Deposit Amount (INR): None (type: NoneType)
+  Balance (INR): 52756.54 (type: float)
+
+Row 4:
+  S No.: 3 (type: int)
+  Transaction Date: '01.02.2026' (type: str)
+  Cheque Number: None (type: NoneType)
+  Transaction Remarks: 'UPI/BENGALURU/gpay-121901573/Egg/AXIS\nBANK/080329017536/UPId312e06e40ea56779f8d\n5a717e430f80/' (type: str)
+  Withdrawal Amount (INR): 65 (type: int)
+  Deposit Amount (INR): None (type: NoneType)
+  Balance (INR): 52691.54 (type: float)

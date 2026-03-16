@@ -12,6 +12,7 @@ public class CreateAccountDto
     public AccountType Type { get; set; }
 
     public decimal Balance { get; set; }
+    public decimal? CreditLimit { get; set; }
 }
 
 public class UpdateAccountDto
@@ -20,6 +21,7 @@ public class UpdateAccountDto
     public string? Name { get; set; }
     public AccountType? Type { get; set; }
     public decimal? Balance { get; set; }
+    public decimal? CreditLimit { get; set; }
 }
 
 public class AccountResponseDto
@@ -28,4 +30,5 @@ public class AccountResponseDto
     public string Name { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
     public decimal Balance { get; set; }
+    public decimal? CreditLimit { get; set; }
 }

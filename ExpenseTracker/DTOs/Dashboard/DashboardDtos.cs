@@ -1,3 +1,5 @@
+using ExpenseTracker.DTOs.Reminder;
+
 namespace ExpenseTracker.DTOs.Dashboard;
 
 public class DashboardResponseDto
@@ -6,6 +8,9 @@ public class DashboardResponseDto
     public decimal TotalExpense { get; set; }
     public decimal TotalInvestment { get; set; }
     public decimal CurrentBalance { get; set; }
+    public int IncomeCount { get; set; }
+    public int ExpenseCount { get; set; }
+    public int TotalTransactionCount { get; set; }
 
     public List<MonthlySummaryDto> MonthlySummary { get; set; } = new();
     public List<YearlyTrendDto> YearlyTrend { get; set; } = new();
@@ -14,6 +19,10 @@ public class DashboardResponseDto
     public OnlineVsOfflineSummaryDto OnlineVsOfflineSummary { get; set; } = new();
     public List<BudgetVsActualDto> BudgetVsActual { get; set; } = new();
     public List<AccountSummaryDto> Accounts { get; set; } = new();
+    public List<RecentTransactionDto> RecentTransactions { get; set; } = new();
+    public List<ReminderDto> UpcomingReminders { get; set; } = new();
+    public List<WeeklyTrendDto> WeeklyTrend { get; set; } = new();
+    public List<DailyTrendDto> MonthlyTrend { get; set; } = new();
 }
 
 public class MonthlySummaryDto
@@ -42,6 +51,7 @@ public class CategoryWiseSpendingDto
     public string CategoryType { get; set; } = string.Empty;
     public decimal Total { get; set; }
     public decimal Percentage { get; set; }
+    public string? Icon { get; set; }
 }
 
 public class BankWiseSpendingDto
@@ -69,6 +79,7 @@ public class BudgetVsActualDto
     public decimal ActualSpent { get; set; }
     public decimal Remaining { get; set; }
     public decimal UtilizationPercent { get; set; }
+    public string? Icon { get; set; }
 }
 
 public class AccountSummaryDto
@@ -77,4 +88,30 @@ public class AccountSummaryDto
     public string Name { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
     public decimal Balance { get; set; }
+}
+
+public class RecentTransactionDto
+{
+    public Guid Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public decimal Amount { get; set; }
+    public DateTime Date { get; set; }
+    public string CategoryName { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public string? Icon { get; set; }
+}
+
+public class WeeklyTrendDto
+{
+    public string Day { get; set; } = string.Empty;
+    public decimal Income { get; set; }
+    public decimal Expense { get; set; }
+}
+
+public class DailyTrendDto
+{
+    public int Day { get; set; }
+    public decimal Income { get; set; }
+    public decimal Expense { get; set; }
 }

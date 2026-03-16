@@ -34,18 +34,18 @@ public class DashboardController : BaseApiController
             var log = $"[{DateTime.UtcNow}] {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}\n";
             if (ex.InnerException != null)
                 log += $"INNER: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}\n{ex.InnerException.StackTrace}\n";
-            await System.IO.File.AppendAllTextAsync(@"C:\Users\HareneeS\Desktop\Expense_Tracker\dashboard_error.log", log);
+            await System.IO.File.AppendAllTextAsync("dashboard_error.log", log);
             return StatusCode(500, new { error = ex.Message, inner = ex.InnerException?.Message, stack = ex.StackTrace });
         }
     }
 
     /// <summary>Get summary dashboard: totals, monthly breakdown, category breakdown, accounts.</summary>
     [HttpGet]
-    public async Task<IActionResult> GetDashboard()
+    public async Task<IActionResult> GetDashboard([FromQuery] int? month = null, [FromQuery] int? year = null, [FromQuery] Guid? accountId = null)
     {
         try
         {
-            var result = await _dashboardService.GetDashboardAsync(GetUserId());
+            var result = await _dashboardService.GetDashboardAsync(GetUserId(), month, year, accountId);
             return Ok(result);
         }
         catch (Exception ex)
@@ -53,7 +53,7 @@ public class DashboardController : BaseApiController
             var log = $"[{DateTime.UtcNow}] {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}\n";
             if (ex.InnerException != null)
                 log += $"INNER: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}\n{ex.InnerException.StackTrace}\n";
-            await System.IO.File.AppendAllTextAsync(@"C:\Users\HareneeS\Desktop\Expense_Tracker\dashboard_error.log", log);
+            await System.IO.File.AppendAllTextAsync("dashboard_error.log", log);
             throw;
         }
     }

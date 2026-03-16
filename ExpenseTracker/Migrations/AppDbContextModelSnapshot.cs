@@ -26,6 +26,9 @@ namespace ExpenseTracker.Migrations
                     b.Property<decimal>("Balance")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<decimal?>("CreditLimit")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -43,7 +46,7 @@ namespace ExpenseTracker.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Accounts", (string)null);
+                    b.ToTable("Accounts");
                 });
 
             modelBuilder.Entity("ExpenseTracker.Models.Budget", b =>
@@ -76,13 +79,16 @@ namespace ExpenseTracker.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Budgets", (string)null);
+                    b.ToTable("Budgets");
                 });
 
             modelBuilder.Entity("ExpenseTracker.Models.Category", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Icon")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
@@ -102,7 +108,47 @@ namespace ExpenseTracker.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Categories", (string)null);
+                    b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("ExpenseTracker.Models.FuelEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("FuelCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("FuelQuantity")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("OdometerReading")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("PricePerLiter")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("VehicleId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("VehicleId");
+
+                    b.ToTable("FuelEntries");
                 });
 
             modelBuilder.Entity("ExpenseTracker.Models.Investment", b =>
@@ -111,15 +157,107 @@ namespace ExpenseTracker.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("AssetType")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal?>("BuyPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Category")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
                     b.Property<decimal>("CurrentValue")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("DateInvested")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal?>("InterestRate")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("InvestedAmount")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("InvestmentFrequency")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastProcessedDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal?>("MonthlyAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("MonthsCompleted")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Platform")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal?>("ProjectedMaturityValue")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("Quantity")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("Status")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("TenureMonths")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Investments");
+                });
+
+            modelBuilder.Entity("ExpenseTracker.Models.Reminder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal?>("Amount")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("UserId")
@@ -129,7 +267,7 @@ namespace ExpenseTracker.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Investments", (string)null);
+                    b.ToTable("Reminders");
                 });
 
             modelBuilder.Entity("ExpenseTracker.Models.Tag", b =>
@@ -150,7 +288,7 @@ namespace ExpenseTracker.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Tags", (string)null);
+                    b.ToTable("Tags");
                 });
 
             modelBuilder.Entity("ExpenseTracker.Models.Transaction", b =>
@@ -177,6 +315,9 @@ namespace ExpenseTracker.Migrations
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("InvestmentId")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsAutoDebit")
@@ -210,13 +351,15 @@ namespace ExpenseTracker.Migrations
 
                     b.HasIndex("CategoryId");
 
+                    b.HasIndex("InvestmentId");
+
                     b.HasIndex("TagId");
 
                     b.HasIndex("TransferAccountId");
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Transactions", (string)null);
+                    b.ToTable("Transactions");
                 });
 
             modelBuilder.Entity("ExpenseTracker.Models.User", b =>
@@ -247,7 +390,48 @@ namespace ExpenseTracker.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("ExpenseTracker.Models.Vehicle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FuelType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RegistrationNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("ServiceIntervalKm")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("VehicleType")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Vehicles");
                 });
 
             modelBuilder.Entity("ExpenseTracker.Models.Account", b =>
@@ -291,10 +475,40 @@ namespace ExpenseTracker.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ExpenseTracker.Models.FuelEntry", b =>
+                {
+                    b.HasOne("ExpenseTracker.Models.User", "User")
+                        .WithMany("FuelEntries")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ExpenseTracker.Models.Vehicle", "Vehicle")
+                        .WithMany("FuelEntries")
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+
+                    b.Navigation("Vehicle");
+                });
+
             modelBuilder.Entity("ExpenseTracker.Models.Investment", b =>
                 {
                     b.HasOne("ExpenseTracker.Models.User", "User")
                         .WithMany("Investments")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ExpenseTracker.Models.Reminder", b =>
+                {
+                    b.HasOne("ExpenseTracker.Models.User", "User")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -327,6 +541,10 @@ namespace ExpenseTracker.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ExpenseTracker.Models.Investment", "Investment")
+                        .WithMany()
+                        .HasForeignKey("InvestmentId");
+
                     b.HasOne("ExpenseTracker.Models.Tag", "Tag")
                         .WithMany()
                         .HasForeignKey("TagId")
@@ -347,9 +565,22 @@ namespace ExpenseTracker.Migrations
 
                     b.Navigation("Category");
 
+                    b.Navigation("Investment");
+
                     b.Navigation("Tag");
 
                     b.Navigation("TransferAccount");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ExpenseTracker.Models.Vehicle", b =>
+                {
+                    b.HasOne("ExpenseTracker.Models.User", "User")
+                        .WithMany("Vehicles")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -374,11 +605,20 @@ namespace ExpenseTracker.Migrations
 
                     b.Navigation("Categories");
 
+                    b.Navigation("FuelEntries");
+
                     b.Navigation("Investments");
 
                     b.Navigation("Tags");
 
                     b.Navigation("Transactions");
+
+                    b.Navigation("Vehicles");
+                });
+
+            modelBuilder.Entity("ExpenseTracker.Models.Vehicle", b =>
+                {
+                    b.Navigation("FuelEntries");
                 });
 #pragma warning restore 612, 618
         }

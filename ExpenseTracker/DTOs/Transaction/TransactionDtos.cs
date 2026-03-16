@@ -64,6 +64,7 @@ public class TransactionResponseDto
     public string AccountName { get; set; } = string.Empty;
     public Guid CategoryId { get; set; }
     public string CategoryName { get; set; } = string.Empty;
+    public string? CategoryIcon { get; set; }
     public decimal Amount { get; set; }
     public string Type { get; set; } = string.Empty;
     public string OnlineOffline { get; set; } = string.Empty;
@@ -78,4 +79,9 @@ public class TransactionResponseDto
     public string? TagName { get; set; }
     public Guid? InvestmentId { get; set; }
     public string? InvestmentName { get; set; }
+}
+public class BulkDeleteDto
+{
+    [Required]
+    public List<Guid> Ids { get; set; } = new();
 }

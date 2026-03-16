@@ -17,6 +17,8 @@ public class Category
     [Required]
     public CategoryType Type { get; set; }
 
+    public string? Icon { get; set; }
+
     // Navigation
     [ForeignKey(nameof(UserId))]
     public User User { get; set; } = null!;

@@ -1,101 +1,122 @@
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiHome, FiCreditCard, FiDollarSign, FiPieChart, FiTrendingUp, FiLogOut, FiGrid, FiTag, FiCpu, FiChevronDown, FiBarChart2, FiList, FiTruck } from 'react-icons/fi';
+import {
+    FiHome, FiCreditCard, FiGrid, FiDollarSign, FiTarget,
+    FiClock, FiBell, FiList, FiLogOut, FiTrendingUp, FiBarChart2, FiCpu, FiTruck, FiChevronLeft, FiChevronRight, FiTag
+} from 'react-icons/fi';
 import ThemeToggle from './ThemeToggle';
 
 export default function Sidebar() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
-    const location = useLocation();
-
-    // Expand investment sub-menu if on either investment page
-    const isInvestmentPage = location.pathname === '/investments' || location.pathname === '/portfolio';
-    const [investOpen, setInvestOpen] = useState(isInvestmentPage);
+    const [isCollapsed, setIsCollapsed] = useState(false);
 
     const handleLogout = () => {
         logout();
         navigate('/login');
     };
 
-    const links = [
+    const toggleSidebar = () => {
+        setIsCollapsed(!isCollapsed);
+        // Dispatch event to app layout to adjust main content margin if needed
+        document.body.classList.toggle('sidebar-collapsed', !isCollapsed);
+    };
+
+    const mainLinks = [
         { to: '/', icon: <FiHome />, label: 'Dashboard' },
         { to: '/transactions', icon: <FiCreditCard />, label: 'Transactions' },
-        { to: '/accounts', icon: <FiDollarSign />, label: 'Accounts' },
         { to: '/categories', icon: <FiGrid />, label: 'Categories' },
-        { to: '/tags', icon: <FiTag />, label: 'Tags' },
-        { to: '/budgets', icon: <FiPieChart />, label: 'Budgets' },
+        { to: '/accounts', icon: <FiDollarSign />, label: 'Balance' },
+        { to: '/goals', icon: <FiTarget />, label: 'Goals' },
     ];
 
-    const investmentLinks = [
-        { to: '/portfolio', icon: <FiBarChart2 />, label: 'Portfolio' },
-        { to: '/investments', icon: <FiList />, label: 'Investment Transactions' },
+    const secondaryLinks = [
+        { to: '/tags', icon: <FiTag />, label: 'Tags' },
+        { to: '/reminders', icon: <FiBell />, label: 'Reminders' },
+        { to: '/history', icon: <FiList />, label: 'History' },
+    ];
+
+    const moreLinks = [
+        { to: '/investments', icon: <FiTrendingUp />, label: 'Investments' },
+        { to: '/budgets', icon: <FiBarChart2 />, label: 'Budgets' },
+        { to: '/mileage', icon: <FiTruck />, label: 'Mileage' },
+        { to: '/ai-insights', icon: <FiCpu />, label: 'AI Insights' },
     ];
 
     return (
-        <aside className="sidebar">
+        <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+            {/* Brand */}
             <div className="sidebar-brand">
-                <span className="brand-icon">💰</span>
+                <div className="sidebar-logo">
+                    <span className="sidebar-logo-icon">💰</span>
+                </div>
                 <h2>ExpenseTracker</h2>
+                <button className="sidebar-toggle-btn" onClick={toggleSidebar}>
+                    {isCollapsed ? <FiChevronRight /> : <FiChevronLeft />}
+                </button>
             </div>
+
+            {/* User Profile */}
+            <div className="sidebar-profile">
+                <div className="sidebar-avatar">
+                    {user?.name?.[0]?.toUpperCase() || 'U'}
+                </div>
+                <div className="sidebar-profile-info">
+                    <p className="sidebar-profile-name">{user?.name || 'User'}</p>
+                    <p className="sidebar-profile-role">Personal</p>
+                </div>
+            </div>
+
+            {/* Main Nav */}
             <nav className="sidebar-nav">
-                {links.map((link) => (
+                {mainLinks.map((link) => (
                     <NavLink
                         key={link.to}
                         to={link.to}
+                        end={link.to === '/'}
                         className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                        title={isCollapsed ? link.label : undefined}
                     >
                         {link.icon}
                         <span>{link.label}</span>
                     </NavLink>
                 ))}
 
-                {/* ── Investments Sub-menu ── */}
-                <button
-                    className={`nav-link nav-parent ${isInvestmentPage ? 'active' : ''}`}
-                    onClick={() => setInvestOpen(!investOpen)}
-                >
-                    <FiTrendingUp />
-                    <span>Investments</span>
-                    <FiChevronDown className={`nav-chevron ${investOpen ? 'nav-chevron-open' : ''}`} />
-                </button>
-                <div className={`nav-submenu ${investOpen ? 'nav-submenu-open' : ''}`}>
-                    {investmentLinks.map((link) => (
-                        <NavLink
-                            key={link.to}
-                            to={link.to}
-                            className={({ isActive }) => `nav-link nav-sub-link ${isActive ? 'active' : ''}`}
-                        >
-                            {link.icon}
-                            <span>{link.label}</span>
-                        </NavLink>
-                    ))}
-                </div>
+                <div className="sidebar-divider" />
 
-                <NavLink
-                    to="/mileage"
-                    className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                >
-                    <FiTruck />
-                    <span>Mileage Tracker</span>
-                </NavLink>
+                {secondaryLinks.map((link) => (
+                    <NavLink
+                        key={link.to}
+                        to={link.to}
+                        className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                        title={isCollapsed ? link.label : undefined}
+                    >
+                        {link.icon}
+                        <span>{link.label}</span>
+                    </NavLink>
+                ))}
 
-                <NavLink
-                    to="/ai-insights"
-                    className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                >
-                    <FiCpu />
-                    <span>AI Insights</span>
-                </NavLink>
+                <div className="sidebar-divider" />
+
+                {moreLinks.map((link) => (
+                    <NavLink
+                        key={link.to}
+                        to={link.to}
+                        className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                        title={isCollapsed ? link.label : undefined}
+                    >
+                        {link.icon}
+                        <span>{link.label}</span>
+                    </NavLink>
+                ))}
             </nav>
+
+            {/* Footer */}
             <div className="sidebar-footer">
                 <ThemeToggle />
-                <div className="user-info">
-                    <div className="user-avatar">{user?.name?.[0]?.toUpperCase() || 'U'}</div>
-                    <span className="user-name">{user?.name || 'User'}</span>
-                </div>
-                <button className="logout-btn" onClick={handleLogout}>
-                    <FiLogOut /> Logout
+                <button className="logout-btn" onClick={handleLogout} title={isCollapsed ? "Log Out" : undefined}>
+                    <FiLogOut /> <span>Log Out</span>
                 </button>
             </div>
         </aside>

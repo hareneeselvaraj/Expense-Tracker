@@ -1,0 +1,10 @@
+Executing SELECT * FROM Accounts LIMIT 1
+{'Id': '8772FE4A-A1C1-4759-A07E-BD42DA22D2D5', 'UserId': 'BC4C63CB-A94D-4BE8-823A-B52A0EB42C1A', 'Name': 'HDFC', 'Type': 'Bank', 'Balance': 19800, 'CreditLimit': None}
+
+Executing PRAGMA table_info(Accounts)
+{'cid': 0, 'name': 'Id', 'type': 'TEXT', 'notnull': 1, 'dflt_value': None, 'pk': 1}
+{'cid': 1, 'name': 'UserId', 'type': 'TEXT', 'notnull': 1, 'dflt_value': None, 'pk': 0}
+{'cid': 2, 'name': 'Name', 'type': 'TEXT', 'notnull': 1, 'dflt_value': None, 'pk': 0}
+{'cid': 3, 'name': 'Type', 'type': 'TEXT', 'notnull': 1, 'dflt_value': None, 'pk': 0}
+{'cid': 4, 'name': 'Balance', 'type': 'decimal(18,2)', 'notnull': 1, 'dflt_value': None, 'pk': 0}
+{'cid': 5, 'name': 'CreditLimit', 'type': 'decimal(18,2)', 'notnull': 0, 'dflt_value': None, 'pk': 0}

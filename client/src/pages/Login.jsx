@@ -26,22 +26,46 @@ export default function Login() {
                 <div className="auth-header">
                     <span className="auth-icon">💰</span>
                     <h1>Welcome Back</h1>
-                    <p>Sign in to your Expense Tracker</p>
+                    <p>Log in to your account</p>
                 </div>
+                
                 {error && <div className="alert alert-error">{error}</div>}
+                
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
                         <label>Email</label>
-                        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
+                        <input 
+                            type="email" 
+                            value={email} 
+                            onChange={(e) => setEmail(e.target.value)} 
+                            placeholder="you@example.com" 
+                            required 
+                        />
                     </div>
+                    
                     <div className="form-group">
                         <label>Password</label>
-                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
+                        <input 
+                            type="password" 
+                            value={password} 
+                            onChange={(e) => setPassword(e.target.value)} 
+                            placeholder="••••••••" 
+                            required 
+                        />
                     </div>
+                    
+                    <div className="form-group" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', textTransform: 'none' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', textTransform: 'none' }}>
+                            <input type="checkbox" style={{ width: 'auto', marginBottom: 0 }} /> Remember Me
+                        </label>
+                        <Link to="/forgot-password" style={{ fontSize: '0.85rem' }}>Forgot Password?</Link>
+                    </div>
+                    
                     <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
-                        {loading ? 'Signing in…' : 'Sign In'}
+                        {loading ? 'Logging in…' : 'Sign In'}
                     </button>
                 </form>
+                
                 <p className="auth-switch">
                     Don't have an account? <Link to="/register">Sign Up</Link>
                 </p>

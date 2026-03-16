@@ -72,6 +72,35 @@ public class TransactionController : BaseApiController
         return deleted ? NoContent() : NotFound();
     }
 
+    [HttpDelete("bulk")]
+    public async Task<IActionResult> DeleteBulk([FromBody] BulkDeleteDto dto)
+    {
+        if (dto?.Ids == null || !dto.Ids.Any()) return BadRequest(new { error = "No IDs provided" });
+        var count = await _transactionService.DeleteBulkAsync(GetUserId(), dto.Ids);
+        return Ok(new { message = $"Successfully deleted {count} transactions" });
+    }
+
+    [HttpPost("upload")]
+    public async Task<IActionResult> Upload([FromForm] IFormFile file, [FromForm] Guid accountId)
+    {
+        if (file == null || file.Length == 0) return BadRequest(new { error = "File is empty" });
+        
+        try
+        {
+            System.Console.WriteLine($"[UPLOAD CONTROLLER] file={file.FileName}, size={file.Length}, account={accountId}, user={GetUserId()}");
+            using var stream = file.OpenReadStream();
+            var count = await _transactionService.UploadAsync(GetUserId(), accountId, stream, file.FileName);
+            System.Console.WriteLine($"[UPLOAD CONTROLLER] SUCCESS: {count} transactions imported");
+            return Ok(new { message = $"Successfully uploaded {count} transactions" });
+        }
+        catch (Exception ex)
+        {
+            var fullError = ex.ToString();
+            System.Console.WriteLine($"[UPLOAD CONTROLLER ERROR] {fullError}");
+            return BadRequest(new { error = ex.Message, detail = ex.InnerException?.Message });
+        }
+    }
+
     /// <summary>Diagnostic: trigger a budget check for a category in the current month and return detailed results.</summary>
     [HttpPost("test-budget-alert/{categoryId:guid}")]
     public async Task<IActionResult> TestBudgetAlert(Guid categoryId)

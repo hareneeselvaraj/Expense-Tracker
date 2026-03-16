@@ -20,7 +20,8 @@ public class CategoryService : ICategoryService
         {
             UserId = userId,
             Name = dto.Name,
-            Type = dto.Type
+            Type = dto.Type,
+            Icon = dto.Icon
         };
 
         await _categoryRepo.AddAsync(category);
@@ -46,6 +47,7 @@ public class CategoryService : ICategoryService
     {
         Id = c.Id,
         Name = c.Name,
-        Type = c.Type.ToString()
+        Type = c.Type.ToString(),
+        Icon = c.Icon
     };
 }

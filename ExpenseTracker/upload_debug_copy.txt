@@ -1,0 +1,31 @@
+﻿Upload: TestData.xlsx, Rows: 16, User: 33a9c1a2-af41-4962-ab67-1c4dc7c6e4d1, Account: b30b43e9-29e8-46bc-b518-4e5cc38b550f
+Keys: [A, B, C, D, E, F, G]
+
+Row 0:
+  A = S No. (type: String)
+  B = Transaction Date (type: String)
+  C = Cheque Number (type: String)
+  D = Transaction Remarks (type: String)
+  E = Withdrawal Amount (INR) (type: String)
+  F = Deposit Amount (INR) (type: String)
+  G = Balance (INR) (type: String)
+
+Row 1:
+  A = 1 (type: Double)
+  B = 01.02.2026 (type: String)
+  C =  (type: null)
+  D = EBA/EQ Trade 01FEB/20260201055243 (type: String)
+  E = 7.22 (type: Double)
+  F =  (type: null)
+  G = 53056.54 (type: Double)
+
+Row 2:
+  A = 2 (type: Double)
+  B = 01.02.2026 (type: String)
+  C =  (type: null)
+  D = UPI/YASEEN AHM/Q461543179@ybl/Liver/YES
+BANK
+L/080046819664/UPI875b2d52fe0c58b789863ed3 d71d5bd4/ (type: String)
+  E = 300 (type: Double)
+  F =  (type: null)
+  G = 52756.54 (type: Double)
