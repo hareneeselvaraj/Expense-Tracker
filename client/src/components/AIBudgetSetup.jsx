@@ -12,6 +12,7 @@ export default function AIBudgetSetup({ onApplied }) {
     const [result, setResult]               = useState(null);
     const [editAmounts, setEditAmounts]     = useState({});
     const [allCategories, setAllCategories] = useState([]);
+    const [catError, setCatError]           = useState(false);
     const [excluded, setExcluded]           = useState(new Set());
     const [showCatPicker, setShowCatPicker] = useState(false);
 
@@ -28,11 +29,11 @@ export default function AIBudgetSetup({ onApplied }) {
     // Fetch ALL categories — not just "Expense" typed ones
     // (Python-imported categories may have wrong type stored in DB)
     useEffect(() => {
-        if (open && allCategories.length === 0) {
-            api.get('/category')
-                .then(res => setAllCategories(res.data || []))
-                .catch(() => {});
-        }
+        if (!open) return;
+        setCatError(false);
+        api.get('/category')
+            .then(res => setAllCategories(res.data || []))
+            .catch(() => setCatError(true));
     }, [open]);
 
     const toggleExclude = (id) => {
@@ -57,6 +58,14 @@ export default function AIBudgetSetup({ onApplied }) {
     }, [allCategories]);
 
     const includedCount = allCategories.filter(c => !excluded.has(c.id)).length;
+
+    const parseAmount = (raw, fallback) => {
+        // Accept "0" (string) as a real value; treat ""/null/undefined as empty.
+        const candidate = (raw === '' || raw === null || raw === undefined) ? fallback : raw;
+        const n = typeof candidate === 'number' ? candidate : parseFloat(String(candidate).replace(/,/g, ''));
+        if (!Number.isFinite(n) || n < 0) return fallback;
+        return n;
+    };
 
     const generate = async () => {
         if (!prompt.trim() || includedCount === 0) return;
@@ -89,7 +98,7 @@ export default function AIBudgetSetup({ onApplied }) {
         try {
             const budgets = result.suggestions.map(s => ({
                 ...s,
-                suggestedAmount: parseFloat(editAmounts[s.categoryId] || s.suggestedAmount)
+                suggestedAmount: parseAmount(editAmounts[s.categoryId], s.suggestedAmount)
             }));
             await api.post('/aifeatures/budget/apply', { budgets, month, year });
             toast.success(`${budgets.length} budgets applied for ${now.toLocaleString('en-IN', { month: 'long', year: 'numeric' })}!`);
@@ -105,9 +114,9 @@ export default function AIBudgetSetup({ onApplied }) {
     };
 
     const fmt = v => `₹${Number(v || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
-    const total = result?.suggestions?.reduce(
-        (s, x) => s + parseFloat(editAmounts[x.categoryId] || x.suggestedAmount), 0
-    ) ?? 0;
+    const total = result?.suggestions?.reduce((s, x) => {
+        return s + parseAmount(editAmounts[x.categoryId], x.suggestedAmount);
+    }, 0) ?? 0;
 
     // Group categories for display
     const includedCats  = allCategories.filter(c => !excluded.has(c.id));
@@ -128,7 +137,12 @@ export default function AIBudgetSetup({ onApplied }) {
                 {open ? <FiChevronUp /> : <FiChevronDown />}
             </button>
 
-            {open && (
+            {open && catError ? (
+                <div className="aibs-body" style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+                    <p className="aibs-warn" style={{ marginBottom: 16 }}>Failed to load categories. The AI budget generator requires your category data.</p>
+                    <button className="btn btn-outline" onClick={() => { setOpen(false); setTimeout(() => setOpen(true), 10); }}>Retry</button>
+                </div>
+            ) : open && (
                 <div className="aibs-body">
 
                     {/* ── Category picker ── */}

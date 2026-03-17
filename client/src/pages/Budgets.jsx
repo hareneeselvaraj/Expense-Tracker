@@ -8,6 +8,7 @@ import {
 import { useToast } from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
 import AIBudgetSetup from '../components/AIBudgetSetup';
+import { CoupleContext } from '../context/CoupleContext';
 
 const RISK_COLORS = {
     safe:     { color: '#10b981', label: 'Safe',      bg: 'rgba(16,185,129,0.12)',  icon: <FiCheckCircle /> },
@@ -104,6 +105,9 @@ export default function Budgets() {
     const now = new Date();
     const [viewYear,  setViewYear]  = useState(now.getFullYear());
     const [viewMonth, setViewMonth] = useState(now.getMonth() + 1);
+    
+    const { isCouple } = useContext(CoupleContext);
+    const [scope, setScope] = useState('Combined');
 
     const [form, setForm] = useState({
         categoryId: '', amount: '', year: now.getFullYear(), month: now.getMonth() + 1,
@@ -113,7 +117,7 @@ export default function Budgets() {
     const load = useCallback(async () => {
         try {
             setLoading(true);
-            const [bRes, cRes] = await Promise.all([api.get('/budget'), api.get('/category')]);
+            const [bRes, cRes] = await Promise.all([api.get('/budget', { params: { scope } }), api.get('/category')]);
             setAllBudgets(bRes.data);
             setCategories(cRes.data);
         } catch (err) {
@@ -122,7 +126,7 @@ export default function Budgets() {
         } finally {
             setLoading(false);
         }
-    }, [toast]);
+    }, [toast, scope]);
     useEffect(() => { load(); }, [load]);
 
     // Filter budgets by selected month/year
@@ -196,9 +200,18 @@ export default function Budgets() {
                     <h1 className="page-title"><FiShield /> Budgets</h1>
                     <p className="page-subtitle">Track and manage your monthly spending limits</p>
                 </div>
-                <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-                    <FiPlus /> New Budget
-                </button>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    {isCouple && (
+                        <select className="dash-filter-select" style={{ background: 'var(--primary-color)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px' }} value={scope} onChange={e => setScope(e.target.value)}>
+                            <option value="Mine">Mine</option>
+                            <option value="Partner">Partner</option>
+                            <option value="Combined">Combined</option>
+                        </select>
+                    )}
+                    <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+                        <FiPlus /> New Budget
+                    </button>
+                </div>
             </div>
 
             <AIBudgetSetup onApplied={load} />
@@ -334,8 +347,15 @@ export default function Budgets() {
                                         </div>
 
                                         {/* Progress Bar */}
-                                        <div className="bpc-bar-track">
-                                            <div className="bpc-bar-fill" style={{ width: `${pct}%`, background: cfg.color }} />
+                                        <div className="bpc-bar-track" style={{ display: 'flex' }}>
+                                            {isCouple && scope === 'Combined' ? (
+                                                <>
+                                                    <div className="bpc-bar-fill" style={{ width: `${b.amount > 0 ? Math.min(100, (b.mySpent / b.amount) * 100) : 0}%`, background: cfg.color, borderRight: '2px solid var(--bg-panel)' }} title={`My Spend: ${fmt(b.mySpent)}`} />
+                                                    <div className="bpc-bar-fill" style={{ width: `${b.amount > 0 ? Math.min(100, (b.partnerSpent / b.amount) * 100) : 0}%`, background: '#8b5cf6', opacity: 0.8 }} title={`Partner Spend: ${fmt(b.partnerSpent)}`} />
+                                                </>
+                                            ) : (
+                                                <div className="bpc-bar-fill" style={{ width: `${pct}%`, background: cfg.color }} />
+                                            )}
                                         </div>
                                         <div className="bpc-bar-labels">
                                             <span>{fmt(b.spent)} spent</span>

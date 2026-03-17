@@ -1,6 +1,7 @@
 import axios from 'axios';
+console.log("ANTIGRAVITY_CHECK_V1");
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+const API_URL = '/api';
 
 const api = axios.create({
     baseURL: API_URL,

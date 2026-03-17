@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
     public DbSet<FuelEntry> FuelEntries => Set<FuelEntry>();
     public DbSet<Reminder> Reminders => Set<Reminder>();
+    public DbSet<Couple> Couples => Set<Couple>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -159,6 +160,27 @@ public class AppDbContext : DbContext
              .WithMany()
              .HasForeignKey(r => r.UserId)
              .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── Couple ──
+        modelBuilder.Entity<Couple>(e =>
+        {
+            e.HasOne(c => c.Owner)
+             .WithMany()
+             .HasForeignKey(c => c.OwnerId)
+             .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(c => c.Partner)
+             .WithMany()
+             .HasForeignKey(c => c.PartnerId)
+             .OnDelete(DeleteBehavior.SetNull);
+
+            e.HasIndex(c => c.InviteCode)
+             .IsUnique();
+
+            e.Property(c => c.Status)
+             .HasConversion<string>()
+             .HasMaxLength(20);
         });
     }
 }

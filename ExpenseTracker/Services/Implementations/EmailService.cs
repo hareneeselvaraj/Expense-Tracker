@@ -187,4 +187,56 @@ public class EmailService : IEmailService
             _logger.LogError(ex, "Failed to send welcome email to {Email}", recipientEmail);
         }
     }
+
+    public async Task SendCoupleInviteAsync(string recipientEmail, string inviteCode, string inviterName)
+    {
+        var smtp = _config.GetSection("SmtpSettings");
+        var senderEmail = smtp["SenderEmail"]!;
+        var senderName = smtp["SenderName"] ?? "Expense Tracker";
+        var host = smtp["Host"]!;
+        var port = int.Parse(smtp["Port"] ?? "587");
+        var appPassword = smtp["AppPassword"]!.Replace(" ", "");
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(senderName, senderEmail));
+        message.To.Add(new MailboxAddress("Partner", recipientEmail));
+        message.Subject = $"🔗 {inviterName} invited you to share expenses";
+
+        var bodyBuilder = new BodyBuilder
+        {
+            HtmlBody = $@"
+            <div style=""font-family: 'Segoe UI', Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #1a1d27; color: #e4e6ef; border-radius: 12px; overflow: hidden;"">
+                <div style=""background: linear-gradient(135deg, #10b981, #3b82f6); padding: 24px 28px;"">
+                    <h1 style=""margin: 0; font-size: 20px; color: #fff;"">Expense Sharing Invite</h1>
+                </div>
+                <div style=""padding: 28px;"">
+                    <p style=""margin: 0 0 16px; font-size: 16px; line-height: 1.5;"">
+                        <strong>{inviterName}</strong> has invited you to share an expense tracking dashboard.
+                    </p>
+                    <div style=""background: #0f1117; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 24px;"">
+                        <p style=""margin: 0 0 8px; color: #8b8fa3; font-size: 14px;"">Your Invite Code:</p>
+                        <div style=""font-size: 32px; font-weight: 700; letter-spacing: 4px; color: #10b981;"">
+                            {inviteCode}
+                        </div>
+                    </div>
+                </div>
+            </div>"
+        };
+
+        message.Body = bodyBuilder.ToMessageBody();
+
+        try
+        {
+            using var client = new SmtpClient();
+            await client.ConnectAsync(host, port, MailKit.Security.SecureSocketOptions.StartTls);
+            await client.AuthenticateAsync(senderEmail, appPassword);
+            await client.SendAsync(message);
+            await client.DisconnectAsync(true);
+            _logger.LogInformation("Couple invite email sent to {Email}", recipientEmail);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send couple invite to {Email}", recipientEmail);
+        }
+    }
 }

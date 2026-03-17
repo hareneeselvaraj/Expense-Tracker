@@ -3,12 +3,15 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
     FiHome, FiCreditCard, FiGrid, FiDollarSign, FiTarget,
-    FiClock, FiBell, FiList, FiLogOut, FiTrendingUp, FiBarChart2, FiCpu, FiTruck, FiChevronLeft, FiChevronRight, FiTag, FiZap
+    FiClock, FiBell, FiList, FiLogOut, FiTrendingUp, FiBarChart2, FiCpu, FiTruck, FiChevronLeft, FiChevronRight, FiTag, FiZap, FiUsers
 } from 'react-icons/fi';
 import ThemeToggle from './ThemeToggle';
+import { CoupleContext } from '../context/CoupleContext';
+import { useContext } from 'react';
 
 export default function Sidebar() {
     const { user, logout } = useAuth();
+    const { isCouple } = useContext(CoupleContext);
     const navigate = useNavigate();
     const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -40,6 +43,7 @@ export default function Sidebar() {
     const moreLinks = [
         { to: '/investments', icon: <FiTrendingUp />, label: 'Investments' },
         { to: '/budgets', icon: <FiBarChart2 />, label: 'Budgets' },
+        { to: '/couple', icon: <FiUsers />, label: 'Shared Finance', badge: isCouple },
         { to: '/mileage', icon: <FiTruck />, label: 'Mileage' },
         { to: '/ai-insights', icon: <FiCpu />, label: 'AI Insights' },
         { to: '/ai-chat', icon: <FiZap />, label: 'Ask AI' },
@@ -65,7 +69,7 @@ export default function Sidebar() {
                 </div>
                 <div className="sidebar-profile-info">
                     <p className="sidebar-profile-name">{user?.name || 'User'}</p>
-                    <p className="sidebar-profile-role">Personal</p>
+                    <p className="sidebar-profile-role">{isCouple ? 'Couple Mode' : 'Personal'}</p>
                 </div>
             </div>
 
@@ -108,7 +112,10 @@ export default function Sidebar() {
                         title={isCollapsed ? link.label : undefined}
                     >
                         {link.icon}
-                        <span>{link.label}</span>
+                        <span>
+                            {link.label}
+                            {link.badge && <span className="couple-badge"></span>}
+                        </span>
                     </NavLink>
                 ))}
             </nav>

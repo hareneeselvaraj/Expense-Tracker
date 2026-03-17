@@ -30,6 +30,13 @@ public class CategoryController : BaseApiController
         return Ok(result);
     }
 
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCategoryDto dto)
+    {
+        var result = await _categoryService.UpdateAsync(GetUserId(), id, dto);
+        return result == null ? NotFound() : Ok(result);
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {

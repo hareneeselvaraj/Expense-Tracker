@@ -6,4 +6,5 @@ public interface IEmailService
         string categoryName, decimal budgetAmount, decimal amountSpent,
         int month, int year);
     Task SendWelcomeEmailAsync(string recipientEmail, string recipientName);
+    Task SendCoupleInviteAsync(string recipientEmail, string inviteCode, string inviterName);
 }

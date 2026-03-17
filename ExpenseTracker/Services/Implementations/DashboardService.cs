@@ -15,27 +15,32 @@ public class DashboardService : IDashboardService
     private readonly IInvestmentRepository _investmentRepo;
     private readonly IBudgetRepository _budgetRepo;
     private readonly AppDbContext _context;
+    private readonly ICoupleService _coupleService;
 
     public DashboardService(
         ITransactionRepository transactionRepo,
         IAccountRepository accountRepo,
         IInvestmentRepository investmentRepo,
         IBudgetRepository budgetRepo,
-        AppDbContext context)
+        AppDbContext context,
+        ICoupleService coupleService)
     {
         _transactionRepo = transactionRepo;
         _accountRepo = accountRepo;
         _investmentRepo = investmentRepo;
         _budgetRepo = budgetRepo;
         _context = context;
+        _coupleService = coupleService;
     }
 
-    public async Task<DashboardResponseDto> GetDashboardAsync(Guid userId, int? month = null, int? year = null, Guid? accountId = null)
+    public async Task<DashboardResponseDto> GetDashboardAsync(Guid userId, int? month = null, int? year = null, Guid? accountId = null, string scope = "Combined")
     {
-        var transactions = (await _transactionRepo.GetByUserIdAsync(userId)).ToList();
-        var accounts = (await _accountRepo.GetByUserIdAsync(userId)).ToList();
-        var investments = (await _investmentRepo.GetByUserIdAsync(userId)).ToList();
-        var budgets = (await _budgetRepo.GetByUserIdAsync(userId)).ToList();
+        var userIds = await _coupleService.GetUserScopeAsync(userId, scope);
+
+        var transactions = await _context.Transactions.Include(t => t.Category).Where(t => userIds.Contains(t.UserId)).ToListAsync();
+        var accounts = await _context.Accounts.Where(a => userIds.Contains(a.UserId)).ToListAsync();
+        var investments = await _context.Investments.Where(i => userIds.Contains(i.UserId)).ToListAsync();
+        var budgets = await _context.Budgets.Include(b => b.Category).Where(b => userIds.Contains(b.UserId)).ToListAsync();
 
         // ── Filter for Account ──
         if (accountId.HasValue)
@@ -259,7 +264,7 @@ public class DashboardService : IDashboardService
             .ToList();
 
         var upcomingReminders = await _context.Reminders
-            .Where(r => r.UserId == userId && r.Status == "upcoming")
+            .Where(r => userIds.Contains(r.UserId) && r.Status == "upcoming")
             .OrderBy(r => r.Date)
             .Take(5)
             .Select(r => new ReminderDto

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { CoupleProvider } from './context/CoupleContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './components/Toast';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -19,15 +20,17 @@ import MileageTracker from './pages/MileageTracker';
 import Goals from './pages/Goals';
 import UpcomingReminders from './pages/UpcomingReminders';
 import History from './pages/History';
+import Couple from './pages/Couple';
 import AIChat from './components/AI/AIChat';
 
 export default function App() {
     return (
         <ThemeProvider>
             <AuthProvider>
-                <ToastProvider>
-                    <BrowserRouter>
-                        <Routes>
+                <CoupleProvider>
+                    <ToastProvider>
+                        <BrowserRouter>
+                            <Routes>
                             <Route path="/login" element={<Login />} />
                             <Route path="/register" element={<Register />} />
                             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
@@ -44,11 +47,13 @@ export default function App() {
                                 <Route path="/goals" element={<Goals />} />
                                 <Route path="/reminders" element={<UpcomingReminders />} />
                                 <Route path="/history" element={<History />} />
-                                <Route path="/ai-chat" element={<AIChat />} />
-                            </Route>
-                        </Routes>
-                    </BrowserRouter>
-                </ToastProvider>
+                                    <Route path="/ai-chat" element={<AIChat />} />
+                                    <Route path="/couple" element={<Couple />} />
+                                </Route>
+                            </Routes>
+                        </BrowserRouter>
+                    </ToastProvider>
+                </CoupleProvider>
             </AuthProvider>
         </ThemeProvider>
     );

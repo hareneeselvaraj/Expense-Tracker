@@ -45,7 +45,6 @@ public class AuthService : IAuthService
         {
             // Income
             new Category { UserId = user.Id, Name = "cashback", Type = CategoryType.Income, Icon = "💰" },
-            new Category { UserId = user.Id, Name = "wife", Type = CategoryType.Income, Icon = "👩" },
             new Category { UserId = user.Id, Name = "Salary", Type = CategoryType.Income, Icon = "💸" },
 
             // Expense

@@ -41,11 +41,11 @@ public class DashboardController : BaseApiController
 
     /// <summary>Get summary dashboard: totals, monthly breakdown, category breakdown, accounts.</summary>
     [HttpGet]
-    public async Task<IActionResult> GetDashboard([FromQuery] int? month = null, [FromQuery] int? year = null, [FromQuery] Guid? accountId = null)
+    public async Task<IActionResult> GetDashboard([FromQuery] int? month = null, [FromQuery] int? year = null, [FromQuery] Guid? accountId = null, [FromQuery] string scope = "Combined")
     {
         try
         {
-            var result = await _dashboardService.GetDashboardAsync(GetUserId(), month, year, accountId);
+            var result = await _dashboardService.GetDashboardAsync(GetUserId(), month, year, accountId, scope);
             return Ok(result);
         }
         catch (Exception ex)

@@ -14,17 +14,20 @@ public class AIChatService : IAIChatService
     private readonly IConfiguration     _config;
     private readonly IHttpClientFactory _httpFactory;
     private readonly ILogger<AIChatService> _logger;
+    private readonly ICoupleService         _coupleService;
 
     public AIChatService(
         AppDbContext context,
         IConfiguration config,
         IHttpClientFactory httpFactory,
-        ILogger<AIChatService> logger)
+        ILogger<AIChatService> logger,
+        ICoupleService coupleService)
     {
-        _context     = context;
-        _config      = config;
-        _httpFactory = httpFactory;
-        _logger      = logger;
+        _context       = context;
+        _config        = config;
+        _httpFactory   = httpFactory;
+        _logger        = logger;
+        _coupleService = coupleService;
     }
 
     public async Task<AIChatResponseDto> ChatAsync(Guid userId, AIChatRequestDto request)
@@ -43,31 +46,34 @@ public class AIChatService : IAIChatService
         var monthStart   = new DateTime(now.Year, now.Month, 1);
         var threeMonAgo  = now.AddDays(-90);
 
+        var userIds = await _coupleService.GetUserScopeAsync(userId, "Combined");
+        var isCouple = userIds.Count > 1;
+
         // ── Fetch data in parallel ──
         var accountsTask      = _context.Accounts
-                                    .Where(a => a.UserId == userId)
+                                    .Where(a => userIds.Contains(a.UserId))
                                     .ToListAsync();
 
         var recentTxTask      = _context.Transactions
                                     .Include(t => t.Category)
-                                    .Where(t => t.UserId == userId && t.Date >= threeMonAgo)
+                                    .Where(t => userIds.Contains(t.UserId) && t.Date >= threeMonAgo)
                                     .OrderByDescending(t => t.Date)
                                     .Take(150)
                                     .ToListAsync();
 
         var budgetsTask       = _context.Budgets
                                     .Include(b => b.Category)
-                                    .Where(b => b.UserId == userId
+                                    .Where(b => userIds.Contains(b.UserId)
                                              && b.Month == now.Month
                                              && b.Year  == now.Year)
                                     .ToListAsync();
 
         var investmentsTask   = _context.Investments
-                                    .Where(i => i.UserId == userId)
+                                    .Where(i => userIds.Contains(i.UserId))
                                     .ToListAsync();
 
         var remindersTask     = _context.Reminders
-                                    .Where(r => r.UserId == userId && r.Status == "upcoming")
+                                    .Where(r => userIds.Contains(r.UserId) && r.Status == "upcoming")
                                     .ToListAsync();
 
         await Task.WhenAll(accountsTask, recentTxTask, budgetsTask, investmentsTask, remindersTask);
@@ -78,10 +84,12 @@ public class AIChatService : IAIChatService
         var investments = investmentsTask.Result;
         var reminders   = remindersTask.Result;
 
-        // ── Format sections ──
         var sb = new StringBuilder();
 
         sb.AppendLine("You are a personal financial assistant embedded inside ExpenseTracker, an Indian personal finance app.");
+        if (isCouple)
+            sb.AppendLine("The user is currently in 'Couple Mode'. The data provided reflects combined household finances of both partners. Please address them inclusively when appropriate (e.g., 'your combined spending').");
+        
         sb.AppendLine("All amounts are in Indian Rupees (₹). Use Indian number formatting (lakhs/crores where appropriate).");
         sb.AppendLine("Answer conversationally, be specific with numbers from the data, and give concise actionable advice.");
         sb.AppendLine("If you don't have enough data to answer confidently, say so rather than guessing.");

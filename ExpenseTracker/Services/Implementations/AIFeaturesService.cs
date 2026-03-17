@@ -17,19 +17,22 @@ public class AIFeaturesService : IAIFeaturesService
     private readonly IHttpClientFactory        _httpFactory;
     private readonly IBudgetService            _budgetService;
     private readonly ILogger<AIFeaturesService> _logger;
+    private readonly ICoupleService             _coupleService;
 
     public AIFeaturesService(
         AppDbContext context,
         IConfiguration config,
         IHttpClientFactory httpFactory,
         IBudgetService budgetService,
-        ILogger<AIFeaturesService> logger)
+        ILogger<AIFeaturesService> logger,
+        ICoupleService coupleService)
     {
         _context       = context;
         _config        = config;
         _httpFactory   = httpFactory;
         _budgetService = budgetService;
         _logger        = logger;
+        _coupleService = coupleService;
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -52,11 +55,13 @@ public class AIFeaturesService : IAIFeaturesService
             .Where(c => c.UserId == userId)
             .ToListAsync();
 
-        // Exclude categories by user-supplied IDs first
         var excludedIds = request.ExcludedCategoryIds ?? new List<Guid>();
         var categories = allCategories
             .Where(c => !excludedIds.Contains(c.Id))
             .ToList();
+
+        var userIds = await _coupleService.GetUserScopeAsync(userId, "Combined");
+        var isCouple = userIds.Count > 1;
 
         if (!categories.Any())
             return new AIBudgetResponseDto
@@ -68,7 +73,7 @@ public class AIFeaturesService : IAIFeaturesService
         // Spending history for ALL transaction types (not just Expense)
         // because category type may be mismatched in DB
         var recentTx = await _context.Transactions
-            .Where(t => t.UserId == userId && t.Date >= threeMonAgo
+            .Where(t => userIds.Contains(t.UserId) && t.Date >= threeMonAgo
                      && (t.Type == TransactionType.Expense || t.Type == TransactionType.Withdraw))
             .ToListAsync();
 
@@ -94,7 +99,7 @@ public class AIFeaturesService : IAIFeaturesService
 
         // Try Gemini
         var geminiSuggestions = await TryGeminiAsync(request.Prompt, catData
-            .Select(c => (c.Number, c.Name, c.AvgMonthly)).ToList(), spendable);
+            .Select(c => (c.Number, c.Name, c.AvgMonthly)).ToList(), spendable, isCouple);
 
         if (geminiSuggestions != null && geminiSuggestions.Count > 0)
         {
@@ -248,7 +253,8 @@ public class AIFeaturesService : IAIFeaturesService
     private async Task<List<(int num, decimal amount, string reason)>?> TryGeminiAsync(
         string prompt,
         List<(int Number, string Name, decimal AvgMonthly)> cats,
-        decimal spendable)
+        decimal spendable,
+        bool isCouple)
     {
         try
         {
@@ -258,6 +264,7 @@ public class AIFeaturesService : IAIFeaturesService
             var spendNote = spendable > 0
                 ? $"Spendable after savings: ₹{spendable:N0}/month. "
                 : "";
+            if (isCouple) spendNote += "Note: This is a shared budget for a couple based on combined household finances. ";
 
             var p = $"User: \"{prompt}\"\n{spendNote}\nCategories:\n{lines}\n\n" +
                     "Return ONLY JSON: {\"b\":[{\"n\":1,\"a\":5000,\"r\":\"reason why\"},{\"n\":2,\"a\":3000,\"r\":\"reason why\"}]}\n" +
@@ -301,10 +308,11 @@ public class AIFeaturesService : IAIFeaturesService
 
     public async Task<int> ApplyBudgetsAsync(Guid userId, AIBudgetApplyDto dto)
     {
-        int applied = 0;
-        foreach (var s in dto.Budgets)
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
         {
-            try
+            int applied = 0;
+            foreach (var s in dto.Budgets)
             {
                 var existing = await _context.Budgets
                     .FirstOrDefaultAsync(b => b.UserId     == userId
@@ -328,13 +336,16 @@ public class AIFeaturesService : IAIFeaturesService
                 }
                 applied++;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[AI BUDGET APPLY] categoryId={CatId}", s.CategoryId);
-            }
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+            return applied;
         }
-        await _context.SaveChangesAsync();
-        return applied;
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            _logger.LogError(ex, "[AI BUDGET APPLY] Bulk save failed for user {UserId}", userId);
+            throw new InvalidOperationException("Failed to apply budgets in bulk. Please try again.", ex);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════

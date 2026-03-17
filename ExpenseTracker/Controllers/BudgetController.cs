@@ -24,16 +24,16 @@ public class BudgetController : BaseApiController
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] string scope = "Combined")
     {
-        var result = await _budgetService.GetAllAsync(GetUserId());
+        var result = await _budgetService.GetAllAsync(GetUserId(), scope);
         return Ok(result);
     }
 
     [HttpGet("month")]
-    public async Task<IActionResult> GetByMonth([FromQuery] int year, [FromQuery] int month)
+    public async Task<IActionResult> GetByMonth([FromQuery] int year, [FromQuery] int month, [FromQuery] string scope = "Combined")
     {
-        var result = await _budgetService.GetByMonthAsync(GetUserId(), year, month);
+        var result = await _budgetService.GetByMonthAsync(GetUserId(), year, month, scope);
         return Ok(result);
     }
 

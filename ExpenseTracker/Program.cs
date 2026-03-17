@@ -62,6 +62,7 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
 builder.Services.AddScoped<IInvestmentService, InvestmentService>();
+builder.Services.AddScoped<ICoupleService, CoupleService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<ITagService, TagService>();
 builder.Services.AddScoped<IEmailService, EmailService>();

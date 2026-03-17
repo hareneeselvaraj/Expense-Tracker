@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { CoupleContext } from '../context/CoupleContext';
+import { useContext } from 'react';
 import {
     FiArrowUpRight, FiArrowDownRight, FiDollarSign, FiRefreshCw,
     FiTrendingUp, FiPlus, FiChevronRight, FiChevronLeft, FiGrid,
@@ -126,7 +128,9 @@ export default function Dashboard() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const { user } = useAuth();
+    const { isCouple } = useContext(CoupleContext);
     const { isDark } = useTheme();
+    const [scope, setScope] = useState('Combined');
     const [chartPeriod, setChartPeriod] = useState('monthly');
     const [chartWeekIdx, setChartWeekIdx] = useState(0);
     const [balView, setBalView] = useState('pie');
@@ -271,7 +275,7 @@ export default function Dashboard() {
         const monthMap = { 'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12 };
         const mIdx = monthMap[month];
 
-        const params = { month: mIdx, year };
+        const params = { month: mIdx, year, scope };
         if (account !== 'All Accounts') {
             params.accountId = account;
         }
@@ -298,11 +302,11 @@ export default function Dashboard() {
             setAllCategories(res.data);
         });
 
-        api.get('/investment').then((res) => {
+        api.get('/investment', { params: { scope } }).then((res) => {
             const total = res.data.reduce((acc, cur) => acc + (cur.investedAmount || 0), 0);
             setTotalInvestments(total);
         }).catch(() => { });
-    }, [month, year, account]);
+    }, [month, year, account, scope]);
 
 
 
@@ -324,7 +328,8 @@ export default function Dashboard() {
                     categoryId: selectedCat.id,
                     startDate: startDate.toISOString(),
                     endDate: endDate.toISOString(),
-                    type: catType
+                    type: catType,
+                    scope
                 }
             }).then(res => {
                 const filtered = (res.data || []).filter(t =>
@@ -487,6 +492,13 @@ export default function Dashboard() {
                     <select className="dash-filter-select" value={year} onChange={e => setYear(e.target.value)}>
                         {YEARS.map(y => <option key={y}>{y}</option>)}
                     </select>
+                    {isCouple && (
+                        <select className="dash-filter-select" style={{ background: 'var(--primary-color)', color: 'white', border: 'none' }} value={scope} onChange={e => setScope(e.target.value)}>
+                            <option value="Mine">Mine</option>
+                            <option value="Partner">Partner</option>
+                            <option value="Combined">Combined</option>
+                        </select>
+                    )}
                     <button className="dash-filter-icon-btn"><FiRefreshCw /></button>
                 </div>
             </div>
