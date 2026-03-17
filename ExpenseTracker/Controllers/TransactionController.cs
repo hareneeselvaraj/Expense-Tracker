@@ -11,10 +11,12 @@ namespace ExpenseTracker.Controllers;
 public class TransactionController : BaseApiController
 {
     private readonly ITransactionService _transactionService;
+    private readonly ILogger<TransactionController> _logger;
 
-    public TransactionController(ITransactionService transactionService)
+    public TransactionController(ITransactionService transactionService, ILogger<TransactionController> logger)
     {
         _transactionService = transactionService;
+        _logger = logger;
     }
 
     [HttpPost]
@@ -87,16 +89,16 @@ public class TransactionController : BaseApiController
         
         try
         {
-            System.Console.WriteLine($"[UPLOAD CONTROLLER] file={file.FileName}, size={file.Length}, account={accountId}, user={GetUserId()}");
+            _logger.LogInformation("[UPLOAD CONTROLLER] file={FileName}, size={Length}, account={AccountId}, user={UserId}", 
+                file.FileName, file.Length, accountId, GetUserId());
             using var stream = file.OpenReadStream();
             var count = await _transactionService.UploadAsync(GetUserId(), accountId, stream, file.FileName);
-            System.Console.WriteLine($"[UPLOAD CONTROLLER] SUCCESS: {count} transactions imported");
+            _logger.LogInformation("[UPLOAD CONTROLLER] SUCCESS: {Count} transactions imported", count);
             return Ok(new { message = $"Successfully uploaded {count} transactions" });
         }
         catch (Exception ex)
         {
-            var fullError = ex.ToString();
-            System.Console.WriteLine($"[UPLOAD CONTROLLER ERROR] {fullError}");
+            _logger.LogError(ex, "[UPLOAD CONTROLLER ERROR] {Message}", ex.Message);
             return BadRequest(new { error = ex.Message, detail = ex.InnerException?.Message });
         }
     }

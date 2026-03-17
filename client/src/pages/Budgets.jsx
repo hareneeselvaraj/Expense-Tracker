@@ -111,11 +111,17 @@ export default function Budgets() {
     const toast = useToast();
 
     const load = async () => {
-        setLoading(true);
-        const [bRes, cRes] = await Promise.all([api.get('/budget'), api.get('/category')]);
-        setAllBudgets(bRes.data);
-        setCategories(cRes.data);
-        setLoading(false);
+        try {
+            setLoading(true);
+            const [bRes, cRes] = await Promise.all([api.get('/budget'), api.get('/category')]);
+            setAllBudgets(bRes.data);
+            setCategories(cRes.data);
+        } catch (err) {
+            console.error('Failed to load budget data:', err);
+            toast.error('Failed to load budgets. Please check your connection.');
+        } finally {
+            setLoading(false);
+        }
     };
     useEffect(() => { load(); }, []);
 
