@@ -1,40 +1,40 @@
 import { useState, useContext } from 'react';
 import { CoupleContext } from '../context/CoupleContext';
 import { useToast } from '../components/Toast';
-import api from '../utils/api';
+import api from '../services/api';
 import './Couple.css'; // Creating standard styles or using vanilla CSS
 
 export default function Couple() {
   const { couple, isCouple, refresh } = useContext(CoupleContext);
-  const { addToast } = useToast();
+  const toast = useToast();
   const [inviteEmail, setInviteEmail] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleCreateInvite = async (e) => {
     e.preventDefault();
-    if (!inviteEmail) return addToast('Email is required', 'error');
+    if (!inviteEmail) return toast.error('Email is required');
     setLoading(true);
     try {
       await api.post('/couple/create', { inviteEmail });
-      addToast('Invite sent!', 'success');
+      toast.success('Invite sent!');
       refresh();
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to send invite', 'error');
+      toast.error(err.response?.data?.message || 'Failed to send invite');
     }
     setLoading(false);
   };
 
   const handleAcceptInvite = async (e) => {
     e.preventDefault();
-    if (!joinCode) return addToast('Code is required', 'error');
+    if (!joinCode) return toast.error('Code is required');
     setLoading(true);
     try {
       await api.post('/couple/accept', { inviteCode: joinCode });
-      addToast('Successfully joined partner!', 'success');
+      toast.success('Successfully joined partner!');
       refresh();
     } catch (err) {
-      addToast(err.response?.data?.message || 'Invalid or expired code', 'error');
+      toast.error(err.response?.data?.message || 'Invalid or expired code');
     }
     setLoading(false);
   };
@@ -44,10 +44,10 @@ export default function Couple() {
     setLoading(true);
     try {
       await api.delete('/couple/leave');
-      addToast('Disconnected successfully', 'success');
+      toast.success('Disconnected successfully');
       refresh();
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to leave', 'error');
+      toast.error(err.response?.data?.message || 'Failed to leave');
     }
     setLoading(false);
   };

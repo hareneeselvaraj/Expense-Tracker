@@ -42,8 +42,6 @@ public class BudgetService : IBudgetService
 
         await _budgetRepo.AddAsync(budget);
 
-        await _budgetRepo.AddAsync(budget);
-
         var userIds = await _coupleService.GetUserScopeAsync(userId, "Combined");
         var budgets = await _context.Budgets.Include(b => b.Category).Where(b => userIds.Contains(b.UserId)).ToListAsync();
         var created = budgets.First(b => b.Id == budget.Id);

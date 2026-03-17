@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useContext } from 'react';
 import api from '../services/api';
 import {
     FiPlus, FiTrash2, FiDollarSign, FiTrendingDown,
