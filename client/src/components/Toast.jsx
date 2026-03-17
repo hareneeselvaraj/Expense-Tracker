@@ -17,11 +17,6 @@ export function ToastProvider({ children }) {
         }, duration);
     }, []);
 
-    const toast = useCallback({
-        success: (msg) => addToast(msg, 'success'),
-        error: (msg) => addToast(msg, 'error'),
-        warning: (msg) => addToast(msg, 'warning'),
-    }, [addToast]);
 
     // Make toast callable directly and also have .success/.error/.warning
     const toastFn = useCallback((msg, type) => addToast(msg, type), [addToast]);

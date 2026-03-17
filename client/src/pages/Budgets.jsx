@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../services/api';
 import {
     FiPlus, FiTrash2, FiDollarSign, FiTrendingDown,
@@ -110,7 +110,7 @@ export default function Budgets() {
     });
     const toast = useToast();
 
-    const load = async () => {
+    const load = useCallback(async () => {
         try {
             setLoading(true);
             const [bRes, cRes] = await Promise.all([api.get('/budget'), api.get('/category')]);
@@ -122,8 +122,8 @@ export default function Budgets() {
         } finally {
             setLoading(false);
         }
-    };
-    useEffect(() => { load(); }, []);
+    }, [toast]);
+    useEffect(() => { load(); }, [load]);
 
     // Filter budgets by selected month/year
     const budgets = useMemo(
