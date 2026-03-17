@@ -260,8 +260,8 @@ public class AIFeaturesService : IAIFeaturesService
                 : "";
 
             var p = $"User: \"{prompt}\"\n{spendNote}\nCategories:\n{lines}\n\n" +
-                    "Return ONLY JSON: {\"b\":[{\"n\":1,\"a\":5000},{\"n\":2,\"a\":3000}]}\n" +
-                    "Include every category number. Whole number rupee amounts only.";
+                    "Return ONLY JSON: {\"b\":[{\"n\":1,\"a\":5000,\"r\":\"reason why\"},{\"n\":2,\"a\":3000,\"r\":\"reason why\"}]}\n" +
+                    "Include ALL category numbers. Integer rupee amounts only. Keep each reason under 8 words.";
 
             var raw = await PostToGeminiAsync(p);
             if (string.IsNullOrWhiteSpace(raw) || raw == "{}") return null;
@@ -428,9 +428,14 @@ public class AIFeaturesService : IAIFeaturesService
         try
         {
             var content  = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-            var url      = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}";
+            var url      = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
             var response = await _httpFactory.CreateClient("google").PostAsync(url, content);
-            if (!response.IsSuccessStatusCode) return "{}";
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync();
+                _logger.LogError("[AI BUDGET] Gemini API failed with {StatusCode}: {Body}", response.StatusCode, errorBody);
+                return "{}";
+            }
             var body = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(body);
             return doc.RootElement
@@ -440,7 +445,11 @@ public class AIFeaturesService : IAIFeaturesService
                 .GetProperty("text")
                 .GetString() ?? "{}";
         }
-        catch { return "{}"; }
+        catch (Exception ex)
+        { 
+            _logger.LogError(ex, "[AI BUDGET] Exception in PostToGeminiAsync");
+            return "{}"; 
+        }
     }
 
     private static string StripToJson(string raw)
