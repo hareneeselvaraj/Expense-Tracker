@@ -579,6 +579,11 @@ body.sidebar-collapsed .main-content {
   cursor: pointer;
   transition: var(--transition);
   font-family: inherit;
+  /* Prevent stretching in flex containers */
+  align-self: center;
+  flex-shrink: 0;
+  width: fit-content;
+  white-space: nowrap;
 }
 
 .btn-primary {
@@ -611,8 +616,9 @@ body.sidebar-collapsed .main-content {
 }
 
 .btn-full {
-  width: 100%;
+  width: 100% !important;
   justify-content: center;
+  align-self: stretch;
 }
 
 .btn-icon {
@@ -679,6 +685,13 @@ body.sidebar-collapsed .main-content {
 
 .page-header .page-title {
   margin-bottom: 0;
+}
+
+.page-header > .btn,
+.page-header > button {
+  flex-shrink: 0;
+  width: fit-content !important;
+  align-self: center;
 }
 
 .page-loader {
@@ -8748,7 +8761,7 @@ tr:hover td {
 
   .page-header button,
   .page-header .btn {
-    width: 100%;
+    width: auto;
     justify-content: center;
   }
 
@@ -11438,3 +11451,49 @@ tr:hover td {
   padding: 8px 12px;
   margin: 8px 0;
 }
+
+/* ── Button container layout fixes ── */
+.inv-tab-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.inv-tab-desc {
+  flex: 1;
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.mil-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: nowrap;
+}
+
+.mil-panel-header h3 {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.budget-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 60px 20px;
+  gap: 16px;
+}
+
+.budget-empty-state .btn {
+  align-self: center;
+  width: fit-content;
+}
+
+

@@ -93,18 +93,8 @@ try
     {
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         
-        // Add columns if they don't exist
-        string[] ivCols = { "AssetType", "Category", "Quantity", "BuyPrice", "Platform", "Notes", "DateInvested", "InterestRate", "TenureMonths", "MonthlyAmount", "InvestmentFrequency", "Status", "MonthsCompleted", "LastProcessedDate", "ProjectedMaturityValue" };
-        foreach (var col in ivCols) { try { await db.Database.ExecuteSqlRawAsync($"ALTER TABLE Investments ADD COLUMN {col} TEXT NULL;"); } catch { } }
-        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Transactions ADD COLUMN InvestmentId TEXT NULL;"); } catch { }
-        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Categories ADD COLUMN Icon TEXT NULL;"); } catch { }
-        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Accounts ADD COLUMN CreditLimit decimal(18,2) NULL;"); } catch { }
+        // Database migrations are now handled via 'dotnet ef database update'
         
-        // Create tables if they don't exist
-        try { await db.Database.ExecuteSqlRawAsync("CREATE TABLE IF NOT EXISTS Vehicles (Id TEXT PRIMARY KEY, UserId TEXT NOT NULL, Name TEXT NOT NULL, VehicleType TEXT NOT NULL DEFAULT 'Car', FuelType TEXT NOT NULL DEFAULT 'Petrol', RegistrationNumber TEXT NULL, ServiceIntervalKm INTEGER NULL, CreatedAt TEXT NOT NULL, FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE);"); } catch { }
-        try { await db.Database.ExecuteSqlRawAsync("CREATE TABLE IF NOT EXISTS FuelEntries (Id TEXT PRIMARY KEY, UserId TEXT NOT NULL, VehicleId TEXT NOT NULL, Date TEXT NOT NULL, OdometerReading REAL NOT NULL, FuelQuantity REAL NOT NULL, FuelCost REAL NOT NULL, PricePerLiter REAL NULL, Notes TEXT NULL, FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE, FOREIGN KEY (VehicleId) REFERENCES Vehicles(Id) ON DELETE CASCADE);"); } catch { }
-        try { await db.Database.ExecuteSqlRawAsync("CREATE TABLE IF NOT EXISTS Reminders (Id TEXT PRIMARY KEY, UserId TEXT NOT NULL, Title TEXT NOT NULL, Description TEXT NULL, Date TEXT NOT NULL, Amount REAL NULL, Category TEXT NOT NULL DEFAULT 'General', Priority TEXT NOT NULL DEFAULT 'medium', Status TEXT NOT NULL DEFAULT 'upcoming', FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE);"); } catch { }
-
         // RD Catch-up Logic
         var today = DateTime.UtcNow;
         var rds = await db.Investments.Where(i => i.AssetType == "RD" && i.Status == "Active").ToListAsync();

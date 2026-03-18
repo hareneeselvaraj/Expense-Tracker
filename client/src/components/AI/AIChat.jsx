@@ -149,6 +149,11 @@ export default function AIChat() {
                 </div>
             )}
 
+            {/* Error shown in empty state (e.g. suggestion click fails) */}
+            {isEmpty && error && (
+                <div className="aic-error" style={{ margin: '0 1.5rem' }}>{error}</div>
+            )}
+
             {/* ── Input Bar ── */}
             <div className="aic-input-bar">
                 {!isEmpty && (

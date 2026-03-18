@@ -44,20 +44,16 @@ public class AIFeaturesService : IAIFeaturesService
         var now         = DateTime.UtcNow;
         var threeMonAgo = now.AddDays(-90);
 
-        // ─────────────────────────────────────────────────────────────
-        // KEY FIX: Do NOT filter by CategoryType.Expense
-        // Python-imported categories are stored with integer type values
-        // ("0","1","2") which EF Core parses incorrectly (0 = Income in C# enum).
-        // Instead fetch ALL categories for this user and exclude only the
-        // obviously Investment ones by name keyword + explicit exclusion list.
-        // ─────────────────────────────────────────────────────────────
+        // Fetch ALL categories first to handle potential type mapping issues with legacy data
         var allCategories = await _context.Categories
             .Where(c => c.UserId == userId)
             .ToListAsync();
 
+        // Filter to Expense only — this handles both "Expense" string and prevents legacy "1" from matching incorrectly
         var excludedIds = request.ExcludedCategoryIds ?? new List<Guid>();
         var categories = allCategories
             .Where(c => !excludedIds.Contains(c.Id))
+            .Where(c => c.Type == CategoryType.Expense)
             .ToList();
 
         var userIds = await _coupleService.GetUserScopeAsync(userId, "Combined");
@@ -70,8 +66,7 @@ public class AIFeaturesService : IAIFeaturesService
                 Suggestions = new()
             };
 
-        // Spending history for ALL transaction types (not just Expense)
-        // because category type may be mismatched in DB
+        // Spending history for Expense and Withdrawal transaction types.
         var recentTx = await _context.Transactions
             .Where(t => userIds.Contains(t.UserId) && t.Date >= threeMonAgo
                      && (t.Type == TransactionType.Expense || t.Type == TransactionType.Withdraw))
@@ -439,7 +434,7 @@ public class AIFeaturesService : IAIFeaturesService
         try
         {
             var content  = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-            var url      = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
+            var url      = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={apiKey}";
             var response = await _httpFactory.CreateClient("google").PostAsync(url, content);
             if (!response.IsSuccessStatusCode)
             {

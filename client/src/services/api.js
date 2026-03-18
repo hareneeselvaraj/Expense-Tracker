@@ -1,5 +1,4 @@
 import axios from 'axios';
-console.log("ANTIGRAVITY_CHECK_V1");
 
 const API_URL = '/api';
 

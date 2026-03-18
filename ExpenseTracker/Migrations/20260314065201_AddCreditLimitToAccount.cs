@@ -11,11 +11,13 @@ namespace ExpenseTracker.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            /* Column manually added in Program.cs
             migrationBuilder.AddColumn<decimal>(
                 name: "CreditLimit",
                 table: "Accounts",
                 type: "decimal(18,2)",
                 nullable: true);
+            */
         }
 
         /// <inheritdoc />

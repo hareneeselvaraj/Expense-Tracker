@@ -27,7 +27,7 @@ export default function AIBudgetSetup({ onApplied }) {
     ];
 
     // Fetch ALL categories — not just "Expense" typed ones
-    // (Python-imported categories may have wrong type stored in DB)
+    // (We need them all, but only Expense will be used for the budget checklist)
     useEffect(() => {
         if (!open) return;
         setCatError(false);
@@ -45,19 +45,11 @@ export default function AIBudgetSetup({ onApplied }) {
         setResult(null);
     };
 
-    // Pre-exclude Investment-typed categories so user starts with sensible defaults
-    useEffect(() => {
-        if (allCategories.length > 0) {
-            const investmentIds = new Set(
-                allCategories
-                    .filter(c => c.type === 'Investment')
-                    .map(c => c.id)
-            );
-            setExcluded(investmentIds);
-        }
-    }, [allCategories]);
+    // Investment categories are filtered out at fetch
 
-    const includedCount = allCategories.filter(c => !excluded.has(c.id)).length;
+    // List of categories that are eligible for budget setup (Expense only)
+    const budgetCategories = allCategories.filter(c => c.type === 'Expense');
+    const includedCount = budgetCategories.filter(c => !excluded.has(c.id)).length;
 
     const parseAmount = (raw, fallback) => {
         // Accept "0" (string) as a real value; treat ""/null/undefined as empty.
@@ -118,9 +110,8 @@ export default function AIBudgetSetup({ onApplied }) {
         return s + parseAmount(editAmounts[x.categoryId], x.suggestedAmount);
     }, 0) ?? 0;
 
-    // Group categories for display
-    const includedCats  = allCategories.filter(c => !excluded.has(c.id));
-    const excludedCats  = allCategories.filter(c => excluded.has(c.id));
+    const includedCats     = budgetCategories.filter(c => !excluded.has(c.id));
+    const excludedCats     = budgetCategories.filter(c => excluded.has(c.id));
 
     return (
         <div className="ai-budget-setup">
@@ -156,7 +147,7 @@ export default function AIBudgetSetup({ onApplied }) {
                                     <FiSettings size={13} />
                                     {showCatPicker ? 'Hide' : 'Choose'} categories
                                     <span className="aibs-cat-count">
-                                        {includedCount}/{allCategories.length} selected
+                                        {includedCount}/{budgetCategories.length} selected
                                     </span>
                                 </button>
                             </div>
@@ -168,7 +159,7 @@ export default function AIBudgetSetup({ onApplied }) {
                                         Investment categories are excluded by default.
                                     </p>
                                     <div className="aibs-cat-chips">
-                                        {allCategories.map(c => {
+                                        {budgetCategories.map(c => {
                                             const isExcluded = excluded.has(c.id);
                                             return (
                                                 <button

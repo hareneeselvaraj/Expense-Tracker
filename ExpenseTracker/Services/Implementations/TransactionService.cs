@@ -697,7 +697,12 @@ public class TransactionService : ITransactionService
             Id = Guid.NewGuid(),
             UserId = userId,
             Name = categoryName,
-            Type = catType == TransactionType.Withdraw ? CategoryType.Expense : (CategoryType)Enum.Parse(typeof(CategoryType), catType.ToString()),
+            Type = catType switch
+            {
+                TransactionType.Income     => CategoryType.Income,
+                TransactionType.Investment => CategoryType.Income,   // investment returns are income-like
+                _                          => CategoryType.Expense,  // Expense, Withdraw → Expense
+            },
             Icon = "🏷️"
         };
         _context.Categories.Add(newCat);
