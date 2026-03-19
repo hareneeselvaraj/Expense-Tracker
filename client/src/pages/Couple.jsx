@@ -40,16 +40,12 @@ export default function Couple() {
   };
 
   const handleLeaveCouple = async () => {
-    console.log('[COUPLE] Cancel button clicked');
     setLoading(true);
     try {
-      console.log('[COUPLE] Calling DELETE /couple/leave...');
       await api.delete('/couple/leave');
-      console.log('[COUPLE] Leave succeeded!');
       toast.success('Disconnected successfully');
       refresh();
     } catch (err) {
-      console.error('[COUPLE] Leave failed:', err);
       toast.error(err.response?.data?.message || 'Failed to leave');
     }
     setLoading(false);

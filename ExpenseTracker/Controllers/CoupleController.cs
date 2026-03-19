@@ -67,19 +67,6 @@ public class CoupleController : ControllerBase
         await _coupleService.LeaveCoupleAsync(GetUserId());
         return Ok(new { message = "Successfully left the couple." });
     }
-
-    [HttpGet("debug-me")]
-    public async Task<IActionResult> DebugMe([FromServices] ExpenseTracker.Data.AppDbContext db)
-    {
-        var userId = GetUserId();
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        return Ok(new { 
-            jwtUserId = userId, 
-            userFound = user != null,
-            userEmail = user?.Email,
-            userName = user?.Name
-        });
-    }
 }
 
 public class CreateCoupleRequest

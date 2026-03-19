@@ -22,7 +22,6 @@ public class CoupleService : ICoupleService
     {
         try 
         {
-            _logger.LogInformation("[COUPLE] CreateCoupleAsync for user {UserId}, email {InviteEmail}", userId, inviteEmail);
             
             // 1. Check if user already in an active couple
             var existing = await _context.Couples.FirstOrDefaultAsync(c => 
@@ -146,8 +145,6 @@ public class CoupleService : ICoupleService
 
     public async Task<bool> LeaveCoupleAsync(Guid userId)
     {
-        _logger.LogInformation("[COUPLE] LeaveCoupleAsync for user {UserId}", userId);
-        
         var couple = await _context.Couples
             .Include(c => c.Owner)
             .Include(c => c.Partner)
@@ -156,11 +153,9 @@ public class CoupleService : ICoupleService
 
         if (couple == null) 
         {
-            _logger.LogWarning("[COUPLE] No active/pending couple found for user {UserId}", userId);
             return false;
         }
 
-        _logger.LogInformation("[COUPLE] Found couple {CoupleId} with status {Status}, dissolving...", couple.Id, couple.Status);
         couple.Status = CoupleStatus.Dissolved;
         
         if (couple.Owner != null)
