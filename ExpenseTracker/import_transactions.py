@@ -34,7 +34,7 @@ CATEGORY_RULES = [
         'keywords': ['uber', 'ola', 'rapido', 'petrol', 'diesel', 'fuel', 'metro',
                       'bus', 'train', 'irctc', 'redbus', 'cab', 'auto', 'parking',
                       'toll', 'fastag'],
-        'category_name': 'Transport',
+        'category_name': 'Transportation',
         'type': 'Expense',
     },
     # Shopping

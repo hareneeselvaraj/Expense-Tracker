@@ -36,58 +36,7 @@ const ICON_CHOICES = [
 const COLOR_CHOICES = [
     '#6366f1', '#10b981', '#f59e0b', '#f43f5e', '#06b6d4', '#8b5cf6', '#ec4899', '#f97316', '#14b8a6', '#64748b'
 ];
-const initialGoals = [
-    {
-        id: 1,
-        icon: <FiHome />,
-        title: 'Dream Home Down Payment',
-        description: '20% down payment for 3BHK',
-        target: 1500000,
-        current: 345000,
-        deadline: '2028-12-31',
-        color: '#6366f1',
-    },
-    {
-        id: 2,
-        icon: <FiAirplay />,
-        title: 'Emergency Fund',
-        description: '6 months of living expenses',
-        target: 180000,
-        current: 148000,
-        deadline: '2026-06-30',
-        color: '#10b981',
-    },
-    {
-        id: 3,
-        icon: <FiShoppingBag />,
-        title: 'Japan Vacation',
-        description: '10-day Japan trip with family',
-        target: 250000,
-        current: 62000,
-        deadline: '2026-12-31',
-        color: '#f59e0b',
-    },
-    {
-        id: 4,
-        icon: <FiTarget />,
-        title: 'Investment Portfolio',
-        description: 'Build ₹10L investment corpus',
-        target: 1000000,
-        current: 824000,
-        deadline: '2026-09-30',
-        color: '#f43f5e',
-    },
-    {
-        id: 5,
-        icon: <FiCheckCircle />,
-        title: 'New MacBook Pro',
-        description: 'M4 MacBook Pro for work',
-        target: 250000,
-        current: 210000,
-        deadline: '2026-04-30',
-        color: '#06b6d4',
-    },
-];
+const initialGoals = [];
 
 export default function Goals() {
     const [goals, setGoals] = useState(initialGoals);
@@ -168,6 +117,12 @@ export default function Goals() {
         setShowModal(false);
     };
 
+    const handleDeleteGoal = (id) => {
+        if (window.confirm('Are you sure you want to delete this goal?')) {
+            setGoals(prev => prev.filter(g => g.id !== id));
+        }
+    };
+
     return (
         <div className="page">
             <div className="page-header">
@@ -232,9 +187,14 @@ export default function Goals() {
 
                             <div className="goal-card-hero">
                                 <div className="goal-hero-icon">{goal.icon}</div>
-                                <button className="goal-edit-btn" onClick={() => handleEditClick(goal)} title="Update Goal">
-                                    <FiEdit2 />
-                                </button>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button className="goal-edit-btn" onClick={() => handleEditClick(goal)} title="Update Goal">
+                                        <FiEdit2 />
+                                    </button>
+                                    <button className="goal-edit-btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }} onClick={() => handleDeleteGoal(goal.id)} title="Delete Goal">
+                                        <FiX />
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="goal-card-body">

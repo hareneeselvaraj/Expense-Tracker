@@ -7,6 +7,7 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import YearlyDashboard from './pages/YearlyDashboard';
 import Transactions from './pages/Transactions';
 import Accounts from './pages/Accounts';
 import Budgets from './pages/Budgets';
@@ -31,6 +32,7 @@ export default function App() {
                             <Route path="/register" element={<Register />} />
                             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                                 <Route path="/" element={<Dashboard />} />
+                                <Route path="/yearly-dashboard" element={<YearlyDashboard />} />
                                 <Route path="/transactions" element={<Transactions />} />
                                 <Route path="/accounts" element={<Accounts />} />
                                 <Route path="/categories" element={<Categories />} />

@@ -19,7 +19,7 @@ DEFAULT_ACCOUNT_ID = 'B30B43E9-29E8-46BC-B518-4E5CC38B550F'  # HDFC debit accoun
 # ─── AI CATEGORIZATION ENGINE ─────────────────────────────────────────
 CATEGORY_RULES = [
     {'keywords': ['swiggy', 'zomato', 'food', 'restaurant', 'cafe', 'pizza', 'burger', 'chicken', 'biryani', 'egg', 'milk', 'bread', 'tea', 'coffee', 'hotel', 'mess', 'canteen', 'dine', 'eat', 'liver', 'mutton', 'fish', 'rice'], 'category_name': 'Food', 'type': 'Expense'},
-    {'keywords': ['uber', 'ola', 'rapido', 'petrol', 'diesel', 'fuel', 'metro', 'bus', 'train', 'irctc', 'redbus', 'cab', 'auto', 'parking', 'toll', 'fastag'], 'category_name': 'Transport', 'type': 'Expense'},
+    {'keywords': ['uber', 'ola', 'rapido', 'petrol', 'diesel', 'fuel', 'metro', 'bus', 'train', 'irctc', 'redbus', 'cab', 'auto', 'parking', 'toll', 'fastag'], 'category_name': 'Transportation', 'type': 'Expense'},
     {'keywords': ['amazon', 'flipkart', 'myntra', 'ajio', 'meesho', 'shopping', 'mall', 'store', 'mart', 'retail', 'reliance', 'dmart', 'bigbasket', 'blinkit', 'instamart', 'zepto'], 'category_name': 'Shopping', 'type': 'Expense'},
     {'keywords': ['rent', 'electricity', 'water', 'gas', 'bill', 'maintenance', 'society', 'broadband', 'wifi', 'internet', 'airtel', 'jio', 'vodafone', 'bsnl', 'recharge', 'dth', 'tata'], 'category_name': 'Rent & Bills', 'type': 'Expense'},
     {'keywords': ['netflix', 'hotstar', 'prime', 'spotify', 'youtube', 'movie', 'theatre', 'game', 'play', 'bookmyshow', 'pvr', 'inox'], 'category_name': 'Entertainment', 'type': 'Expense'},

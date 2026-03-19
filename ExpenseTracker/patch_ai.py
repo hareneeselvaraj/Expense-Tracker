@@ -37,7 +37,7 @@ code_to_inject = """
             return ("Food", TransactionType.Expense);
         
         if (lower.Contains("uber") || lower.Contains("ola") || lower.Contains("rapido") || lower.Contains("irctc") || lower.Contains("petrol") || lower.Contains("fuel") || lower.Contains("transport") || lower.Contains("metro") || lower.Contains("namma"))
-            return ("Transport", TransactionType.Expense);
+            return ("transportation", TransactionType.Expense);
 
         if (lower.Contains("amazon") || lower.Contains("flipkart") || lower.Contains("myntra") || lower.Contains("shopping") || lower.Contains("dmart") || lower.Contains("reliance") || lower.Contains("retail") || lower.Contains("mall"))
             return ("Shopping", TransactionType.Expense);
