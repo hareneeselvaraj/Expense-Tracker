@@ -33,7 +33,7 @@ public class AIChatService : IAIChatService
     public async Task<AIChatResponseDto> ChatAsync(Guid userId, AIChatRequestDto request)
     {
         var systemPrompt = await BuildSystemPromptAsync(userId);
-        var reply        = await CallGeminiAsync(systemPrompt, request);
+        var reply        = await CallGroqAsync(systemPrompt, request);
         return new AIChatResponseDto { Reply = reply };
     }
 
@@ -189,71 +189,72 @@ public class AIChatService : IAIChatService
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Call the Gemini API
+    // Call the Groq API (OpenAI-compatible chat completions)
     // ─────────────────────────────────────────────────────────────────────────
-    private async Task<string> CallGeminiAsync(string systemPrompt, AIChatRequestDto request)
+    private async Task<string> CallGroqAsync(string systemPrompt, AIChatRequestDto request)
     {
-        var apiKey = _config["Google:ApiKey"];
+        var apiKey = _config["Groq:ApiKey"];
         if (string.IsNullOrWhiteSpace(apiKey))
-            return "⚠️ Gemini API key is not configured. Please add `Google:ApiKey` to appsettings.json.";
+            return "⚠️ Groq API key is not configured. Please add `Groq:ApiKey` to appsettings.json.";
 
-        // Build messages array
-        var contents = new List<object>();
+        // Build messages array (OpenAI format: system, user, assistant)
+        var messages = new List<object>
+        {
+            new { role = "system", content = systemPrompt }
+        };
 
         foreach (var msg in request.History)
         {
-            contents.Add(new
+            messages.Add(new
             {
-                role = msg.Role == "user" ? "user" : "model",
-                parts = new[] { new { text = msg.Content } }
+                role = msg.Role == "user" ? "user" : "assistant",
+                content = msg.Content
             });
         }
 
-        contents.Add(new
+        messages.Add(new
         {
             role = "user",
-            parts = new[] { new { text = request.Message } }
+            content = request.Message
         });
 
         var payload = new
         {
-            systemInstruction = new
-            {
-                parts = new[] { new { text = systemPrompt } }
-            },
-            contents = contents
+            model = "llama-3.3-70b-versatile",
+            messages = messages,
+            temperature = 0.7,
+            max_tokens = 1024
         };
 
         var json    = JsonSerializer.Serialize(payload);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var client = _httpFactory.CreateClient("google");
+        var client = _httpFactory.CreateClient();
+        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
 
         try
         {
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={apiKey}";
-            var response = await client.PostAsync(url, content);
+            var response = await client.PostAsync("https://api.groq.com/openai/v1/chat/completions", content);
             var body     = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError("[AI CHAT] Gemini API error {Status}: {Body}", response.StatusCode, body);
-                return "Sorry, I couldn't reach the AI service right now. Please try again in a moment.";
+                _logger.LogError("[AI CHAT] Groq API error {Status}: {Body}", response.StatusCode, body);
+                return "Sorry, I couldn't reach the AI service right now. Please try again later.";
             }
 
             using var doc  = JsonDocument.Parse(body);
             var textBlock  = doc.RootElement
-                               .GetProperty("candidates")[0]
+                               .GetProperty("choices")[0]
+                               .GetProperty("message")
                                .GetProperty("content")
-                               .GetProperty("parts")[0]
-                               .GetProperty("text")
                                .GetString();
 
             return textBlock ?? "No response from AI.";
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[AI CHAT] Exception calling Gemini API");
+            _logger.LogError(ex, "[AI CHAT] Exception calling Groq API");
             return "Something went wrong while talking to the AI. Please try again.";
         }
     }

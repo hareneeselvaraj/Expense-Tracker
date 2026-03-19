@@ -1,6 +1,7 @@
 using ExpenseTracker.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace ExpenseTracker.Controllers;
@@ -11,10 +12,12 @@ namespace ExpenseTracker.Controllers;
 public class CoupleController : ControllerBase
 {
     private readonly ICoupleService _coupleService;
+    private readonly ILogger<CoupleController> _logger;
 
-    public CoupleController(ICoupleService coupleService)
+    public CoupleController(ICoupleService coupleService, ILogger<CoupleController> logger)
     {
         _coupleService = coupleService;
+        _logger = logger;
     }
 
     private Guid GetUserId()
@@ -34,6 +37,11 @@ public class CoupleController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating couple invite");
+            return StatusCode(500, new { message = "An unexpected error occurred. Please try again." });
         }
     }
 
@@ -55,9 +63,22 @@ public class CoupleController : ControllerBase
     [HttpDelete("leave")]
     public async Task<IActionResult> LeaveCouple()
     {
-        var success = await _coupleService.LeaveCoupleAsync(GetUserId());
-        if (!success) return BadRequest(new { message = "Could not leave couple or not part of one." });
+        // Always return success — clean up even if there's nothing to clean
+        await _coupleService.LeaveCoupleAsync(GetUserId());
         return Ok(new { message = "Successfully left the couple." });
+    }
+
+    [HttpGet("debug-me")]
+    public async Task<IActionResult> DebugMe([FromServices] ExpenseTracker.Data.AppDbContext db)
+    {
+        var userId = GetUserId();
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        return Ok(new { 
+            jwtUserId = userId, 
+            userFound = user != null,
+            userEmail = user?.Email,
+            userName = user?.Name
+        });
     }
 }
 

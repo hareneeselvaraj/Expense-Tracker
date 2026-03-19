@@ -40,13 +40,16 @@ export default function Couple() {
   };
 
   const handleLeaveCouple = async () => {
-    if (!window.confirm('Are you sure you want to disconnect your accounts?')) return;
+    console.log('[COUPLE] Cancel button clicked');
     setLoading(true);
     try {
+      console.log('[COUPLE] Calling DELETE /couple/leave...');
       await api.delete('/couple/leave');
+      console.log('[COUPLE] Leave succeeded!');
       toast.success('Disconnected successfully');
       refresh();
     } catch (err) {
+      console.error('[COUPLE] Leave failed:', err);
       toast.error(err.response?.data?.message || 'Failed to leave');
     }
     setLoading(false);
@@ -58,13 +61,13 @@ export default function Couple() {
       <div className="couple-page card">
         <h2>Couple Settings</h2>
         <p>Connect with your partner to share tracking and manage finances together.</p>
-        
+
         <div className="couple-actions">
           <form onSubmit={handleCreateInvite} className="action-box">
             <h3>Invite Partner</h3>
-            <input 
-              type="email" 
-              placeholder="Partner's email address" 
+            <input
+              type="email"
+              placeholder="Partner's email address"
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
               disabled={loading}
@@ -77,9 +80,9 @@ export default function Couple() {
 
           <form onSubmit={handleAcceptInvite} className="action-box">
             <h3>Have a code?</h3>
-            <input 
-              type="text" 
-              placeholder="Enter 8-character code" 
+            <input
+              type="text"
+              placeholder="Enter 8-character code"
               value={joinCode}
               onChange={(e) => setJoinCode(e.target.value)}
               disabled={loading}
@@ -98,7 +101,7 @@ export default function Couple() {
       <div className="couple-page card pending-card">
         <h2>Invitation Pending</h2>
         <p>You have invited <strong>{couple.partnerEmail}</strong>. Waiting for them to accept.</p>
-        
+
         <div className="invite-code-display">
           <span>Invite Code:</span>
           <div className="code-box">{couple.inviteCode}</div>
@@ -123,9 +126,9 @@ export default function Couple() {
             <p>{couple.partnerEmail}</p>
           </div>
         </div>
-        
+
         <p className="success-text">Your accounts are linked. You can toggle between personal and shared data on the dashboard and budgets.</p>
-        
+
         <button onClick={handleLeaveCouple} disabled={loading} className="btn danger mt-2">
           Dissolve Couple
         </button>

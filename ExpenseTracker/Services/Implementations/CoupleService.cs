@@ -9,44 +9,66 @@ public class CoupleService : ICoupleService
 {
     private readonly AppDbContext _context;
     private readonly IEmailService _emailService;
+    private readonly ILogger<CoupleService> _logger;
 
-    public CoupleService(AppDbContext context, IEmailService emailService)
+    public CoupleService(AppDbContext context, IEmailService emailService, ILogger<CoupleService> logger)
     {
         _context = context;
         _emailService = emailService;
+        _logger = logger;
     }
 
     public async Task<string> CreateCoupleAsync(Guid userId, string inviteEmail)
     {
-        var existing = await _context.Couples.FirstOrDefaultAsync(c => c.OwnerId == userId || c.PartnerId == userId);
-        if (existing is { Status: CoupleStatus.Active or CoupleStatus.Pending })
-            throw new InvalidOperationException("You are already part of an active or pending couple.");
-
-        var user = await _context.Users.FindAsync(userId);
-        if (user == null) throw new KeyNotFoundException("User not found.");
-
-        var inviteCode = GenerateInviteCode();
-
-        var couple = new Couple
+        try 
         {
-            OwnerId = userId,
-            InviteEmail = inviteEmail,
-            InviteCode = inviteCode,
-            Status = CoupleStatus.Pending
-        };
+            _logger.LogInformation("[COUPLE] CreateCoupleAsync for user {UserId}, email {InviteEmail}", userId, inviteEmail);
+            
+            // 1. Check if user already in an active couple
+            var existing = await _context.Couples.FirstOrDefaultAsync(c => 
+                (c.OwnerId == userId || c.PartnerId == userId) && 
+                (c.Status == CoupleStatus.Active || c.Status == CoupleStatus.Pending));
+            
+            if (existing != null)
+                throw new InvalidOperationException("You are already part of an active or pending couple.");
 
-        user.CoupleId = couple.Id;
-        user.CoupleRole = "Owner";
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null) throw new KeyNotFoundException($"User not found for id {userId}.");
 
-        _context.Couples.Add(couple);
-        await _context.SaveChangesAsync();
+            var inviteCode = GenerateInviteCode();
 
-        if (!string.IsNullOrWhiteSpace(inviteEmail))
-        {
-            _ = _emailService.SendCoupleInviteAsync(inviteEmail, inviteCode, user.Name);
+            // 2. CREATE THE COUPLE RECORD FIRST
+            var couple = new Couple
+            {
+                Id = Guid.NewGuid(),
+                OwnerId = userId,
+                InviteEmail = inviteEmail,
+                InviteCode = inviteCode,
+                Status = CoupleStatus.Pending
+            };
+
+            _context.Couples.Add(couple);
+            await _context.SaveChangesAsync(); // Save the couple to the DB first
+            _logger.LogInformation("[COUPLE] Created couple {CoupleId} with code {Code}", couple.Id, inviteCode);
+
+            // 3. LINK THE USER TO THE NEW COUPLE
+            user.CoupleId = couple.Id;
+            user.CoupleRole = "Owner";
+            await _context.SaveChangesAsync(); // Update the user record
+            _logger.LogInformation("[COUPLE] Linked user {UserId} to couple as Owner", userId);
+
+            if (!string.IsNullOrWhiteSpace(inviteEmail))
+            {
+                _ = _emailService.SendCoupleInviteAsync(inviteEmail, inviteCode, user.Name);
+            }
+
+            return inviteCode;
         }
-
-        return inviteCode;
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[COUPLE] Crash in CreateCoupleAsync");
+            throw; // Re-throw to be caught by Controller
+        }
     }
 
     public async Task<bool> AcceptInviteAsync(string inviteCode, Guid partnerId)
@@ -74,7 +96,8 @@ public class CoupleService : ICoupleService
         var couple = await _context.Couples
             .Include(c => c.Owner)
             .Include(c => c.Partner)
-            .FirstOrDefaultAsync(c => c.OwnerId == userId || c.PartnerId == userId);
+            .FirstOrDefaultAsync(c => (c.OwnerId == userId || c.PartnerId == userId) 
+                                   && c.Status != CoupleStatus.Dissolved);
 
         if (couple == null) return null;
 
@@ -123,13 +146,21 @@ public class CoupleService : ICoupleService
 
     public async Task<bool> LeaveCoupleAsync(Guid userId)
     {
+        _logger.LogInformation("[COUPLE] LeaveCoupleAsync for user {UserId}", userId);
+        
         var couple = await _context.Couples
             .Include(c => c.Owner)
             .Include(c => c.Partner)
-            .FirstOrDefaultAsync(c => c.OwnerId == userId || c.PartnerId == userId);
+            .OrderByDescending(c => c.CreatedAt) // Pick newest first
+            .FirstOrDefaultAsync(c => (c.OwnerId == userId || c.PartnerId == userId) && c.Status != CoupleStatus.Dissolved);
 
-        if (couple == null || couple.Status == CoupleStatus.Dissolved) return false;
+        if (couple == null) 
+        {
+            _logger.LogWarning("[COUPLE] No active/pending couple found for user {UserId}", userId);
+            return false;
+        }
 
+        _logger.LogInformation("[COUPLE] Found couple {CoupleId} with status {Status}, dissolving...", couple.Id, couple.Status);
         couple.Status = CoupleStatus.Dissolved;
         
         if (couple.Owner != null)
@@ -145,6 +176,7 @@ public class CoupleService : ICoupleService
         }
 
         await _context.SaveChangesAsync();
+        _logger.LogInformation("[COUPLE] Successfully dissolved couple {CoupleId}", couple.Id);
         return true;
     }
 
