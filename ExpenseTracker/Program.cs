@@ -71,6 +71,12 @@ builder.Services.AddScoped<IAIChatService, AIChatService>();
 builder.Services.AddScoped<IAIFeaturesService, AIFeaturesService>();
 builder.Services.AddHttpClient("google");
 
+// ───────────────────── Wealth Dashboard ─────────────────────
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<IPriceFeedService, PriceFeedService>();
+builder.Services.AddScoped<SIPService>();
+builder.Services.AddHostedService<ExpenseTracker.Services.SIPBackgroundService>();
+
 builder.Services.AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
@@ -93,7 +99,51 @@ try
     {
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         
-        // Database migrations are now handled via 'dotnet ef database update'
+        // ── Wealth Dashboard: ensure new tables & columns exist ──
+        var conn = db.Database.GetDbConnection();
+        await conn.OpenAsync();
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                -- Add Ticker columns to Investments (idempotent)
+                CREATE TABLE IF NOT EXISTS _migration_check (id INTEGER);
+                
+                -- Ticker column
+                INSERT OR IGNORE INTO _migration_check SELECT 1 WHERE EXISTS (SELECT 1 FROM pragma_table_info('Investments') WHERE name='Ticker');
+                
+                -- SIPs table
+                CREATE TABLE IF NOT EXISTS SIPs (
+                    Id TEXT PRIMARY KEY,
+                    UserId TEXT NOT NULL,
+                    InvestmentId TEXT NOT NULL,
+                    MonthlyAmount REAL NOT NULL,
+                    ExecutionDay INTEGER NOT NULL DEFAULT 1,
+                    Status TEXT DEFAULT 'Active',
+                    NextExecutionDate TEXT,
+                    CreatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+                    FOREIGN KEY (UserId) REFERENCES Users(Id),
+                    FOREIGN KEY (InvestmentId) REFERENCES Investments(Id)
+                );
+
+                -- SIPHistories table
+                CREATE TABLE IF NOT EXISTS SIPHistories (
+                    Id TEXT PRIMARY KEY,
+                    SIPId TEXT NOT NULL,
+                    Amount REAL NOT NULL,
+                    NavAtExecution REAL,
+                    ExecutedAt TEXT NOT NULL DEFAULT (datetime('now')),
+                    Status TEXT DEFAULT 'Success',
+                    Notes TEXT,
+                    FOREIGN KEY (SIPId) REFERENCES SIPs(Id)
+                );
+            ";
+            await cmd.ExecuteNonQueryAsync();
+        }
+        // Add new columns if missing (ALTER TABLE can't use IF NOT EXISTS in SQLite)
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Investments ADD COLUMN Ticker TEXT"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Investments ADD COLUMN PriceSource TEXT"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Investments ADD COLUMN LastPriceUpdate TEXT"); } catch { }
+        await conn.CloseAsync();
         
         // RD Catch-up Logic
         var today = DateTime.UtcNow;

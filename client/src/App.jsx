@@ -21,6 +21,7 @@ import Goals from './pages/Goals';
 import UpcomingReminders from './pages/UpcomingReminders';
 import History from './pages/History';
 import Couple from './pages/Couple';
+import SIPs from './pages/SIPs';
 
 export default function App() {
     return (
@@ -40,6 +41,7 @@ export default function App() {
                                     <Route path="/tags" element={<Tags />} />
                                     <Route path="/budgets" element={<Budgets />} />
                                     <Route path="/investments" element={<Investments />} />
+                                    <Route path="/sips" element={<SIPs />} />
                                     <Route path="/portfolio" element={<Portfolio />} />
                                     <Route path="/mileage" element={<MileageTracker />} />
                                     <Route path="/ai-insights" element={<AIInsights />} />

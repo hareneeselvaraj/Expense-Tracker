@@ -18,6 +18,8 @@ public class AppDbContext : DbContext
     public DbSet<FuelEntry> FuelEntries => Set<FuelEntry>();
     public DbSet<Reminder> Reminders => Set<Reminder>();
     public DbSet<Couple> Couples => Set<Couple>();
+    public DbSet<SIP> SIPs => Set<SIP>();
+    public DbSet<SIPHistory> SIPHistories => Set<SIPHistory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

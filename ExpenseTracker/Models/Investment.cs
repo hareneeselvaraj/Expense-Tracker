@@ -65,6 +65,15 @@ public class Investment
     [Column(TypeName = "decimal(18,2)")]
     public decimal? ProjectedMaturityValue { get; set; } // pre-calculated maturity
 
+    // ── Live Price Feed fields ──
+    [MaxLength(50)]
+    public string? Ticker { get; set; }                  // e.g., "TCS.NS", "BTC-USD", "119598"
+
+    [MaxLength(20)]
+    public string? PriceSource { get; set; }             // "yahoo" | "mfapi" | "manual"
+
+    public DateTime? LastPriceUpdate { get; set; }
+
 
     /// <summary>
     /// ROI = ((CurrentValue - InvestedAmount) / InvestedAmount) * 100

@@ -42,6 +42,7 @@ export default function Sidebar() {
 
     const moreLinks = [
         { to: '/investments', icon: <FiTrendingUp />, label: 'Investments' },
+        { to: '/sips', icon: <FiZap />, label: 'SIPs' },
         { to: '/budgets', icon: <FiBarChart2 />, label: 'Budgets' },
         { to: '/couple', icon: <FiUsers />, label: 'Shared Finance', badge: isCouple },
         { to: '/mileage', icon: <FiTruck />, label: 'Mileage' },
