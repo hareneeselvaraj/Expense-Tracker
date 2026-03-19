@@ -74,6 +74,19 @@ public class Investment
 
     public DateTime? LastPriceUpdate { get; set; }
 
+    [MaxLength(50)]
+    public string? ISIN { get; set; }
+
+    [MaxLength(50)]
+    public string? SchemeCode { get; set; }
+
+    [MaxLength(100)]
+    public string? SectorTag { get; set; }
+
+    [NotMapped]
+    public int HoldingPeriodDays => DateInvested.HasValue 
+        ? (int)(DateTime.UtcNow - DateInvested.Value).TotalDays 
+        : 0;
 
     /// <summary>
     /// ROI = ((CurrentValue - InvestedAmount) / InvestedAmount) * 100

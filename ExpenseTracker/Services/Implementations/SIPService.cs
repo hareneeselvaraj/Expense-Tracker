@@ -93,38 +93,58 @@ public class SIPService
         {
             try
             {
-                // Fetch live price if ticker is available
-                decimal? nav = null;
+                // Fetch live price if ticker is available (for current executions)
+                decimal? currentNav = null;
                 if (!string.IsNullOrEmpty(sip.Investment.Ticker) && !string.IsNullOrEmpty(sip.Investment.PriceSource))
                 {
                     var priceResult = await _priceFeed.GetPriceAsync(sip.Investment.Ticker, sip.Investment.PriceSource);
-                    if (priceResult.Price > 0) nav = priceResult.Price;
+                    if (priceResult.Price > 0) currentNav = priceResult.Price;
                 }
 
-                // Update the investment's InvestedAmount
-                sip.Investment.InvestedAmount += sip.MonthlyAmount;
-
-                // If we have a live price and quantity, update current value
-                if (nav.HasValue && sip.Investment.Quantity.HasValue && nav.Value > 0)
+                while (sip.NextExecutionDate <= today && sip.Status == "Active")
                 {
-                    var additionalUnits = sip.MonthlyAmount / nav.Value;
-                    sip.Investment.Quantity += additionalUnits;
-                    sip.Investment.CurrentValue = sip.Investment.Quantity.Value * nav.Value;
-                    sip.Investment.LastPriceUpdate = DateTime.UtcNow;
+                    var execDate = sip.NextExecutionDate.Value;
+                    
+                    // In a perfect system we'd fetch historical NAV for execDate, 
+                    // but falling back to current NAV or 0 logic for simplicity if missing
+                    decimal? navToUse = currentNav; 
+                    decimal? unitsToAdd = null;
+
+                    sip.Investment.InvestedAmount += sip.MonthlyAmount;
+
+                    if (navToUse.HasValue && navToUse.Value > 0)
+                    {
+                        unitsToAdd = sip.MonthlyAmount / navToUse.Value;
+                        sip.Investment.Quantity = (sip.Investment.Quantity ?? 0) + unitsToAdd.Value;
+                        sip.Investment.CurrentValue = sip.Investment.Quantity.Value * navToUse.Value;
+                        sip.Investment.LastPriceUpdate = today;
+                    }
+
+                    // Log history
+                    _context.SIPHistories.Add(new SIPHistory
+                    {
+                        SIPId = sip.Id,
+                        Amount = sip.MonthlyAmount,
+                        NavAtExecution = navToUse,
+                        ExecutedAt = execDate,
+                        Status = "Success"
+                    });
+
+                    // Log as AssetTransaction!
+                    _context.AssetTransactions.Add(new AssetTransaction
+                    {
+                        InvestmentId = sip.InvestmentId,
+                        TxnType = "SIP",
+                        Date = execDate,
+                        Price = navToUse ?? 0,
+                        Amount = sip.MonthlyAmount,
+                        Units = unitsToAdd ?? 0,
+                        Notes = "Automated SIP Execution"
+                    });
+
+                    sip.NextExecutionDate = CalculateNextExecution(sip.ExecutionDay, execDate);
+                    executed++;
                 }
-
-                // Log the history
-                _context.SIPHistories.Add(new SIPHistory
-                {
-                    SIPId = sip.Id,
-                    Amount = sip.MonthlyAmount,
-                    NavAtExecution = nav,
-                    Status = "Success"
-                });
-
-                // Move to next execution date
-                sip.NextExecutionDate = CalculateNextExecution(sip.ExecutionDay);
-                executed++;
             }
             catch (Exception ex)
             {
@@ -136,6 +156,9 @@ public class SIPService
                     Status = "Failed",
                     Notes = ex.Message
                 });
+                
+                // Pause it so we don't infinitely hit errors
+                sip.Status = "Paused";
             }
         }
 
@@ -144,11 +167,25 @@ public class SIPService
         return executed;
     }
 
-    private static DateTime CalculateNextExecution(int executionDay)
+    private static DateTime CalculateNextExecution(int executionDay, DateTime? fromDate = null)
     {
-        var now = DateTime.UtcNow;
-        var thisMonth = new DateTime(now.Year, now.Month, Math.Min(executionDay, DateTime.DaysInMonth(now.Year, now.Month)));
-        return thisMonth > now ? thisMonth : thisMonth.AddMonths(1);
+        var baseDate = fromDate ?? DateTime.UtcNow;
+        var thisMonth = new DateTime(baseDate.Year, baseDate.Month, Math.Min(executionDay, DateTime.DaysInMonth(baseDate.Year, baseDate.Month)));
+        return thisMonth > baseDate ? thisMonth : thisMonth.AddMonths(1);
+    }
+
+    public decimal CalculateProjection(decimal monthlyAmount, int years, decimal expectedAnnualReturnPct)
+    {
+        if (expectedAnnualReturnPct == 0) return monthlyAmount * years * 12;
+        decimal r = expectedAnnualReturnPct / 100 / 12; // monthly interest rate
+        int n = years * 12; // total months
+        
+        // Future Value of a SIP = P * [ ((1+r)^n - 1) / r ] * (1+r)
+        double amount = (double)monthlyAmount;
+        double rate = (double)r;
+        double fv = amount * (Math.Pow(1 + rate, n) - 1) / rate * (1 + rate);
+        
+        return Math.Round((decimal)fv, 2);
     }
 }
 

@@ -8,6 +8,7 @@ using ExpenseTracker.Repositories.Implementations;
 using ExpenseTracker.Repositories.Interfaces;
 using ExpenseTracker.Services.Implementations;
 using ExpenseTracker.Services.Interfaces;
+using ExpenseTracker.Services;
 using ExpenseTracker.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -74,8 +75,16 @@ builder.Services.AddHttpClient("google");
 // ───────────────────── Wealth Dashboard ─────────────────────
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient<IPriceFeedService, PriceFeedService>();
+builder.Services.AddSingleton<AMFIService>();
 builder.Services.AddScoped<SIPService>();
+builder.Services.AddScoped<PnLCalculationService>();
+builder.Services.AddScoped<XIRRService>();
+builder.Services.AddScoped<ImportService>();
+builder.Services.AddScoped<SnapshotService>();
+builder.Services.AddSingleton<BackupService>();
 builder.Services.AddHostedService<ExpenseTracker.Services.SIPBackgroundService>();
+builder.Services.AddHostedService<ExpenseTracker.Services.SnapshotBackgroundService>();
+builder.Services.AddHostedService<ExpenseTracker.Services.BackupBackgroundService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
@@ -135,6 +144,17 @@ try
                     Status TEXT DEFAULT 'Success',
                     Notes TEXT,
                     FOREIGN KEY (SIPId) REFERENCES SIPs(Id)
+                );
+
+                -- PortfolioSnapshots table
+                CREATE TABLE IF NOT EXISTS PortfolioSnapshots (
+                    Id TEXT PRIMARY KEY,
+                    UserId TEXT NOT NULL,
+                    Date TEXT NOT NULL,
+                    TotalValue REAL NOT NULL,
+                    TotalInvested REAL NOT NULL,
+                    TotalPnl REAL NOT NULL,
+                    FOREIGN KEY (UserId) REFERENCES Users(Id)
                 );
             ";
             await cmd.ExecuteNonQueryAsync();

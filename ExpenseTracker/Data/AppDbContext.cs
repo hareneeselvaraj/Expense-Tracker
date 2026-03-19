@@ -20,6 +20,10 @@ public class AppDbContext : DbContext
     public DbSet<Couple> Couples => Set<Couple>();
     public DbSet<SIP> SIPs => Set<SIP>();
     public DbSet<SIPHistory> SIPHistories => Set<SIPHistory>();
+    public DbSet<AssetTransaction> AssetTransactions => Set<AssetTransaction>();
+    public DbSet<PriceCache> PriceCaches => Set<PriceCache>();
+    public DbSet<PortfolioSnapshot> PortfolioSnapshots => Set<PortfolioSnapshot>();
+    public DbSet<Dividend> Dividends => Set<Dividend>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

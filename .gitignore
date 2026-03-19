@@ -22,3 +22,9 @@ budget_trace.log
 # OS
 Thumbs.db
 .DS_Store
+
+# Databases & Backups
+*.db
+*.db-shm
+*.db-wal
+ExpenseTracker/backups/

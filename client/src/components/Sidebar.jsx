@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import './Sidebar.css';
 import { useAuth } from '../context/AuthContext';
 import {
     FiHome, FiCreditCard, FiGrid, FiDollarSign, FiTarget,
-    FiClock, FiBell, FiList, FiLogOut, FiTrendingUp, FiBarChart2, FiCpu, FiTruck, FiChevronLeft, FiChevronRight, FiTag, FiZap, FiUsers
+    FiClock, FiBell, FiList, FiLogOut, FiTrendingUp, FiBarChart2, FiCpu, FiTruck, FiChevronLeft, FiChevronRight, FiTag, FiZap, FiUsers, FiSettings
 } from 'react-icons/fi';
 import ThemeToggle from './ThemeToggle';
 import { CoupleContext } from '../context/CoupleContext';
@@ -26,27 +27,31 @@ export default function Sidebar() {
         document.body.classList.toggle('sidebar-collapsed', !isCollapsed);
     };
 
-    const mainLinks = [
+    const wealthLinks = [
         { to: '/', icon: <FiHome />, label: 'Dashboard' },
-        { to: '/transactions', icon: <FiCreditCard />, label: 'Transactions' },
-        { to: '/categories', icon: <FiGrid />, label: 'Categories' },
-        { to: '/accounts', icon: <FiDollarSign />, label: 'Balance' },
-        { to: '/goals', icon: <FiTarget />, label: 'Goals' },
+        { to: '/stocks', icon: <FiTrendingUp />, label: 'Stocks & Equity' },
+        { to: '/sips', icon: <FiZap />, label: 'MF & SIPs' },
+        { to: '/other-assets', icon: <FiDollarSign />, label: 'Other Assets' },
+        { to: '/investments', icon: <FiSettings />, label: 'Manage All' },
+        { to: '/portfolio', icon: <FiList />, label: 'Portfolio' },
     ];
 
-    const secondaryLinks = [
+    const expenseLinks = [
+        { to: '/transactions', icon: <FiCreditCard />, label: 'Transactions' },
+        { to: '/budgets', icon: <FiBarChart2 />, label: 'Budgets' },
+        { to: '/categories', icon: <FiGrid />, label: 'Categories' },
         { to: '/tags', icon: <FiTag />, label: 'Tags' },
-        { to: '/reminders', icon: <FiBell />, label: 'Reminders' },
-        { to: '/history', icon: <FiList />, label: 'History' },
+        { to: '/accounts', icon: <FiDollarSign />, label: 'Accounts' },
     ];
 
     const moreLinks = [
-        { to: '/investments', icon: <FiTrendingUp />, label: 'Investments' },
-        { to: '/sips', icon: <FiZap />, label: 'SIPs' },
-        { to: '/budgets', icon: <FiBarChart2 />, label: 'Budgets' },
-        { to: '/couple', icon: <FiUsers />, label: 'Shared Finance', badge: isCouple },
+        { to: '/goals', icon: <FiTarget />, label: 'Goals' },
+        { to: '/tax-reports', icon: <FiList />, label: 'Tax & Reports' },
+        { to: '/reminders', icon: <FiBell />, label: 'Reminders' },
+        { to: '/history', icon: <FiClock />, label: 'History' },
         { to: '/mileage', icon: <FiTruck />, label: 'Mileage' },
         { to: '/ai-insights', icon: <FiCpu />, label: 'AI Insights' },
+        { to: '/couple', icon: <FiUsers />, label: 'Shared Finance', badge: isCouple },
     ];
 
     return (
@@ -75,7 +80,8 @@ export default function Sidebar() {
 
             {/* Main Nav */}
             <nav className="sidebar-nav">
-                {mainLinks.map((link) => (
+                <div className="nav-section-title">{!isCollapsed && 'Wealth'}</div>
+                {wealthLinks.map((link) => (
                     <NavLink
                         key={link.to}
                         to={link.to}
@@ -89,8 +95,9 @@ export default function Sidebar() {
                 ))}
 
                 <div className="sidebar-divider" />
+                <div className="nav-section-title">{!isCollapsed && 'Expense Tracking'}</div>
 
-                {secondaryLinks.map((link) => (
+                {expenseLinks.map((link) => (
                     <NavLink
                         key={link.to}
                         to={link.to}
@@ -103,6 +110,7 @@ export default function Sidebar() {
                 ))}
 
                 <div className="sidebar-divider" />
+                <div className="nav-section-title">{!isCollapsed && 'More'}</div>
 
                 {moreLinks.map((link) => (
                     <NavLink

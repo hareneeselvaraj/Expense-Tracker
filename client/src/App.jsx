@@ -22,6 +22,9 @@ import UpcomingReminders from './pages/UpcomingReminders';
 import History from './pages/History';
 import Couple from './pages/Couple';
 import SIPs from './pages/SIPs';
+import Stocks from './pages/Stocks';
+import OtherAssets from './pages/OtherAssets';
+import TaxReports from './pages/TaxReports';
 
 export default function App() {
     return (
@@ -42,6 +45,9 @@ export default function App() {
                                     <Route path="/budgets" element={<Budgets />} />
                                     <Route path="/investments" element={<Investments />} />
                                     <Route path="/sips" element={<SIPs />} />
+                                    <Route path="/stocks" element={<Stocks />} />
+                                    <Route path="/other-assets" element={<OtherAssets />} />
+                                    <Route path="/tax-reports" element={<TaxReports />} />
                                     <Route path="/portfolio" element={<Portfolio />} />
                                     <Route path="/mileage" element={<MileageTracker />} />
                                     <Route path="/ai-insights" element={<AIInsights />} />

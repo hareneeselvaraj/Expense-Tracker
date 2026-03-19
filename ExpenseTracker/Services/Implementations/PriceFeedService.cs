@@ -1,5 +1,6 @@
 using System.Text.Json;
-using Microsoft.Extensions.Caching.Memory;
+using ExpenseTracker.Data;
+using ExpenseTracker.Models;
 using ExpenseTracker.Services.Interfaces;
 
 namespace ExpenseTracker.Services.Implementations;
@@ -7,68 +8,79 @@ namespace ExpenseTracker.Services.Implementations;
 public class PriceFeedService : IPriceFeedService
 {
     private readonly HttpClient _http;
-    private readonly IMemoryCache _cache;
+    private readonly IServiceProvider _sp;
+    private readonly AMFIService _amfi;
     private readonly ILogger<PriceFeedService> _logger;
-    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
-    public PriceFeedService(HttpClient http, IMemoryCache cache, ILogger<PriceFeedService> logger)
+    public PriceFeedService(HttpClient http, IServiceProvider sp, AMFIService amfi, ILogger<PriceFeedService> logger)
     {
         _http = http;
-        _cache = cache;
+        _sp = sp;
+        _amfi = amfi;
         _logger = logger;
+    }
+
+    // ─── USD/INR ────────────────────────────────────────────────────────
+
+    private async Task<decimal> GetUsdInrRateAsync()
+    {
+        var result = await GetCachedOrFetch("INR=X", "yahoo", async () => await FetchYahooPriceAsync("INR=X"), GetStockCacheDuration());
+        return result.Price > 0 ? result.Price : 83.0m; // safe fallback
     }
 
     // ─── Stocks & ETFs (Yahoo Finance) ───────────────────────────────────
 
     public async Task<PriceResult> GetStockPriceAsync(string ticker)
     {
-        return await GetCachedOrFetch(ticker, "yahoo", async () =>
+        // Is it a US stock? (Usually just letters, no suffix like .NS)
+        bool isUsStock = !ticker.Contains('.') && !ticker.Contains('=') && !ticker.Contains('-');
+
+        var result = await GetCachedOrFetch(ticker, "yahoo", async () => await FetchYahooPriceAsync(ticker), GetStockCacheDuration());
+
+        if (isUsStock && result.Price > 0)
         {
-            var url = $"https://query1.finance.yahoo.com/v8/finance/chart/{Uri.EscapeDataString(ticker)}?interval=1d&range=1d";
-            _http.DefaultRequestHeaders.Clear();
-            _http.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
+            var rate = await GetUsdInrRateAsync();
+            result.Price = Math.Round(result.Price * rate, 2);
+        }
 
-            var response = await _http.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-
-            var json = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(json);
-
-            var result = doc.RootElement
-                .GetProperty("chart")
-                .GetProperty("result")[0];
-
-            var meta = result.GetProperty("meta");
-            var price = meta.GetProperty("regularMarketPrice").GetDecimal();
-
-            return price;
-        });
+        return result;
     }
 
-    // ─── Mutual Funds (mfapi.in — free, no key) ─────────────────────────
+    private async Task<decimal> FetchYahooPriceAsync(string ticker)
+    {
+        var url = $"https://query1.finance.yahoo.com/v8/finance/chart/{Uri.EscapeDataString(ticker)}?interval=1d&range=1d";
+        _http.DefaultRequestHeaders.Clear();
+        _http.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
+
+        var response = await _http.GetAsync(url);
+        if (!response.IsSuccessStatusCode)
+        {
+            // fallback URL
+            url = $"https://query2.finance.yahoo.com/v8/finance/chart/{Uri.EscapeDataString(ticker)}?interval=1d&range=1d";
+            response = await _http.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+        }
+
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+
+        var resultObj = doc.RootElement.GetProperty("chart").GetProperty("result")[0];
+        var meta = resultObj.GetProperty("meta");
+        return meta.GetProperty("regularMarketPrice").GetDecimal();
+    }
+
+    // ─── Mutual Funds (AMFIService) ──────────────────────────────────────
 
     public async Task<PriceResult> GetMutualFundNavAsync(string schemeCode)
     {
-        return await GetCachedOrFetch($"mf:{schemeCode}", "mfapi", async () =>
+        return await GetCachedOrFetch($"mf:{schemeCode}", "amfi", async () =>
         {
-            var url = $"https://api.mfapi.in/mf/{schemeCode}/latest";
-            var response = await _http.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-
-            var json = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(json);
-
-            // Response: { "data": [{ "nav": "25.1234" }] }
-            var navStr = doc.RootElement
-                .GetProperty("data")[0]
-                .GetProperty("nav")
-                .GetString();
-
-            return decimal.Parse(navStr ?? "0");
-        });
+            var nav = await _amfi.GetNavAsync(schemeCode);
+            return nav ?? 0m;
+        }, TimeSpan.FromHours(6)); // MFs don't trade intra-day, 6 hrs is fine
     }
 
-    // ─── Crypto (Yahoo Finance — symbol-USD) ────────────────────────────
+    // ─── Crypto (Yahoo Finance) ─────────────────────────────────────────
 
     public async Task<PriceResult> GetCryptoPriceAsync(string symbol)
     {
@@ -76,7 +88,15 @@ public class PriceFeedService : IPriceFeedService
             ? symbol
             : $"{symbol.ToUpperInvariant()}-USD";
 
-        return await GetStockPriceAsync(ticker); // Same Yahoo API
+        var result = await GetCachedOrFetch(ticker, "yahoo", async () => await FetchYahooPriceAsync(ticker), TimeSpan.FromMinutes(2));
+
+        if (result.Price > 0)
+        {
+            var rate = await GetUsdInrRateAsync();
+            result.Price = Math.Round(result.Price * rate, 2);
+        }
+
+        return result;
     }
 
     // ─── Auto-Router ────────────────────────────────────────────────────
@@ -86,7 +106,7 @@ public class PriceFeedService : IPriceFeedService
         return priceSource.ToLowerInvariant() switch
         {
             "yahoo" => await GetStockPriceAsync(ticker),
-            "mfapi" => await GetMutualFundNavAsync(ticker),
+            "mfapi" or "amfi" => await GetMutualFundNavAsync(ticker),
             "crypto" => await GetCryptoPriceAsync(ticker),
             _ => new PriceResult
             {
@@ -98,8 +118,6 @@ public class PriceFeedService : IPriceFeedService
         };
     }
 
-    // ─── Batch Fetch ────────────────────────────────────────────────────
-
     public async Task<List<PriceResult>> GetPricesBatchAsync(IEnumerable<(string ticker, string source)> requests)
     {
         var tasks = requests.Select(r => GetPriceAsync(r.ticker, r.source));
@@ -107,51 +125,106 @@ public class PriceFeedService : IPriceFeedService
         return results.ToList();
     }
 
-    // ─── Cache Control ──────────────────────────────────────────────────
-
     public void ClearCache()
     {
-        // IMemoryCache doesn't have a ClearAll — we use a compact instead
-        if (_cache is MemoryCache mc)
-        {
-            mc.Compact(1.0); // Remove 100% of entries
-        }
-        _logger.LogInformation("[PriceFeed] Cache cleared");
+        using var scope = _sp.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.PriceCaches.RemoveRange(db.PriceCaches);
+        db.SaveChanges();
+        _logger.LogInformation("[PriceFeed] DB Price Cache cleared.");
     }
 
-    // ─── Internal: cache-through helper ─────────────────────────────────
+    // ─── Smart Cache logic ──────────────────────────────────────────────
 
-    private async Task<PriceResult> GetCachedOrFetch(string cacheKey, string source, Func<Task<decimal>> fetcher)
+    private static TimeSpan GetStockCacheDuration()
     {
-        var fullKey = $"price:{cacheKey}";
+        var ist = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
+        var nowOst = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, ist);
+        
+        bool isMarketHours = nowOst.TimeOfDay >= new TimeSpan(9, 15, 0) && nowOst.TimeOfDay <= new TimeSpan(15, 30, 0);
+        bool isWeekend = nowOst.DayOfWeek == DayOfWeek.Saturday || nowOst.DayOfWeek == DayOfWeek.Sunday;
 
-        if (_cache.TryGetValue(fullKey, out PriceResult? cached) && cached != null)
+        if (!isWeekend && isMarketHours)
         {
-            cached.IsLive = false; // It's from cache
-            return cached;
+            return TimeSpan.FromMinutes(5); // Fast refresh during market
+        }
+        return TimeSpan.FromHours(6); // Slow refresh outside market
+    }
+
+    private async Task<PriceResult> GetCachedOrFetch(string ticker, string source, Func<Task<decimal>> fetcher, TimeSpan ttl)
+    {
+        using var scope = _sp.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var cached = await db.PriceCaches.FindAsync(ticker);
+        var isStale = cached != null && (DateTime.UtcNow - cached.FetchedAt) > ttl;
+
+        if (cached != null && !isStale)
+        {
+            return new PriceResult
+            {
+                Ticker = ticker,
+                Price = cached.Price,
+                Source = cached.Source,
+                IsLive = false,
+                FetchedAt = cached.FetchedAt
+            };
         }
 
         try
         {
-            var price = await fetcher();
-            var result = new PriceResult
+            var newPrice = await fetcher();
+            if (newPrice == 0m) throw new Exception("Fetched price is 0.");
+
+            if (cached == null)
             {
-                Ticker = cacheKey,
-                Price = price,
+                cached = new PriceCache
+                {
+                    Ticker = ticker,
+                    Source = source,
+                    Price = newPrice,
+                    Currency = "INR",
+                    FetchedAt = DateTime.UtcNow
+                };
+                db.PriceCaches.Add(cached);
+            }
+            else
+            {
+                cached.Price = newPrice;
+                cached.FetchedAt = DateTime.UtcNow;
+                db.PriceCaches.Update(cached);
+            }
+            await db.SaveChangesAsync();
+
+            return new PriceResult
+            {
+                Ticker = ticker,
+                Price = newPrice,
                 Source = source,
                 IsLive = true,
-                FetchedAt = DateTime.UtcNow
+                FetchedAt = cached.FetchedAt
             };
-
-            _cache.Set(fullKey, result, CacheDuration);
-            return result;
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "[PriceFeed] Failed to fetch price for {Ticker}", cacheKey);
+            _logger.LogWarning(ex, "[PriceFeed] Failed to fetch price for {Ticker}. Using stale cache if available.", ticker);
+
+            if (cached != null)
+            {
+                return new PriceResult
+                {
+                    Ticker = ticker,
+                    Price = cached.Price,
+                    Source = cached.Source,
+                    IsLive = false, // Even though returning, it marks stale essentially
+                    FetchedAt = cached.FetchedAt,
+                    Error = "Using stale cache. " + ex.Message
+                };
+            }
+
             return new PriceResult
             {
-                Ticker = cacheKey,
+                Ticker = ticker,
                 Source = source,
                 Error = ex.Message,
                 FetchedAt = DateTime.UtcNow

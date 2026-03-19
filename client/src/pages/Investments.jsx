@@ -539,7 +539,9 @@ function PhysicalTable({ items, onEdit, onDelete }) {
 //  MAIN PAGE
 // ══════════════════════════════════════════════════════════
 export default function Investments() {
-    const [tab, setTab] = useState('Market');
+    const query = new URLSearchParams(window.location.search);
+    const initialTab = query.get('cat') || 'Market';
+    const [tab, setTab] = useState(initialTab);
     const [investments, setInvestments] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [editing, setEditing] = useState(null);
@@ -552,7 +554,12 @@ export default function Investments() {
     const [filterPlatform, setFilterPlatform] = useState('All Platforms');
 
     const load = () => api.get('/investment').then((res) => { setInvestments(res.data); setLoading(false); });
-    useEffect(() => { load(); }, []);
+    useEffect(() => { 
+        load(); 
+        if (query.get('showForm') === 'true') {
+            setShowForm(true);
+        }
+    }, []);
 
     // Extract dynamic options
     const availablePlatforms = useMemo(() => {
