@@ -90,12 +90,12 @@ export default function Sidebar() {
                 </NavLink>
 
                 <div className="sidebar-divider" style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }} />
-                <div className="nav-section-title">{!isCollapsed && 'Wealth'}</div>
-                {wealthLinks.map((link) => (
+                <div className="nav-section-title">{!isCollapsed && 'Expense Tracking'}</div>
+
+                {expenseLinks.map((link) => (
                     <NavLink
                         key={link.to}
                         to={link.to}
-                        end={link.to === '/'}
                         className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                         title={isCollapsed ? link.label : undefined}
                     >
@@ -105,12 +105,12 @@ export default function Sidebar() {
                 ))}
 
                 <div className="sidebar-divider" />
-                <div className="nav-section-title">{!isCollapsed && 'Expense Tracking'}</div>
-
-                {expenseLinks.map((link) => (
+                <div className="nav-section-title">{!isCollapsed && 'Wealth'}</div>
+                {wealthLinks.map((link) => (
                     <NavLink
                         key={link.to}
                         to={link.to}
+                        end={link.to === '/'}
                         className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                         title={isCollapsed ? link.label : undefined}
                     >

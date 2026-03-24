@@ -108,6 +108,9 @@ try
     {
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         
+        // ── Create DB from current model (includes ALL columns) ──
+        await db.Database.EnsureCreatedAsync();
+        
         // ── Wealth Dashboard: ensure new tables & columns exist ──
         var conn = db.Database.GetDbConnection();
         await conn.OpenAsync();
@@ -160,6 +163,7 @@ try
             await cmd.ExecuteNonQueryAsync();
         }
         // Add new columns if missing (ALTER TABLE can't use IF NOT EXISTS in SQLite)
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Categories ADD COLUMN Icon TEXT"); } catch { }
         try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Investments ADD COLUMN Ticker TEXT"); } catch { }
         try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Investments ADD COLUMN PriceSource TEXT"); } catch { }
         try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Investments ADD COLUMN LastPriceUpdate TEXT"); } catch { }
