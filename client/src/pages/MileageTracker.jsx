@@ -169,16 +169,16 @@ export default function MileageTracker() {
         responsive: true,
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
-        plugins: { 
-            legend: { 
-                position: 'top', 
+        plugins: {
+            legend: {
+                position: 'top',
                 align: 'end',
-                labels: { 
-                    usePointStyle: true, 
-                    padding: 20, 
+                labels: {
+                    usePointStyle: true,
+                    padding: 20,
                     font: { size: 12, weight: '600', family: "'Inter', sans-serif" },
                     color: labelColor
-                } 
+                }
             },
             tooltip: {
                 backgroundColor: 'var(--bg-card)',
@@ -194,19 +194,19 @@ export default function MileageTracker() {
             }
         },
         scales: {
-            y: { 
-                position: 'left', 
-                grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', drawBorder: false }, 
-                ticks: { color: tickColor, font: { size: 11, weight: '500' } } 
+            y: {
+                position: 'left',
+                grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', drawBorder: false },
+                ticks: { color: tickColor, font: { size: 11, weight: '500' } }
             },
-            y1: { 
-                position: 'right', 
-                grid: { display: false }, 
-                ticks: { color: tickColor, font: { size: 11, weight: '500' } } 
+            y1: {
+                position: 'right',
+                grid: { display: false },
+                ticks: { color: tickColor, font: { size: 11, weight: '500' } }
             },
-            x: { 
-                grid: { display: false }, 
-                ticks: { color: tickColor, font: { size: 11, weight: '500' } } 
+            x: {
+                grid: { display: false },
+                ticks: { color: tickColor, font: { size: 11, weight: '500' } }
             }
         }
     };
@@ -326,7 +326,7 @@ export default function MileageTracker() {
                 {entries.length === 0 ? (
                     <p className="mil-empty">No fuel entries logged yet.</p>
                 ) : (
-                    <div className="mil-table-wrap">
+                    <div className="table-wrapper">
                         <table className="mil-table">
                             <thead>
                                 <tr>

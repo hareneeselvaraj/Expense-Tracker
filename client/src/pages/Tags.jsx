@@ -93,17 +93,17 @@ export default function Tags() {
             {/* ── Add Tag Modal ── */}
             {showForm && (
                 <div className="modal-overlay" onClick={resetForm} style={{ backdropFilter: 'blur(8px)', background: 'rgba(0,0,0,0.6)' }}>
-                    <div className="modal-card" 
-                        style={{ 
-                            maxWidth: 420, 
-                            textAlign: 'left', 
-                            background: 'var(--bg-card)', 
+                    <div className="modal-card"
+                        style={{
+                            maxWidth: 420,
+                            textAlign: 'left',
+                            background: 'var(--bg-card)',
                             border: '1px solid var(--border)',
                             borderRadius: 24,
                             padding: 32,
                             boxShadow: '0 20px 50px rgba(0,0,0,0.4)',
                             animation: 'modalFadeIn 0.3s ease-out'
-                        }} 
+                        }}
                         onClick={e => e.stopPropagation()}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
@@ -118,16 +118,16 @@ export default function Tags() {
                         <form onSubmit={handleSubmit}>
                             <div className="form-group" style={{ marginBottom: 20 }}>
                                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>Tag Name</label>
-                                <input 
-                                    value={name} 
-                                    onChange={(e) => setName(e.target.value)} 
-                                    placeholder="e.g. Summer Vacation, Marriage, Project Alpha" 
-                                    required 
-                                    style={{ 
-                                        width: '100%', 
-                                        padding: '14px 18px', 
-                                        background: 'var(--bg-input)', 
-                                        border: '1px solid var(--border)', 
+                                <input
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="e.g. Summer Vacation, Marriage, Project Alpha"
+                                    required
+                                    style={{
+                                        width: '100%',
+                                        padding: '14px 18px',
+                                        background: 'var(--bg-input)',
+                                        border: '1px solid var(--border)',
                                         borderRadius: 14,
                                         color: 'var(--text)',
                                         fontSize: '1rem',
@@ -168,7 +168,7 @@ export default function Tags() {
             </div>
 
             {/* ── Stats Row ── */}
-            <div className="cat-stats-row" style={{ marginBottom: 32, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20 }}>
+            <div className="cat-stats-row mobile-grid-2" style={{ marginBottom: 32 }}>
                 <div className="cat-stat-card" style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}>
                     <div className="cat-stat-icon"><FiTag /></div>
                     <div>
@@ -192,7 +192,7 @@ export default function Tags() {
                     const isExpanded = expandedTag === tag.id;
 
                     return (
-                        <div key={tag.id} 
+                        <div key={tag.id}
                             className="tag-card-premium"
                             style={{
                                 background: 'var(--bg-card)',
@@ -221,13 +221,13 @@ export default function Tags() {
 
                             <div style={{ padding: 16 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                                    <div style={{ 
-                                        width: 40, 
-                                        height: 40, 
-                                        borderRadius: 10, 
-                                        background: palette.light, 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
+                                    <div style={{
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: 10,
+                                        background: palette.light,
+                                        display: 'flex',
+                                        alignItems: 'center',
                                         justifyContent: 'center',
                                         color: palette.color,
                                         fontSize: '1rem',
@@ -244,8 +244,8 @@ export default function Tags() {
                                         </div>
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                        <button 
-                                            className="btn-icon" 
+                                        <button
+                                            className="btn-icon"
                                             onClick={(e) => { e.stopPropagation(); setDeleteTarget(tag.id); }}
                                             style={{ color: 'var(--red)', background: 'rgba(239, 68, 68, 0.08)', width: 30, height: 30, borderRadius: 8 }}
                                         >
@@ -261,14 +261,14 @@ export default function Tags() {
 
                 {tags.length === 0 && (
                     <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '100px 0', background: 'var(--bg-card)', borderRadius: 24, border: '1px dashed var(--border)' }}>
-                        <div style={{ 
-                            width: 80, 
-                            height: 80, 
-                            background: 'var(--primary-glow)', 
-                            borderRadius: '50%', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center', 
+                        <div style={{
+                            width: 80,
+                            height: 80,
+                            background: 'var(--primary-glow)',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                             margin: '0 auto 24px',
                             color: 'var(--primary)',
                             fontSize: '2.5rem'
@@ -288,11 +288,11 @@ export default function Tags() {
             {/* ── Tag Detail Modal ── */}
             {expandedTag && tagDetail && (
                 <div className="modal-overlay" onClick={() => toggleExpand(null)} style={{ backdropFilter: 'blur(10px)', background: 'rgba(0,0,0,0.7)', zIndex: 1000 }}>
-                    <div className="modal-card" 
-                        style={{ 
-                            maxWidth: 750, 
+                    <div className="modal-card"
+                        style={{
+                            maxWidth: 750,
                             width: '90%',
-                            textAlign: 'left', 
+                            textAlign: 'left',
                             background: 'rgba(23, 23, 33, 0.85)',
                             backdropFilter: 'blur(20px)',
                             border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -301,24 +301,24 @@ export default function Tags() {
                             boxShadow: '0 30px 60px rgba(0,0,0,0.5)',
                             animation: 'modalFadeIn 0.3s ease-out',
                             overflow: 'hidden'
-                        }} 
+                        }}
                         onClick={e => e.stopPropagation()}
                     >
                         {/* Header with Gradient Background */}
-                        <div style={{ 
-                            padding: '32px 32px 24px', 
+                        <div style={{
+                            padding: '32px 32px 24px',
                             background: 'linear-gradient(to bottom, rgba(99, 102, 241, 0.1), transparent)',
                             position: 'relative'
                         }}>
-                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                                    <div style={{ 
-                                        width: 44, 
-                                        height: 44, 
-                                        borderRadius: 12, 
-                                        background: 'var(--primary-glow)', 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
+                                    <div style={{
+                                        width: 44,
+                                        height: 44,
+                                        borderRadius: 12,
+                                        background: 'var(--primary-glow)',
+                                        display: 'flex',
+                                        alignItems: 'center',
                                         justifyContent: 'center',
                                         color: 'var(--primary)'
                                     }}>
@@ -332,7 +332,7 @@ export default function Tags() {
                                 <button onClick={() => toggleExpand(null)} style={{ background: 'var(--bg-input)', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'var(--transition)' }} className="hover-scale">✕</button>
                             </div>
 
-                            <div className="tag-detail-stats" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
+                            <div className="tag-detail-stats mobile-grid-3">
                                 {(() => {
                                     const incomeTotal = tagDetail.transactions?.filter(t => t.type === 'Income').reduce((sum, t) => sum + t.amount, 0) || 0;
                                     const expenseTotal = tagDetail.transactions?.filter(t => t.type !== 'Income').reduce((sum, t) => sum + t.amount, 0) || 0;
@@ -374,7 +374,7 @@ export default function Tags() {
                             </div>
 
                             {tagDetail.transactions?.length > 0 ? (
-                                <div style={{ borderRadius: 18, border: '1px solid var(--border)', overflow: 'hidden' }}>
+                                <div className="table-wrapper">
                                     <table className="modern-table" style={{ fontSize: '0.85rem' }}>
                                         <thead>
                                             <tr>
@@ -395,10 +395,10 @@ export default function Tags() {
                                             ).map(([category, totals]) => (
                                                 <tr key={category} className="hover-row">
                                                     <td style={{ padding: '14px 16px' }}>
-                                                        <span style={{ 
-                                                            padding: '4px 12px', 
-                                                            borderRadius: 8, 
-                                                            background: 'rgba(255,255,255,0.05)', 
+                                                        <span style={{
+                                                            padding: '4px 12px',
+                                                            borderRadius: 8,
+                                                            background: 'rgba(255,255,255,0.05)',
                                                             color: 'var(--text)',
                                                             fontSize: '0.78rem',
                                                             fontWeight: 600,

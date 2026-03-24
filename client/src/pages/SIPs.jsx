@@ -49,7 +49,7 @@ function AddAssetModal({ onClose, onSaved }) {
                         {errors.name && <span style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>{errors.name.message}</span>}
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                    <div className="mobile-grid-2" style={{ marginBottom: '16px' }}>
                         <div>
                             <label style={{ display: 'block', fontSize: '0.75rem', color: '#a0a0b0', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>ASSET TYPE</label>
                             <select {...register('assetType')} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: '#262635', color: '#fff', fontSize: '0.9rem', outline: 'none' }}>
@@ -64,7 +64,7 @@ function AddAssetModal({ onClose, onSaved }) {
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                    <div className="mobile-grid-2" style={{ marginBottom: '24px' }}>
                         <div>
                             <label style={{ display: 'block', fontSize: '0.75rem', color: '#a0a0b0', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>BUY DATE</label>
                             <input type="date" {...register('dateInvested')} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: '#262635', color: '#fff', fontSize: '0.9rem', outline: 'none' }} />
@@ -338,7 +338,7 @@ export default function SIPs() {
                                         ))}
                                     </select>
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                <div className="mobile-grid-2">
                                     <div>
                                         <label className="inv-filter-label">Monthly Amount</label>
                                         <input

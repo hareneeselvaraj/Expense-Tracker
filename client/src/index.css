@@ -11523,3 +11523,52 @@ tr:hover td {
   align-self: center;
   width: fit-content;
 }
+
+/* Mobile Utility Classes */
+.mobile-grid-2,
+.mobile-grid-3 {
+  display: grid;
+  gap: 16px;
+}
+
+.mobile-grid-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.mobile-grid-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+}
+
+@media (max-width: 768px) {
+
+  .mobile-grid-2,
+  .mobile-grid-3 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Final Mobile Overrides */
+@media (max-width: 768px) {
+
+  .global-history-stats,
+  .budget-cards-grid,
+  .inv-stat-row,
+  .dashboard-grid,
+  .mt-overview-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

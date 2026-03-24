@@ -7,15 +7,15 @@ export default function TaxReports() {
 
     useEffect(() => {
         api.get('/portfolioanalytics/assets/All')
-           .then(res => setAssets(res.data))
-           .finally(() => setLoading(false));
+            .then(res => setAssets(res.data))
+            .finally(() => setLoading(false));
     }, []);
 
     if (loading) return <div className="page-loader">Loading tax calculations...</div>;
 
     const totalLTCG = assets.reduce((acc, a) => acc + (a.ltcg || 0), 0);
     const totalSTCG = assets.reduce((acc, a) => acc + (a.stcg || 0), 0);
-    
+
     // Simple mock tax math: 12.5% on LTCG over 1.25L, 20% on STCG (Indian budget 2024 proxy)
     const taxableLtcg = Math.max(0, totalLTCG - 125000);
     const approxTaxLtcg = taxableLtcg * 0.125;
@@ -60,7 +60,7 @@ export default function TaxReports() {
             </div>
 
             {/* Metrics Row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
+            <div className="mobile-grid-2" style={{ gap: '1rem', marginBottom: '2rem' }}>
                 <div style={{ background: 'var(--card-bg, #1a1a2e)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-color, #333)' }}>
                     <p style={{ margin: '0 0 8px 0', opacity: 0.7, fontSize: '0.9rem' }}>Realised LTCG (+1 Yr)</p>
                     <h3 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800, color: '#10b981' }}>₹{totalLTCG.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</h3>
@@ -76,7 +76,7 @@ export default function TaxReports() {
             {/* Gains Breakdown Table */}
             <h3 style={{ marginTop: '1rem', marginBottom: '1rem', color: 'var(--text-primary)', fontWeight: 700 }}>Asset-wise Breakdown</h3>
 
-            <div style={{ background: 'var(--card-bg, #1a1a2e)', borderRadius: '12px', padding: '0', border: '1px solid var(--border-color, #333)', overflow: 'hidden' }}>
+            <div className="table-wrapper">
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
                     <thead style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid var(--border-color, #333)' }}>
                         <tr>
