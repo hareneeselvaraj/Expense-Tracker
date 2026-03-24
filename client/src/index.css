@@ -123,6 +123,17 @@
   --chart-legend: #6b21a8;
 }
 
+/* Hide native number input arrows */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -687,8 +698,8 @@ body.sidebar-collapsed .main-content {
   margin-bottom: 0;
 }
 
-.page-header > .btn,
-.page-header > button {
+.page-header>.btn,
+.page-header>button {
   flex-shrink: 0;
   width: fit-content !important;
   align-self: center;
@@ -10760,6 +10771,7 @@ tr:hover td {
 .health-modal-btn-save:active {
   transform: translateY(0);
 }
+
 /* ══════════════════════════════════════════════════════════════════
    AI BUDGET SETUP  (add to index.css)
 ══════════════════════════════════════════════════════════════════ */
@@ -10964,7 +10976,9 @@ tr:hover td {
   flex-shrink: 0;
 }
 
-.aibs-amount-cell { width: 160px; }
+.aibs-amount-cell {
+  width: 160px;
+}
 
 .aibs-amount-input-wrap {
   display: flex;
@@ -11039,8 +11053,13 @@ tr:hover td {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -11236,9 +11255,18 @@ tr:hover td {
 }
 
 @media (max-width: 600px) {
-  .aibs-input-row { flex-direction: column; }
-  .aibs-footer    { flex-direction: column; align-items: flex-start; }
-  .fc-vehicles    { grid-template-columns: 1fr; }
+  .aibs-input-row {
+    flex-direction: column;
+  }
+
+  .aibs-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .fc-vehicles {
+    grid-template-columns: 1fr;
+  }
 }
 
 
@@ -11248,7 +11276,7 @@ tr:hover td {
 
 .cat-item-editing {
   border-color: #6366f1 !important;
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.1) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
 }
 
 .cat-card-edit,
@@ -11291,13 +11319,13 @@ tr:hover td {
 .cat-edit-btn:hover {
   color: #6366f1;
   border-color: #6366f1;
-  background: rgba(99,102,241,0.07);
+  background: rgba(99, 102, 241, 0.07);
 }
 
 .cat-delete-btn:hover {
   color: #ef4444;
   border-color: #ef4444;
-  background: rgba(239,68,68,0.07);
+  background: rgba(239, 68, 68, 0.07);
 }
 
 /* Inline edit form */
@@ -11389,7 +11417,7 @@ tr:hover td {
 
 .aibs-cat-count {
   font-size: 0.72rem;
-  background: rgba(99,102,241,0.1);
+  background: rgba(99, 102, 241, 0.1);
   color: #6366f1;
   padding: 1px 7px;
   border-radius: 99px;
@@ -11430,9 +11458,9 @@ tr:hover td {
 }
 
 .aibs-cat-chip.included {
-  background: rgba(99,102,241,0.08);
+  background: rgba(99, 102, 241, 0.08);
   color: #6366f1;
-  border-color: rgba(99,102,241,0.3);
+  border-color: rgba(99, 102, 241, 0.3);
 }
 
 .aibs-cat-chip.excluded {
@@ -11445,8 +11473,8 @@ tr:hover td {
 .aibs-warn {
   font-size: 0.8rem;
   color: #f59e0b;
-  background: rgba(245,158,11,0.07);
-  border: 1px solid rgba(245,158,11,0.2);
+  background: rgba(245, 158, 11, 0.07);
+  border: 1px solid rgba(245, 158, 11, 0.2);
   border-radius: 8px;
   padding: 8px 12px;
   margin: 8px 0;
@@ -11495,5 +11523,3 @@ tr:hover td {
   align-self: center;
   width: fit-content;
 }
-
-

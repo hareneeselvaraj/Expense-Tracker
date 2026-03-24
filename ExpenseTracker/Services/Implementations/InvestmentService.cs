@@ -8,10 +8,14 @@ namespace ExpenseTracker.Services.Implementations;
 public class InvestmentService : IInvestmentService
 {
     private readonly IInvestmentRepository _investmentRepo;
+    private readonly AMFIService _amfiService;
+    private readonly ILogger<InvestmentService> _logger;
 
-    public InvestmentService(IInvestmentRepository investmentRepo)
+    public InvestmentService(IInvestmentRepository investmentRepo, AMFIService amfiService, ILogger<InvestmentService> logger)
     {
         _investmentRepo = investmentRepo;
+        _amfiService = amfiService;
+        _logger = logger;
     }
 
     public async Task<InvestmentResponseDto> CreateAsync(Guid userId, CreateInvestmentDto dto)
@@ -19,12 +23,35 @@ public class InvestmentService : IInvestmentService
         // Auto-derive category from AssetType
         var category = Investment.DeriveCategory(dto.AssetType);
 
+        // Auto-compute Mutual Fund Unit Quantity using Historical NAV if missing
+        _logger.LogInformation("Creating Investment -> AssetType: {0}, Ticker: {1}, Qty: {2}, Date: {3}", dto.AssetType, dto.Ticker, dto.Quantity, dto.DateInvested);
+        if ((category == "Mutual Fund" || dto.AssetType == "Mutual Fund" || dto.AssetType == "MF") && (dto.Quantity == null || dto.Quantity <= 0))
+        {
+            if (!string.IsNullOrEmpty(dto.Ticker) && dto.DateInvested.HasValue && dto.InvestedAmount > 0)
+            {
+                _logger.LogInformation("Auto-computing Mutual Fund Units for {0} on {1}", dto.Ticker, dto.DateInvested.Value);
+                var historicalNav = await _amfiService.GetHistoricalNavAsync(dto.Ticker.Trim(), dto.DateInvested.Value);
+                
+                if (historicalNav.HasValue && historicalNav.Value > 0)
+                {
+                    dto.Quantity = dto.InvestedAmount / historicalNav.Value;
+                    dto.BuyPrice = historicalNav.Value;
+                    _logger.LogInformation("Auto-computed NAV: {0}, Qty: {1}", historicalNav.Value, dto.Quantity);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to get historical NAV from AMFIService.");
+                }
+            }
+        }
+
         var investment = new Investment
         {
             UserId = userId,
             Name = dto.Name,
             AssetType = dto.AssetType,
             Category = category,
+            Ticker = dto.Ticker,
             Quantity = dto.Quantity,
             BuyPrice = dto.BuyPrice,
             InvestedAmount = dto.InvestedAmount,
@@ -35,14 +62,14 @@ public class InvestmentService : IInvestmentService
             InterestRate = dto.InterestRate,
             TenureMonths = dto.TenureMonths,
             MonthlyAmount = dto.MonthlyAmount,
-            InvestmentFrequency = dto.InvestmentFrequency
+            InvestmentFrequency = dto.InvestmentFrequency,
+            Status = "Active" // <-- Default to Active so it shows up in queries
         };
 
         // ── Deposit-specific initialization ──
         if (category == "Deposit")
         {
             investment.DateInvested ??= DateTime.UtcNow;
-            investment.Status = "Active";
 
             bool isRD = string.Equals(dto.AssetType, "RD", StringComparison.OrdinalIgnoreCase);
             bool isFD = string.Equals(dto.AssetType, "FD", StringComparison.OrdinalIgnoreCase);
@@ -109,6 +136,7 @@ public class InvestmentService : IInvestmentService
         if (investment == null || investment.UserId != userId) return null;
 
         if (dto.Name != null) investment.Name = dto.Name;
+        if (dto.Ticker != null) investment.Ticker = dto.Ticker;
         if (dto.AssetType != null)
         {
             investment.AssetType = dto.AssetType;

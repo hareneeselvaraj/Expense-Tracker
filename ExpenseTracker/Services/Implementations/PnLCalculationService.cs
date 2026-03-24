@@ -1,5 +1,6 @@
 using ExpenseTracker.Data;
 using ExpenseTracker.Models;
+using ExpenseTracker.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace ExpenseTracker.Services.Implementations;
@@ -7,10 +8,12 @@ namespace ExpenseTracker.Services.Implementations;
 public class PnLCalculationService
 {
     private readonly AppDbContext _db;
+    private readonly IPriceFeedService _priceFeed;
 
-    public PnLCalculationService(AppDbContext db)
+    public PnLCalculationService(AppDbContext db, IPriceFeedService priceFeed)
     {
         _db = db;
+        _priceFeed = priceFeed;
     }
 
     public async Task<PnLDto> CalculatePnLAsync(Guid investmentId)
@@ -95,7 +98,7 @@ public class PnLCalculationService
     public async Task<List<AssetPerformanceDto>> GetAssetPerformanceAsync(Guid userId, string assetCategory)
     {
         // assetCategory can be "MF", "Stock", "Other" etc. We will filter by AssetType
-        var query = _db.Investments.Where(i => i.UserId == userId && i.Status == "Active");
+        var query = _db.Investments.Where(i => i.UserId == userId && (i.Status == "Active" || i.Status == null));
         
         if (assetCategory == "MF") query = query.Where(i => i.AssetType == "MF" || i.AssetType == "Mutual Fund");
         else if (assetCategory == "Stock") query = query.Where(i => i.AssetType == "Stock");
@@ -103,15 +106,51 @@ public class PnLCalculationService
         // if "All", do not filter
 
         var investments = await query.ToListAsync();
+
+        // ── LIVE PRICE FETCH ──
+        var priceRequests = investments
+            .Where(i => !string.IsNullOrWhiteSpace(i.Ticker) && (i.AssetType == "Stock" || i.AssetType == "MF" || i.AssetType == "Mutual Fund" || i.AssetType == "Crypto"))
+            .Select(i => (i.Ticker, Source: i.AssetType == "Crypto" ? "crypto" : (i.AssetType == "Stock" ? "yahoo" : "amfi")))
+            .Distinct()
+            .ToList();
+
+        List<PriceResult> livePrices = new();
+        if (priceRequests.Any())
+        {
+            livePrices = await _priceFeed.GetPricesBatchAsync(priceRequests!);
+        }
+
         var results = new List<AssetPerformanceDto>();
+        bool dbUpdated = false;
 
         foreach (var inv in investments)
         {
             // Call the existing single PnL calculate to get precise AvgCost and Units
             var pnlDto = await CalculatePnLAsync(inv.Id);
+
+            // Apply live price if available
+            if (!string.IsNullOrWhiteSpace(inv.Ticker) && livePrices.Any())
+            {
+                var live = livePrices.FirstOrDefault(p => p.Ticker == inv.Ticker && p.Price > 0);
+                if (live != null)
+                {
+                    decimal activeUnits = pnlDto.RemainingUnits > 0 ? pnlDto.RemainingUnits : (inv.Quantity ?? 0m);
+                    if (activeUnits > 0)
+                    {
+                        var newValue = live.Price * activeUnits;
+                        if (inv.CurrentValue != newValue)
+                        {
+                            inv.CurrentValue = newValue;
+                            dbUpdated = true;
+                        }
+                    }
+                }
+            }
             
             decimal pnl = inv.CurrentValue - inv.InvestedAmount;
             decimal pnlPct = inv.InvestedAmount > 0 ? (pnl / inv.InvestedAmount) * 100 : 0;
+
+            decimal finalUnits = pnlDto.RemainingUnits > 0 ? pnlDto.RemainingUnits : (inv.Quantity ?? 0m);
 
             results.Add(new AssetPerformanceDto
             {
@@ -119,15 +158,24 @@ public class PnLCalculationService
                 Name = inv.Name,
                 Ticker = inv.Ticker ?? "",
                 AssetType = inv.AssetType ?? "Other",
-                Units = pnlDto.RemainingUnits,
-                AvgCost = pnlDto.AvgCost,
+                Units = finalUnits,
+                AvgCost = pnlDto.AvgCost > 0 ? pnlDto.AvgCost : (inv.BuyPrice ?? 0m),
                 InvestedAmount = inv.InvestedAmount,
                 CurrentValue = inv.CurrentValue,
+                CurrentPrice = finalUnits > 0 ? Math.Round(inv.CurrentValue / finalUnits, 4) : 0,
+                DateInvested = inv.DateInvested,
                 OverallPnL = pnl,
-                OverallPnLPct = pnlPct
+                OverallPnLPct = pnlPct,
+                LTCG = pnlDto.LTCG,
+                STCG = pnlDto.STCG
             });
         }
         
+        if (dbUpdated)
+        {
+            await _db.SaveChangesAsync();
+        }
+
         return results.OrderByDescending(r => r.InvestedAmount).ToList();
     }
 
@@ -135,7 +183,7 @@ public class PnLCalculationService
     {
         // Basic implementation for now, ignoring scope's couple-logic just to get it working for the user
         var investments = await _db.Investments
-            .Where(i => i.UserId == userId && i.Status == "Active")
+            .Where(i => i.UserId == userId && (i.Status == "Active" || i.Status == null))
             .ToListAsync();
 
         var summary = new PortfolioSummaryDto
@@ -231,4 +279,6 @@ public class AssetPerformanceDto
     public decimal OverallPnLPct { get; set; }
     public decimal LTCG { get; set; }
     public decimal STCG { get; set; }
+    public decimal CurrentPrice { get; set; }
+    public DateTime? DateInvested { get; set; }
 }

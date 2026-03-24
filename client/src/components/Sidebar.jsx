@@ -28,7 +28,6 @@ export default function Sidebar() {
     };
 
     const wealthLinks = [
-        { to: '/', icon: <FiHome />, label: 'Dashboard' },
         { to: '/stocks', icon: <FiTrendingUp />, label: 'Stocks & Equity' },
         { to: '/sips', icon: <FiZap />, label: 'MF & SIPs' },
         { to: '/other-assets', icon: <FiDollarSign />, label: 'Other Assets' },
@@ -80,6 +79,17 @@ export default function Sidebar() {
 
             {/* Main Nav */}
             <nav className="sidebar-nav">
+                <NavLink
+                    to="/"
+                    end={true}
+                    className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    title={isCollapsed ? 'Dashboard' : undefined}
+                >
+                    <FiHome />
+                    <span>Dashboard</span>
+                </NavLink>
+
+                <div className="sidebar-divider" style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }} />
                 <div className="nav-section-title">{!isCollapsed && 'Wealth'}</div>
                 {wealthLinks.map((link) => (
                     <NavLink

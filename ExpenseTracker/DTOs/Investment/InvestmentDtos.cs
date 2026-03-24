@@ -10,6 +10,9 @@ public class CreateInvestmentDto
     [MaxLength(50)]
     public string? AssetType { get; set; }
 
+    [MaxLength(50)]
+    public string? Ticker { get; set; }
+
     public decimal? Quantity { get; set; }
     public decimal? BuyPrice { get; set; }
 
@@ -42,6 +45,9 @@ public class UpdateInvestmentDto
     [MaxLength(50)]
     public string? AssetType { get; set; }
 
+    [MaxLength(50)]
+    public string? Ticker { get; set; }
+
     public decimal? Quantity { get; set; }
     public decimal? BuyPrice { get; set; }
     public decimal? InvestedAmount { get; set; }
@@ -69,6 +75,7 @@ public class InvestmentResponseDto
     public string Name { get; set; } = string.Empty;
     public string? AssetType { get; set; }
     public string? Category { get; set; }       // "Market" | "Deposit" | "Physical"
+    public string? Ticker { get; set; }
     public decimal? Quantity { get; set; }
     public decimal? BuyPrice { get; set; }
     public decimal InvestedAmount { get; set; }

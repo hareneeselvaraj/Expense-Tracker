@@ -95,4 +95,50 @@ public class AMFIService
         }
         return dict;
     }
+
+    /// <summary>
+    /// Fetches historical NAV perfectly backwards until the nearest valid trading date.
+    /// Used by Auto-Quantity for Mutual Fund SIPs in InvestmentService.
+    /// </summary>
+    public async Task<decimal?> GetHistoricalNavAsync(string schemeCode, DateTime targetDate)
+    {
+        try
+        {
+            var url = $"https://api.mfapi.in/mf/{schemeCode}";
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+            var response = await _http.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("[AMFI] mfapi.in returned {StatusCode} for scheme {SchemeCode}", response.StatusCode, schemeCode);
+                return null;
+            }
+
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            
+            if (!doc.RootElement.TryGetProperty("data", out var dataArray)) return null;
+
+            foreach (var item in dataArray.EnumerateArray())
+            {
+                var dateStr = item.GetProperty("date").GetString();
+                if (DateTime.TryParseExact(dateStr, "dd-MM-yyyy", null, System.Globalization.DateTimeStyles.None, out var navDate))
+                {
+                    if (navDate <= targetDate.Date)
+                    {
+                        var navStr = item.GetProperty("nav").GetString();
+                        if (decimal.TryParse(navStr, out var navVal))
+                        {
+                            return navVal;
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[AMFI] Failed to fetch historical NAV for {SchemeCode}", schemeCode);
+        }
+        return null;
+    }
 }

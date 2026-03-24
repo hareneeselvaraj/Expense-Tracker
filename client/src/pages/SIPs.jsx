@@ -1,9 +1,92 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
 import api from '../services/api';
 import { useToast } from '../components/Toast';
 import { FiTrendingUp, FiTrendingDown, FiDollarSign, FiActivity, FiPieChart, FiPlus, FiX, FiZap, FiCalendar, FiClock, FiPlay, FiPause, FiTrash2, FiInfo } from 'react-icons/fi';
 import { Doughnut } from 'react-chartjs-2';
 import { useTheme } from '../context/ThemeContext';
+
+function AddAssetModal({ onClose, onSaved }) {
+    const toast = useToast();
+    const { register, handleSubmit, setValue, getValues, formState: { errors } } = useForm({
+        defaultValues: { name: '', assetType: 'Mutual Fund', ticker: '', investedAmount: '', dateInvested: new Date().toISOString().split('T')[0] }
+    });
+
+    const onSubmit = async (data) => {
+        const invAmt = parseFloat(data.investedAmount);
+
+        const payload = {
+            name: data.name,
+            assetType: data.assetType,
+            ticker: data.ticker,
+            quantity: 0,
+            buyPrice: 0,
+            investedAmount: invAmt,
+            currentValue: invAmt,
+            dateInvested: data.dateInvested
+        };
+        try {
+            await api.post('/investment', payload);
+            toast.success('Mutual Fund added successfully');
+            onSaved();
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Error saving fund');
+        }
+    };
+
+    return (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="form-card" style={{ maxWidth: '500px', width: '90%', background: '#1c1c28', padding: '24px', borderRadius: '12px', color: '#fff', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 'bold' }}>Add Fund</h3>
+                    <button type="button" onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#a0a0b0', cursor: 'pointer', fontSize: '1.2rem' }}><FiX /></button>
+                </div>
+
+                <form onSubmit={handleSubmit(onSubmit)}>
+                    <div style={{ marginBottom: '16px' }}>
+                        <label style={{ display: 'block', fontSize: '0.75rem', color: '#a0a0b0', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>DISPLAY NAME</label>
+                        <input {...register('name', { required: 'Name is required' })} placeholder="e.g. Parag Parikh Flexi Cap" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: '#262635', color: '#fff', fontSize: '0.9rem', outline: 'none' }} />
+                        {errors.name && <span style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>{errors.name.message}</span>}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.75rem', color: '#a0a0b0', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>ASSET TYPE</label>
+                            <select {...register('assetType')} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: '#262635', color: '#fff', fontSize: '0.9rem', outline: 'none' }}>
+                                <option value="Mutual Fund">Mutual Fund</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.75rem', color: '#a0a0b0', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>TICKER / SCHEME CODE</label>
+                            <input {...register('ticker', { required: 'Scheme Code is required for live tracking' })} placeholder="e.g. 119598" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: '#262635', color: '#fff', fontSize: '0.9rem', outline: 'none' }} />
+                            {errors.ticker && <span style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>{errors.ticker.message}</span>}
+                            <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '6px' }}>AMFI Scheme Code (e.g. 119598)</div>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.75rem', color: '#a0a0b0', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>BUY DATE</label>
+                            <input type="date" {...register('dateInvested')} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: '#262635', color: '#fff', fontSize: '0.9rem', outline: 'none' }} />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.75rem', color: '#a0a0b0', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>TOTAL INVESTED (₹)</label>
+                            <input type="number" step="0.01" {...register('investedAmount', { required: 'Amount is required' })} placeholder="5000" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: '#262635', color: '#fff', fontSize: '0.9rem', outline: 'none' }} />
+                            {errors.investedAmount && <span style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>{errors.investedAmount.message}</span>}
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button type="button" onClick={onClose} style={{ background: '#262635', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px 20px', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer' }}>Cancel</button>
+                            <button type="submit" style={{ background: '#3b82f6', border: 'none', color: '#fff', padding: '10px 20px', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500' }}>Add Fund</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
 
 export default function SIPs() {
     const toast = useToast();
@@ -13,6 +96,7 @@ export default function SIPs() {
     const [funds, setFunds] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
+    const [showAddModal, setShowAddModal] = useState(false);
     const [historyId, setHistoryId] = useState(null);
     const [history, setHistory] = useState([]);
     const [form, setForm] = useState({ investmentId: '', monthlyAmount: '', executionDay: 1 });
@@ -118,10 +202,10 @@ export default function SIPs() {
     const chartData = useMemo(() => {
         const topFunds = [...funds].sort((a, b) => b.currentValue - a.currentValue).slice(0, 5);
         const othersValue = funds.length > 5 ? funds.slice(5).reduce((acc, f) => acc + f.currentValue, 0) : 0;
-        
+
         const labels = topFunds.map(f => f.name);
         if (othersValue > 0) labels.push('Others');
-        
+
         const data = topFunds.map(f => f.currentValue);
         if (othersValue > 0) data.push(othersValue);
 
@@ -146,7 +230,7 @@ export default function SIPs() {
                     <p className="inv-subtitle">Manage your systematic investment plans and track fund performance.</p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
-                    <button onClick={() => window.location.href='/investments?cat=Market&showForm=true'} className="btn secondary" style={{ gap: '6px' }}>
+                    <button onClick={() => setShowAddModal(true)} className="btn secondary" style={{ gap: '6px' }}>
                         <FiPlus /> Add Fund
                     </button>
                     <button onClick={executeNow} className="btn secondary" style={{ gap: '6px' }}>
@@ -157,6 +241,16 @@ export default function SIPs() {
                     </button>
                 </div>
             </div>
+
+            {showAddModal && (
+                <AddAssetModal
+                    onClose={() => setShowAddModal(false)}
+                    onSaved={() => {
+                        setShowAddModal(false);
+                        fetchFunds();
+                    }}
+                />
+            )}
 
             {/* Summary Cards */}
             <div className="inv-summary-grid">
@@ -179,9 +273,9 @@ export default function SIPs() {
                     </div>
                 </div>
                 <div className="inv-summary-card">
-                    <div className="inv-sum-icon" style={{ 
-                        background: metrics.overallPnL >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
-                        color: metrics.overallPnL >= 0 ? '#10b981' : '#ef4444' 
+                    <div className="inv-sum-icon" style={{
+                        background: metrics.overallPnL >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                        color: metrics.overallPnL >= 0 ? '#10b981' : '#ef4444'
                     }}>
                         {metrics.overallPnL >= 0 ? <FiTrendingUp /> : <FiTrendingDown />}
                     </div>
@@ -207,11 +301,11 @@ export default function SIPs() {
                 <div className="inv-chart-card">
                     <div className="inv-chart-title"><FiPieChart /> Fund Allocation</div>
                     <div className="inv-chart-wrap">
-                        <Doughnut 
-                            data={chartData} 
+                        <Doughnut
+                            data={chartData}
                             options={{
                                 cutout: '70%',
-                                plugins: { 
+                                plugins: {
                                     legend: { display: false },
                                     centerText: {
                                         label: 'TOTAL',
@@ -220,11 +314,11 @@ export default function SIPs() {
                                     }
                                 },
                                 maintainAspectRatio: false
-                            }} 
+                            }}
                         />
                     </div>
                 </div>
-                
+
                 <div className="inv-filters-card">
                     {showForm ? (
                         <form onSubmit={handleCreate} className="inv-form-container">
@@ -288,8 +382,10 @@ export default function SIPs() {
                         <thead>
                             <tr>
                                 <th>Fund Name</th>
+                                <th>Buy Date</th>
                                 <th className="text-right">Units</th>
                                 <th className="text-right">Avg NAV</th>
+                                <th className="text-right" style={{ color: '#10b981' }}>Current NAV</th>
                                 <th className="text-right">Invested</th>
                                 <th className="text-right">Value</th>
                                 <th className="text-right">P&L (%)</th>
@@ -314,8 +410,10 @@ export default function SIPs() {
                                                     {activeSIP && <span style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#10b981', fontSize: '0.65rem', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>SIP ACTIVE</span>}
                                                 </div>
                                             </td>
+                                            <td style={{ fontSize: '0.85rem', color: '#a0a0b0' }}>{f.dateInvested ? new Date(f.dateInvested).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
                                             <td className="text-right">{f.units.toFixed(3)}</td>
                                             <td className="text-right">₹{f.avgCost.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                                            <td className="text-right" style={{ color: '#10b981', fontWeight: 500 }}>₹{(f.currentPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                             <td className="text-right">₹{f.investedAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
                                             <td className="text-right" style={{ fontWeight: 600 }}>₹{f.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
                                             <td className="text-right">
@@ -354,11 +452,11 @@ export default function SIPs() {
                                 <div>
                                     <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text)' }}>
                                         {sip.investment?.name || 'Investment'}
-                                        <span style={{ 
-                                            marginLeft: '10px', 
-                                            fontSize: '0.65rem', 
-                                            padding: '2px 8px', 
-                                            borderRadius: '6px', 
+                                        <span style={{
+                                            marginLeft: '10px',
+                                            fontSize: '0.65rem',
+                                            padding: '2px 8px',
+                                            borderRadius: '6px',
                                             background: sip.status === 'Active' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
                                             color: sip.status === 'Active' ? '#10b981' : '#f59e0b',
                                             textTransform: 'uppercase',
