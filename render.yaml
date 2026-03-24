@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: expense-tracker-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: singapore # or your preferred region
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      # The JWT Key should be a 32+ character random string
+      - key: Jwt__Key
+        value: YOUR_SECRET_JWT_KEY_HERE_EXACTLY_OVER_32_CHARS
+      - key: Jwt__Issuer
+        value: ExpenseTracker
+      - key: Jwt__Audience
+        value: ExpenseTrackerUsers
+      # Render assigns the PORT automatically, ASP.NET will read ASPNETCORE_URLS in the Dockerfile
