@@ -17,9 +17,19 @@ var builder = WebApplication.CreateBuilder(args);
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
 // ───────────────────── Database ─────────────────────
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(connectionString));
+var dbProvider = builder.Configuration["DatabaseProvider"] ?? "Sqlite";
+if (dbProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+{
+    var sqlServerConn = builder.Configuration.GetConnectionString("SqlServerConnection")!;
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlServer(sqlServerConn));
+}
+else
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlite(connectionString));
+}
 
 // ───────────────────── JWT Authentication ─────────────────────
 var jwtKey = builder.Configuration["Jwt:Key"]!;
@@ -108,66 +118,18 @@ try
     {
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         
-        // ── Create DB from current model (includes ALL columns) ──
+        // ── Create DB from current model (includes ALL tables & columns) ──
         await db.Database.EnsureCreatedAsync();
         
-        // ── Wealth Dashboard: ensure new tables & columns exist ──
-        var conn = db.Database.GetDbConnection();
-        await conn.OpenAsync();
-        using (var cmd = conn.CreateCommand())
+        // ── SQLite-only: add columns that may be missing on older existing DBs ──
+        var isSqlite = db.Database.ProviderName?.Contains("Sqlite") == true;
+        if (isSqlite)
         {
-            cmd.CommandText = @"
-                -- Add Ticker columns to Investments (idempotent)
-                CREATE TABLE IF NOT EXISTS _migration_check (id INTEGER);
-                
-                -- Ticker column
-                INSERT OR IGNORE INTO _migration_check SELECT 1 WHERE EXISTS (SELECT 1 FROM pragma_table_info('Investments') WHERE name='Ticker');
-                
-                -- SIPs table
-                CREATE TABLE IF NOT EXISTS SIPs (
-                    Id TEXT PRIMARY KEY,
-                    UserId TEXT NOT NULL,
-                    InvestmentId TEXT NOT NULL,
-                    MonthlyAmount REAL NOT NULL,
-                    ExecutionDay INTEGER NOT NULL DEFAULT 1,
-                    Status TEXT DEFAULT 'Active',
-                    NextExecutionDate TEXT,
-                    CreatedAt TEXT NOT NULL DEFAULT (datetime('now')),
-                    FOREIGN KEY (UserId) REFERENCES Users(Id),
-                    FOREIGN KEY (InvestmentId) REFERENCES Investments(Id)
-                );
-
-                -- SIPHistories table
-                CREATE TABLE IF NOT EXISTS SIPHistories (
-                    Id TEXT PRIMARY KEY,
-                    SIPId TEXT NOT NULL,
-                    Amount REAL NOT NULL,
-                    NavAtExecution REAL,
-                    ExecutedAt TEXT NOT NULL DEFAULT (datetime('now')),
-                    Status TEXT DEFAULT 'Success',
-                    Notes TEXT,
-                    FOREIGN KEY (SIPId) REFERENCES SIPs(Id)
-                );
-
-                -- PortfolioSnapshots table
-                CREATE TABLE IF NOT EXISTS PortfolioSnapshots (
-                    Id TEXT PRIMARY KEY,
-                    UserId TEXT NOT NULL,
-                    Date TEXT NOT NULL,
-                    TotalValue REAL NOT NULL,
-                    TotalInvested REAL NOT NULL,
-                    TotalPnl REAL NOT NULL,
-                    FOREIGN KEY (UserId) REFERENCES Users(Id)
-                );
-            ";
-            await cmd.ExecuteNonQueryAsync();
+            try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Categories ADD COLUMN Icon TEXT"); } catch { }
+            try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Investments ADD COLUMN Ticker TEXT"); } catch { }
+            try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Investments ADD COLUMN PriceSource TEXT"); } catch { }
+            try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Investments ADD COLUMN LastPriceUpdate TEXT"); } catch { }
         }
-        // Add new columns if missing (ALTER TABLE can't use IF NOT EXISTS in SQLite)
-        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Categories ADD COLUMN Icon TEXT"); } catch { }
-        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Investments ADD COLUMN Ticker TEXT"); } catch { }
-        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Investments ADD COLUMN PriceSource TEXT"); } catch { }
-        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Investments ADD COLUMN LastPriceUpdate TEXT"); } catch { }
-        await conn.CloseAsync();
         
         // RD Catch-up Logic
         var today = DateTime.UtcNow;

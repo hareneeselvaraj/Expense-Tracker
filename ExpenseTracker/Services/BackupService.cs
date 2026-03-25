@@ -6,9 +6,23 @@ public class BackupService
 {
     private readonly string _dbPath = "expense.db";
     private readonly string _backupDir = "backups";
+    private readonly IConfiguration _configuration;
+
+    public BackupService(IConfiguration configuration)
+    {
+        _configuration = configuration;
+    }
 
     public void RunBackup()
     {
+        // Skip file-based backup when using SQL Server (managed by the hosting provider)
+        var provider = _configuration["DatabaseProvider"] ?? "Sqlite";
+        if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("[BackupService] Running on SQL Server — backup managed by hosting provider. Skipping.");
+            return;
+        }
+
         if (!Directory.Exists(_backupDir))
         {
             Directory.CreateDirectory(_backupDir);
