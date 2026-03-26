@@ -49,40 +49,32 @@ public class AIChatService : IAIChatService
         var userIds = await _coupleService.GetUserScopeAsync(userId, "Combined");
         var isCouple = userIds.Count > 1;
 
-        // ── Fetch data in parallel ──
-        var accountsTask      = _context.Accounts
-                                    .Where(a => userIds.Contains(a.UserId))
-                                    .ToListAsync();
+        // ── Fetch data sequentially (EF DbContext is not thread-safe for WhenAll) ──
+        var accounts    = await _context.Accounts
+                            .Where(a => userIds.Contains(a.UserId))
+                            .ToListAsync();
 
-        var recentTxTask      = _context.Transactions
-                                    .Include(t => t.Category)
-                                    .Where(t => userIds.Contains(t.UserId) && t.Date >= threeMonAgo)
-                                    .OrderByDescending(t => t.Date)
-                                    .Take(150)
-                                    .ToListAsync();
+        var recentTx    = await _context.Transactions
+                            .Include(t => t.Category)
+                            .Where(t => userIds.Contains(t.UserId) && t.Date >= threeMonAgo)
+                            .OrderByDescending(t => t.Date)
+                            .Take(150)
+                            .ToListAsync();
 
-        var budgetsTask       = _context.Budgets
-                                    .Include(b => b.Category)
-                                    .Where(b => userIds.Contains(b.UserId)
-                                             && b.Month == now.Month
-                                             && b.Year  == now.Year)
-                                    .ToListAsync();
+        var budgets     = await _context.Budgets
+                            .Include(b => b.Category)
+                            .Where(b => userIds.Contains(b.UserId)
+                                     && b.Month == now.Month
+                                     && b.Year  == now.Year)
+                            .ToListAsync();
 
-        var investmentsTask   = _context.Investments
-                                    .Where(i => userIds.Contains(i.UserId))
-                                    .ToListAsync();
+        var investments = await _context.Investments
+                            .Where(i => userIds.Contains(i.UserId))
+                            .ToListAsync();
 
-        var remindersTask     = _context.Reminders
-                                    .Where(r => userIds.Contains(r.UserId) && r.Status == "upcoming")
-                                    .ToListAsync();
-
-        await Task.WhenAll(accountsTask, recentTxTask, budgetsTask, investmentsTask, remindersTask);
-
-        var accounts    = accountsTask.Result;
-        var recentTx    = recentTxTask.Result;
-        var budgets     = budgetsTask.Result;
-        var investments = investmentsTask.Result;
-        var reminders   = remindersTask.Result;
+        var reminders   = await _context.Reminders
+                            .Where(r => userIds.Contains(r.UserId) && r.Status == "upcoming")
+                            .ToListAsync();
 
         var sb = new StringBuilder();
 

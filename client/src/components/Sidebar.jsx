@@ -4,7 +4,7 @@ import './Sidebar.css';
 import { useAuth } from '../context/AuthContext';
 import {
     FiHome, FiCreditCard, FiGrid, FiDollarSign, FiTarget,
-    FiClock, FiBell, FiList, FiLogOut, FiTrendingUp, FiBarChart2, FiCpu, FiTruck, FiChevronLeft, FiChevronRight, FiTag, FiZap, FiUsers, FiSettings
+    FiClock, FiBell, FiList, FiLogOut, FiTrendingUp, FiBarChart2, FiCpu, FiTruck, FiChevronLeft, FiChevronRight, FiTag, FiZap, FiUsers, FiSettings, FiUploadCloud, FiShield
 } from 'react-icons/fi';
 import ThemeToggle from './ThemeToggle';
 import { CoupleContext } from '../context/CoupleContext';
@@ -28,8 +28,9 @@ export default function Sidebar() {
     };
 
     const wealthLinks = [
+        { to: '/wealth', icon: <FiBarChart2 />, label: 'Wealth Dashboard' },
         { to: '/stocks', icon: <FiTrendingUp />, label: 'Stocks & Equity' },
-        { to: '/sips', icon: <FiZap />, label: 'MF & SIPs' },
+        { to: '/mutual-funds', icon: <FiZap />, label: 'Mutual Funds' },
         { to: '/other-assets', icon: <FiDollarSign />, label: 'Other Assets' },
         { to: '/investments', icon: <FiSettings />, label: 'Manage All' },
         { to: '/portfolio', icon: <FiList />, label: 'Portfolio' },
@@ -37,15 +38,20 @@ export default function Sidebar() {
 
     const expenseLinks = [
         { to: '/transactions', icon: <FiCreditCard />, label: 'Transactions' },
+        { to: '/statement-import', icon: <FiUploadCloud />, label: 'Statement Import' },
         { to: '/budgets', icon: <FiBarChart2 />, label: 'Budgets' },
         { to: '/categories', icon: <FiGrid />, label: 'Categories' },
         { to: '/tags', icon: <FiTag />, label: 'Tags' },
         { to: '/accounts', icon: <FiDollarSign />, label: 'Accounts' },
     ];
 
+    const taxLinks = [
+        { to: '/tax-reports', icon: <FiList />, label: 'Tax Dashboard' },
+        { to: '/tax-advisor', icon: <FiShield />, label: 'AI Tax Advisor' },
+    ];
+
     const moreLinks = [
         { to: '/goals', icon: <FiTarget />, label: 'Goals' },
-        { to: '/tax-reports', icon: <FiList />, label: 'Tax & Reports' },
         { to: '/reminders', icon: <FiBell />, label: 'Reminders' },
         { to: '/history', icon: <FiClock />, label: 'History' },
         { to: '/mileage', icon: <FiTruck />, label: 'Mileage' },
@@ -111,6 +117,21 @@ export default function Sidebar() {
                         key={link.to}
                         to={link.to}
                         end={link.to === '/'}
+                        className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                        title={isCollapsed ? link.label : undefined}
+                    >
+                        {link.icon}
+                        <span>{link.label}</span>
+                    </NavLink>
+                ))}
+
+                <div className="sidebar-divider" />
+                <div className="nav-section-title">{!isCollapsed && 'Tax Filing'}</div>
+
+                {taxLinks.map((link) => (
+                    <NavLink
+                        key={link.to}
+                        to={link.to}
                         className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                         title={isCollapsed ? link.label : undefined}
                     >

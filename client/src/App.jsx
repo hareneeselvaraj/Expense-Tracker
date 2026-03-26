@@ -21,10 +21,13 @@ import Goals from './pages/Goals';
 import UpcomingReminders from './pages/UpcomingReminders';
 import History from './pages/History';
 import Couple from './pages/Couple';
-import SIPs from './pages/SIPs';
 import Stocks from './pages/Stocks';
+import MutualFunds from './pages/MutualFunds';
 import OtherAssets from './pages/OtherAssets';
 import TaxReports from './pages/TaxReports';
+import TaxAdvisor from './pages/TaxAdvisor';
+import StatementImport from './pages/StatementImport';
+import WealthDashboard from './pages/WealthDashboard';
 
 export default function App() {
     return (
@@ -36,18 +39,22 @@ export default function App() {
                             <Routes>
                                 <Route path="/login" element={<Login />} />
                                 <Route path="/register" element={<Register />} />
+                                <Route path="/sips" element={<MutualFunds />} /> {/* Legacy route alias */}
                                 <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                                     <Route path="/" element={<Dashboard />} />
+                                    <Route path="/wealth" element={<WealthDashboard />} />
                                     <Route path="/transactions" element={<Transactions />} />
+                                    <Route path="/statement-import" element={<StatementImport />} />
                                     <Route path="/accounts" element={<Accounts />} />
                                     <Route path="/categories" element={<Categories />} />
                                     <Route path="/tags" element={<Tags />} />
                                     <Route path="/budgets" element={<Budgets />} />
                                     <Route path="/investments" element={<Investments />} />
-                                    <Route path="/sips" element={<SIPs />} />
+                                    <Route path="/mutual-funds" element={<MutualFunds />} />
                                     <Route path="/stocks" element={<Stocks />} />
                                     <Route path="/other-assets" element={<OtherAssets />} />
                                     <Route path="/tax-reports" element={<TaxReports />} />
+                                    <Route path="/tax-advisor" element={<TaxAdvisor />} />
                                     <Route path="/portfolio" element={<Portfolio />} />
                                     <Route path="/mileage" element={<MileageTracker />} />
                                     <Route path="/ai-insights" element={<AIInsights />} />

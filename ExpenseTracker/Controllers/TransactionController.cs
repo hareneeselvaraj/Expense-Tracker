@@ -103,6 +103,43 @@ public class TransactionController : BaseApiController
         }
     }
 
+    [HttpPost("upload-preview")]
+    public async Task<IActionResult> UploadPreview([FromForm] IFormFile file, [FromForm] Guid accountId)
+    {
+        if (file == null || file.Length == 0) return BadRequest(new { error = "File is empty" });
+        
+        try
+        {
+            _logger.LogInformation("[UPLOAD PREVIEW] file={FileName}, size={Length}, account={AccountId}, user={UserId}", 
+                file.FileName, file.Length, accountId, GetUserId());
+            using var stream = file.OpenReadStream();
+            var preview = await _transactionService.UploadPreviewAsync(GetUserId(), accountId, stream, file.FileName);
+            return Ok(preview);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[UPLOAD PREVIEW ERROR] {Message}", ex.Message);
+            return BadRequest(new { error = ex.Message, detail = ex.InnerException?.Message });
+        }
+    }
+
+    [HttpPost("upload-commit")]
+    public async Task<IActionResult> UploadCommit([FromBody] IEnumerable<TransactionResponseDto> dtos)
+    {
+        if (dtos == null || !dtos.Any()) return BadRequest(new { error = "No transactions provided to commit" });
+
+        try
+        {
+            var count = await _transactionService.UploadCommitAsync(GetUserId(), dtos);
+            return Ok(new { message = $"Successfully committed {count} transactions" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[UPLOAD COMMIT ERROR] {Message}", ex.Message);
+            return BadRequest(new { error = ex.Message, detail = ex.InnerException?.Message });
+        }
+    }
+
     /// <summary>Diagnostic: trigger a budget check for a category in the current month and return detailed results.</summary>
     [HttpPost("test-budget-alert/{categoryId:guid}")]
     public async Task<IActionResult> TestBudgetAlert(Guid categoryId)

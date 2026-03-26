@@ -103,17 +103,89 @@ function AddAssetModal({ onClose, onSaved }) {
     );
 }
 
+function SellAssetModal({ asset, onClose, onSaved }) {
+    const toast = useToast();
+    const { register, handleSubmit, control, setValue, getValues, formState: { errors } } = useForm({
+        defaultValues: { sellQuantity: asset?.units || '', sellPrice: asset?.currentPrice || '', sellDate: new Date().toISOString().split('T')[0], notes: '' }
+    });
+
+    const onSubmit = async (data) => {
+        const payload = {
+            sellQuantity: parseFloat(data.sellQuantity),
+            sellPrice: parseFloat(data.sellPrice),
+            sellDate: data.sellDate,
+            notes: data.notes
+        };
+        try {
+            await api.post(`/investment/${asset.id}/sell`, payload);
+            toast.success(`Successfully sold ${payload.sellQuantity} shares of ${asset.name}`);
+            onSaved();
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Error selling asset');
+        }
+    };
+
+    if (!asset) return null;
+
+    return (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="form-card dash-panel" style={{ maxWidth: '500px', width: '90%', padding: '24px', position: 'relative' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 'bold' }}>Sell {asset.ticker}</h3>
+                    <button type="button" onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#a0a0b0', cursor: 'pointer', fontSize: '1.2rem' }}><FiX /></button>
+                </div>
+
+                <div style={{ background: 'rgba(168, 85, 247, 0.1)', border: '1px solid rgba(168, 85, 247, 0.3)', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '0.85rem', color: '#d8b4fe' }}>
+                    <strong>Holdings Available:</strong> {asset.units.toLocaleString('en-IN', { maximumFractionDigits: 4 })} shares @ Avg Cost ₹{asset.avgCost.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                </div>
+
+                <form onSubmit={handleSubmit(onSubmit)}>
+                    <div className="mobile-grid-2" style={{ marginBottom: '16px' }}>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.75rem', color: '#a0a0b0', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SELL QUANTITY</label>
+                            <input type="number" step="0.0001" max={asset.units} {...register('sellQuantity', { required: 'Quantity is required', max: { value: asset.units, message: 'Exceeds holdings' } })} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: '#262635', color: '#fff', fontSize: '0.9rem', outline: 'none' }} />
+                            {errors.sellQuantity && <span style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>{errors.sellQuantity.message}</span>}
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.75rem', color: '#a0a0b0', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SELL PRICE (₹)</label>
+                            <input type="number" step="0.01" {...register('sellPrice', { required: 'Price is required' })} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: '#262635', color: '#fff', fontSize: '0.9rem', outline: 'none' }} />
+                            {errors.sellPrice && <span style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>{errors.sellPrice.message}</span>}
+                        </div>
+                    </div>
+
+                    <div style={{ marginBottom: '24px' }}>
+                        <label style={{ display: 'block', fontSize: '0.75rem', color: '#a0a0b0', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SELL DATE</label>
+                        <input type="date" {...register('sellDate')} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: '#262635', color: '#fff', fontSize: '0.9rem', outline: 'none' }} />
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                        <button type="button" onClick={onClose} style={{ background: '#262635', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '10px 20px', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer' }}>Cancel</button>
+                        <button type="submit" style={{ background: '#ef4444', border: 'none', color: '#fff', padding: '10px 20px', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer', fontWeight: '500' }}>Confirm Sell</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
 export default function Stocks() {
     const [stocks, setStocks] = useState([]);
+    const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
+    const [sellAsset, setSellAsset] = useState(null);
+    const [activeTab, setActiveTab] = useState('holdings'); // 'holdings' | 'history'
     const { theme } = useTheme();
 
     const fetchStocks = () => {
         setLoading(true);
-        api.get('/portfolioanalytics/assets/Stock')
-            .then(res => setStocks(res.data))
-            .finally(() => setLoading(false));
+        Promise.all([
+            api.get('/portfolioanalytics/assets/Stock'),
+            api.get('/investment/transactions/all')
+        ]).then(([stockRes, histRes]) => {
+            setStocks(stockRes.data);
+            setHistory(histRes.data.filter(t => t.assetType === 'Stock' || t.assetType === 'ETF'));
+        }).finally(() => setLoading(false));
     };
 
     useEffect(() => {
@@ -167,7 +239,7 @@ export default function Stocks() {
                 </div>
             </div>
 
-            {showAddModal && (
+                {showAddModal && (
                 <AddAssetModal
                     onClose={() => setShowAddModal(false)}
                     onSaved={() => {
@@ -177,116 +249,201 @@ export default function Stocks() {
                 />
             )}
 
-            {/* Summary Cards */}
-            <div className="inv-summary-grid">
-                <div className="inv-summary-card">
-                    <div className="inv-sum-icon" style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
-                        <FiDollarSign />
-                    </div>
-                    <div>
-                        <div className="inv-sum-label">Total Invested</div>
-                        <div className="inv-sum-value">₹{metrics.totalInvested.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
-                    </div>
-                </div>
-                <div className="inv-summary-card">
-                    <div className="inv-sum-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
-                        <FiActivity />
-                    </div>
-                    <div>
-                        <div className="inv-sum-label">Current Value</div>
-                        <div className="inv-sum-value">₹{metrics.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
-                    </div>
-                </div>
-                <div className="inv-summary-card">
-                    <div className="inv-sum-icon" style={{
-                        background: metrics.overallPnL >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                        color: metrics.overallPnL >= 0 ? '#10b981' : '#ef4444'
-                    }}>
-                        {metrics.overallPnL >= 0 ? <FiTrendingUp /> : <FiTrendingDown />}
-                    </div>
-                    <div>
-                        <div className="inv-sum-label">Overall P&L</div>
-                        <div className="inv-sum-value" style={{ color: metrics.overallPnL >= 0 ? '#10b981' : '#ef4444' }}>
-                            {metrics.overallPnL >= 0 ? '+' : ''}₹{Math.abs(metrics.overallPnL).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                        </div>
-                    </div>
-                </div>
-                <div className="inv-summary-card">
-                    <div className="inv-sum-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
-                        <FiPieChart />
-                    </div>
-                    <div>
-                        <div className="inv-sum-label">Return %</div>
-                        <div className="inv-sum-value" style={{ color: metrics.overallPnLPct >= 0 ? '#10b981' : '#ef4444' }}>
-                            {metrics.overallPnLPct.toFixed(2)}%
-                        </div>
-                    </div>
-                </div>
+            {sellAsset && (
+                <SellAssetModal 
+                    asset={sellAsset}
+                    onClose={() => setSellAsset(null)}
+                    onSaved={() => {
+                        setSellAsset(null);
+                        fetchStocks();
+                    }}
+                />
+            )}
+
+            {/* Navigation Tabs */}
+            <div className="stock-tabs" style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '1.5rem', gap: '24px' }}>
+                <button 
+                    onClick={() => setActiveTab('holdings')}
+                    style={{ background: 'none', border: 'none', color: activeTab === 'holdings' ? '#818cf8' : 'var(--text-muted)', fontSize: '1rem', fontWeight: 600, padding: '0 0 12px 0', borderBottom: activeTab === 'holdings' ? '3px solid #6366f1' : '3px solid transparent', cursor: 'pointer', position: 'relative' }}
+                >
+                    Current Holdings
+                    {/* The original instruction had an extra div here, but the new styling pattern makes it redundant. */}
+                </button>
+                <button 
+                    onClick={() => setActiveTab('history')}
+                    style={{ background: 'transparent', border: 'none', color: activeTab === 'history' ? '#fff' : 'var(--text-muted)', fontSize: '1.1rem', fontWeight: activeTab === 'history' ? 600 : 400, cursor: 'pointer', position: 'relative', padding: '0 8px' }}
+                >
+                    Trade History
+                    {activeTab === 'history' && <div style={{ position: 'absolute', bottom: '-13px', left: 0, right: 0, height: '3px', background: '#6366f1', borderRadius: '3px 3px 0 0' }} />}
+                </button>
             </div>
 
-            <div className="inv-mid-row">
-                <div className="inv-chart-card">
-                    <div className="inv-chart-title"><FiPieChart /> Portfolio Allocation</div>
-                    <div className="inv-chart-wrap">
-                        <Doughnut
-                            data={chartData}
-                            options={{
-                                cutout: '70%',
-                                plugins: {
-                                    legend: { display: false },
-                                    centerText: {
-                                        label: 'TOTAL',
-                                        text: `₹${metrics.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0, notation: 'compact' })}`,
-                                        color: '#fff'
-                                    }
-                                },
-                                maintainAspectRatio: false
-                            }}
-                        />
+            {activeTab === 'holdings' && (
+                <>
+                    {/* Summary Cards */}
+                    <div className="inv-summary-grid">
+                        <div className="inv-summary-card">
+                            <div className="inv-sum-icon" style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
+                                <FiDollarSign />
+                            </div>
+                            <div>
+                                <div className="inv-sum-label">Total Invested</div>
+                                <div className="inv-sum-value">₹{metrics.totalInvested.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
+                            </div>
+                        </div>
+                        <div className="inv-summary-card">
+                            <div className="inv-sum-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+                                <FiActivity />
+                            </div>
+                            <div>
+                                <div className="inv-sum-label">Current Value</div>
+                                <div className="inv-sum-value">₹{metrics.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
+                            </div>
+                        </div>
+                        <div className="inv-summary-card">
+                            <div className="inv-sum-icon" style={{
+                                background: metrics.overallPnL >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                color: metrics.overallPnL >= 0 ? '#10b981' : '#ef4444'
+                            }}>
+                                {metrics.overallPnL >= 0 ? <FiTrendingUp /> : <FiTrendingDown />}
+                            </div>
+                            <div>
+                                <div className="inv-sum-label">Overall P&L</div>
+                                <div className="inv-sum-value" style={{ color: metrics.overallPnL >= 0 ? '#10b981' : '#ef4444' }}>
+                                    {metrics.overallPnL >= 0 ? '+' : ''}₹{Math.abs(metrics.overallPnL).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="inv-summary-card">
+                            <div className="inv-sum-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
+                                <FiPieChart />
+                            </div>
+                            <div>
+                                <div className="inv-sum-label">Return %</div>
+                                <div className="inv-sum-value" style={{ color: metrics.overallPnLPct >= 0 ? '#10b981' : '#ef4444' }}>
+                                    {metrics.overallPnLPct.toFixed(2)}%
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <div className="inv-table-card">
+                    <div className="inv-mid-row">
+                        <div className="inv-chart-card">
+                            <div className="inv-chart-title"><FiPieChart /> Portfolio Allocation</div>
+                            <div className="inv-chart-wrap">
+                                <Doughnut
+                                    data={chartData}
+                                    options={{
+                                        cutout: '70%',
+                                        plugins: {
+                                            legend: { display: false },
+                                            centerText: {
+                                                label: 'TOTAL',
+                                                text: `₹${metrics.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0, notation: 'compact' })}`,
+                                                color: '#fff'
+                                            }
+                                        },
+                                        maintainAspectRatio: false
+                                    }}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="inv-table-card">
+                            <div className="table-wrapper">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Stock / Ticker</th>
+                                            <th className="text-right">Qty</th>
+                                            <th className="text-right">Avg Cost</th>
+                                            <th className="text-right">Current Price</th>
+                                            <th className="text-right">Current Value</th>
+                                            <th className="text-right">P&L</th>
+                                            <th className="text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {stocks.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="7" className="text-center" style={{ padding: '3rem', opacity: 0.5 }}>
+                                                    No stock holdings found.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            stocks.map((s, i) => (
+                                                <tr key={i}>
+                                                    <td>
+                                                        <div style={{ fontWeight: 600 }}>{s.name}</div>
+                                                        <div style={{ fontSize: '0.75rem', opacity: 0.6 }}>{s.ticker}</div>
+                                                    </td>
+                                                    <td className="text-right">{s.units.toLocaleString('en-IN', { maximumFractionDigits: 4 })}</td>
+                                                    <td className="text-right">₹{s.avgCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                    <td className="text-right" style={{ color: '#10b981', fontWeight: 500 }}>₹{(s.currentPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                    <td className="text-right" style={{ fontWeight: 600 }}>₹{s.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                                                    <td className="text-right">
+                                                        <div style={{ color: s.overallPnL >= 0 ? '#10b981' : '#ef4444', fontWeight: 600 }}>
+                                                            {s.overallPnL >= 0 ? '+' : '-'}₹{Math.abs(s.overallPnL).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                                                        </div>
+                                                        <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{s.overallPnLPct.toFixed(2)}%</div>
+                                                    </td>
+                                                    <td className="text-center">
+                                                        <button className="btn outline" style={{ padding: '4px 12px', fontSize: '0.8rem', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }} onClick={() => setSellAsset(s)}>
+                                                            Sell
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {activeTab === 'history' && (
+                <div className="dash-panel">
+                    <div className="dash-panel-header" style={{ marginBottom: '24px' }}>
+                        <span className="dash-panel-title">Trade History & Capital Gains</span>
+                    </div>
                     <div className="table-wrapper">
-                        <table>
-                            <thead>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
+                            <thead style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid var(--border-color)' }}>
                                 <tr>
-                                    <th>Stock / Ticker</th>
-                                    <th>Buy Date</th>
-                                    <th className="text-right">Qty</th>
-                                    <th className="text-right">Avg Cost</th>
-                                    <th className="text-right">Current Price</th>
-                                    <th className="text-right">Invested</th>
-                                    <th className="text-right">Current Value</th>
-                                    <th className="text-right">P&L (%)</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'left', fontWeight: 600 }}>Date</th>
+                                    <th style={{ padding: '16px', textAlign: 'left', fontWeight: 600 }}>Asset</th>
+                                    <th style={{ padding: '16px', textAlign: 'center', fontWeight: 600 }}>Type</th>
+                                    <th style={{ padding: '16px', textAlign: 'right', fontWeight: 600 }}>Qty</th>
+                                    <th style={{ padding: '16px', textAlign: 'right', fontWeight: 600 }}>Price</th>
+                                    <th style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 600 }}>Total Value</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {stocks.length === 0 ? (
+                                {history.length === 0 ? (
                                     <tr>
-                                        <td colSpan="6" className="text-center" style={{ padding: '3rem', opacity: 0.5 }}>
-                                            No stock holdings found.
-                                        </td>
+                                        <td colSpan="6" style={{ padding: '32px', textAlign: 'center', opacity: 0.5 }}>No trade history found.</td>
                                     </tr>
                                 ) : (
-                                    stocks.map((s, i) => (
-                                        <tr key={i}>
-                                            <td>
-                                                <div style={{ fontWeight: 600 }}>{s.name}</div>
-                                                <div style={{ fontSize: '0.75rem', opacity: 0.6 }}>{s.ticker}</div>
+                                    history.map((t, i) => (
+                                        <tr key={i} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                            <td style={{ padding: '16px 20px', color: 'var(--text-muted)' }}>{new Date(t.date).toLocaleDateString()}</td>
+                                            <td style={{ padding: '16px', fontWeight: 500 }}>
+                                                {t.investmentName} <span style={{ fontSize: '0.75rem', opacity: 0.6, marginLeft: 8 }}>{t.ticker}</span>
                                             </td>
-                                            <td style={{ fontSize: '0.9rem', color: '#a0a0b0' }}>{s.dateInvested ? new Date(s.dateInvested).toLocaleDateString() : '-'}</td>
-                                            <td className="text-right">{s.units.toLocaleString('en-IN', { maximumFractionDigits: 4 })}</td>
-                                            <td className="text-right">₹{s.avgCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                            <td className="text-right" style={{ color: '#10b981', fontWeight: 500 }}>₹{(s.currentPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                            <td className="text-right" style={{ color: '#a0a0b0' }}>₹{s.investedAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
-                                            <td className="text-right" style={{ fontWeight: 600 }}>₹{s.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
-                                            <td className="text-right">
-                                                <div style={{ color: s.overallPnL >= 0 ? '#10b981' : '#ef4444', fontWeight: 600 }}>
-                                                    {s.overallPnL >= 0 ? '+' : '-'}₹{Math.abs(s.overallPnL).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                                                </div>
-                                                <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{s.overallPnLPct.toFixed(2)}%</div>
+                                            <td style={{ padding: '16px', textAlign: 'center' }}>
+                                                <span style={{ 
+                                                    padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700,
+                                                    background: t.txnType === 'BUY' || t.txnType === 'SIP' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                                                    color: t.txnType === 'BUY' || t.txnType === 'SIP' ? '#10b981' : '#ef4444'
+                                                }}>
+                                                    {t.txnType}
+                                                </span>
                                             </td>
+                                            <td style={{ padding: '16px', textAlign: 'right' }}>{t.units.toLocaleString('en-IN', { maximumFractionDigits: 4 })}</td>
+                                            <td style={{ padding: '16px', textAlign: 'right' }}>₹{t.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                                            <td style={{ padding: '16px 20px', textAlign: 'right', fontWeight: 600 }}>₹{t.amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
                                         </tr>
                                     ))
                                 )}
@@ -294,7 +451,7 @@ export default function Stocks() {
                         </table>
                     </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

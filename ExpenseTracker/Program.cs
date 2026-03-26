@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ExpenseTracker.Data;
@@ -118,8 +119,19 @@ try
     {
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         
-        // ── Create DB from current model (includes ALL tables & columns) ──
-        await db.Database.EnsureCreatedAsync();
+        // ── Create DB & tables from current model ──
+        // EnsureCreatedAsync won't create tables if DB already exists (e.g. MonsterASP pre-creates it).
+        // So we also try CreateTables() explicitly for that scenario.
+        var created = await db.Database.EnsureCreatedAsync();
+        if (!created)
+        {
+            try
+            {
+                var dbCreator = db.Database.GetService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>();
+                await dbCreator.CreateTablesAsync();
+            }
+            catch { /* Tables already exist — safe to ignore */ }
+        }
         
         // ── SQLite-only: add columns that may be missing on older existing DBs ──
         var isSqlite = db.Database.ProviderName?.Contains("Sqlite") == true;
@@ -156,14 +168,16 @@ try
 catch (Exception ex) { Console.WriteLine($"Startup Migration Error: {ex.Message}"); }
 
 
+app.UseDeveloperExceptionPage();
+
+app.UseSwagger();
+app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "v1"));
+
+// Only redirect to HTTPS in development (MonsterASP free plan is HTTP-only)
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
-    app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "v1"));
+    app.UseHttpsRedirection();
 }
-
-app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();

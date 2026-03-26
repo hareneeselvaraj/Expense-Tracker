@@ -30,6 +30,12 @@ public interface ITransactionService
     /// <summary>Bulk upload transactions from a stream (Excel/PDF).</summary>
     Task<int> UploadAsync(Guid userId, Guid accountId, Stream fileStream, string fileName);
 
+    /// <summary>Generate a preview of parsed transactions from an upload stream without saving.</summary>
+    Task<IEnumerable<TransactionResponseDto>> UploadPreviewAsync(Guid userId, Guid accountId, Stream fileStream, string fileName);
+
+    /// <summary>Commit a pre-reviewed list of transactions to the database.</summary>
+    Task<int> UploadCommitAsync(Guid userId, IEnumerable<TransactionResponseDto> dtos);
+
     /// <summary>Manually trigger a budget check for diagnostics.</summary>
     Task<BudgetCheckResultDto> TestBudgetCheckAsync(Guid userId, Guid categoryId);
 }

@@ -50,4 +50,25 @@ public class InvestmentController : BaseApiController
         var deleted = await _investmentService.DeleteAsync(GetUserId(), id);
         return deleted ? NoContent() : NotFound();
     }
+
+    [HttpPost("{id:guid}/sell")]
+    public async Task<IActionResult> Sell(Guid id, [FromBody] SellInvestmentDto dto)
+    {
+        try
+        {
+            var result = await _investmentService.SellAsync(GetUserId(), id, dto);
+            return result == null ? NotFound() : Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("transactions/all")]
+    public async Task<IActionResult> GetAllTransactions([FromQuery] Guid? investmentId = null)
+    {
+        var txns = await _investmentService.GetTransactionsAsync(GetUserId(), investmentId);
+        return Ok(txns);
+    }
 }

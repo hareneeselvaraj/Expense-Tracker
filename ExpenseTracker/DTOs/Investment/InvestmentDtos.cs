@@ -95,3 +95,33 @@ public class InvestmentResponseDto
     public DateTime? LastProcessedDate { get; set; }
     public decimal? ProjectedMaturityValue { get; set; }
 }
+
+public class SellInvestmentDto
+{
+    [Required]
+    public decimal SellQuantity { get; set; }
+
+    [Required]
+    public decimal SellPrice { get; set; }
+
+    [Required]
+    public DateTime SellDate { get; set; }
+
+    [MaxLength(500)]
+    public string? Notes { get; set; }
+}
+
+public class AssetTransactionDto
+{
+    public Guid Id { get; set; }
+    public Guid InvestmentId { get; set; }
+    public string InvestmentName { get; set; } = string.Empty;
+    public string? AssetType { get; set; }
+    public string? Ticker { get; set; }
+    public string TxnType { get; set; } = string.Empty;
+    public DateTime Date { get; set; }
+    public decimal Units { get; set; }
+    public decimal Price { get; set; }
+    public decimal Amount { get; set; } // For BUY: cost, For SELL: revenue
+    public string? Notes { get; set; }
+}

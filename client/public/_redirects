@@ -1,0 +1,4 @@
+/* Redirects */
+/*    /api/*  http://myexpensetracker.tryasp.net/api/:splat  200 */
+/*  For SPA routing: */
+/*    /*    /index.html   200 */

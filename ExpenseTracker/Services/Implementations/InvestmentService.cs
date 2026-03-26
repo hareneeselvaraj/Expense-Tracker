@@ -2,6 +2,8 @@ using ExpenseTracker.DTOs.Investment;
 using ExpenseTracker.Models;
 using ExpenseTracker.Repositories.Interfaces;
 using ExpenseTracker.Services.Interfaces;
+using ExpenseTracker.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace ExpenseTracker.Services.Implementations;
 
@@ -9,12 +11,14 @@ public class InvestmentService : IInvestmentService
 {
     private readonly IInvestmentRepository _investmentRepo;
     private readonly AMFIService _amfiService;
+    private readonly AppDbContext _db;
     private readonly ILogger<InvestmentService> _logger;
 
-    public InvestmentService(IInvestmentRepository investmentRepo, AMFIService amfiService, ILogger<InvestmentService> logger)
+    public InvestmentService(IInvestmentRepository investmentRepo, AMFIService amfiService, AppDbContext db, ILogger<InvestmentService> logger)
     {
         _investmentRepo = investmentRepo;
         _amfiService = amfiService;
+        _db = db;
         _logger = logger;
     }
 
@@ -199,6 +203,84 @@ public class InvestmentService : IInvestmentService
 
         await _investmentRepo.DeleteAsync(investment);
         return true;
+    }
+
+    public async Task<InvestmentResponseDto?> SellAsync(Guid userId, Guid id, SellInvestmentDto dto)
+    {
+        var investment = await _db.Investments.FirstOrDefaultAsync(i => i.Id == id && i.UserId == userId);
+        if (investment == null) return null;
+
+        if (investment.Quantity == null || dto.SellQuantity <= 0 || dto.SellQuantity > investment.Quantity.Value)
+        {
+            throw new InvalidOperationException("Invalid sell quantity. Must be strongly greater than 0 and less than or equal to current holdings.");
+        }
+
+        // 1. Record the SELL Transaction
+        var sellTxn = new AssetTransaction
+        {
+            InvestmentId = investment.Id,
+            TxnType = "SELL",
+            Date = dto.SellDate,
+            Units = dto.SellQuantity,
+            Price = dto.SellPrice,
+            Amount = dto.SellQuantity * dto.SellPrice,
+            Notes = dto.Notes
+        };
+        _db.AssetTransactions.Add(sellTxn);
+
+        // 2. Adjust Investment Balance
+        decimal ratioSold = dto.SellQuantity / investment.Quantity.Value;
+        decimal investedAmountSold = investment.InvestedAmount * ratioSold;
+
+        investment.Quantity -= dto.SellQuantity;
+        investment.InvestedAmount -= investedAmountSold;
+
+        // If completely sold, mark as inactive/matured or zero out
+        if (investment.Quantity <= 0.0001m)
+        {
+            investment.Quantity = 0;
+            investment.InvestedAmount = 0;
+            investment.CurrentValue = 0;
+            investment.Status = "Sold";
+        }
+        else
+        {
+            // Adjust current value proportionally so UI doesn't break until next price update
+            investment.CurrentValue -= (investment.CurrentValue * ratioSold);
+        }
+
+        await _db.SaveChangesAsync();
+        return MapToDto(investment);
+    }
+
+    public async Task<IEnumerable<AssetTransactionDto>> GetTransactionsAsync(Guid userId, Guid? investmentId = null)
+    {
+        var query = _db.AssetTransactions
+            .Include(t => t.Investment)
+            .Where(t => t.Investment.UserId == userId)
+            .AsQueryable();
+
+        if (investmentId.HasValue)
+        {
+            query = query.Where(t => t.InvestmentId == investmentId.Value);
+        }
+
+        var txns = await query.OrderByDescending(t => t.Date).ToListAsync();
+
+        return txns.Select(t => new AssetTransactionDto
+        {
+            Id = t.Id,
+            InvestmentId = t.InvestmentId,
+            InvestmentName = t.Investment.Name,
+            AssetType = t.Investment.AssetType,
+            Ticker = t.Investment.Ticker,
+            TxnType = t.TxnType,
+            Date = t.Date,
+            Units = t.Units,
+            Price = t.Price,
+            Amount = t.Amount,
+            Notes = t.Notes
+        });
     }
 
     // ── RD Maturity Formula (monthly compounding) ──

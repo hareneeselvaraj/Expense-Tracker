@@ -9,7 +9,7 @@ import {
     FiArrowUpRight, FiArrowDownRight, FiDollarSign, FiRefreshCw,
     FiTrendingUp, FiPlus, FiChevronRight, FiChevronLeft, FiGrid,
     FiBell, FiClock, FiBarChart2,
-    FiShield, FiTarget, FiTrendingDown, FiCheckCircle, FiAlertTriangle, FiAlertCircle, FiXCircle, FiSettings
+    FiShield, FiTarget, FiTrendingDown, FiCheckCircle, FiAlertTriangle, FiAlertCircle, FiXCircle, FiSettings, FiPieChart
 } from 'react-icons/fi';
 import {
     Chart as ChartJS,
@@ -129,8 +129,6 @@ function CircleRing({ pct, color, size = 68, stroke = 8 }) {
 
 export default function Dashboard() {
     const [data, setData] = useState(null);
-    const [portfolio, setPortfolio] = useState(null);
-    const [snapshots, setSnapshots] = useState([]);
     const [loading, setLoading] = useState(true);
     const { user } = useAuth();
     const { isCouple } = useContext(CoupleContext);
@@ -311,14 +309,6 @@ export default function Dashboard() {
             const total = res.data.reduce((acc, cur) => acc + (cur.investedAmount || 0), 0);
             setTotalInvestments(total);
         }).catch(() => { });
-
-        api.get('/portfolioanalytics/summary', { params: { scope } }).then((res) => {
-            setPortfolio(res.data);
-        }).catch(() => { });
-
-        api.get('/portfolioanalytics/snapshots').then((res) => {
-            setSnapshots(res.data);
-        }).catch(() => { });
     }, [month, year, account, scope]);
 
 
@@ -493,7 +483,7 @@ export default function Dashboard() {
         <div className="dash-new">
             {/* ── Top Header ── */}
             <div className="dash-top-bar">
-                <h1 className="dash-title">My Dashboard</h1>
+                <h1 className="dash-title">Expense Dashboard</h1>
                 <div className="dash-filters">
                     <select className="dash-filter-select" value={account} onChange={e => setAccount(e.target.value)}>
                         <option value="All Accounts">All Accounts</option>
@@ -513,161 +503,11 @@ export default function Dashboard() {
                         </select>
                     )}
                     <button className="dash-filter-icon-btn"><FiRefreshCw /></button>
+                    <Link to="/wealth" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, background: 'rgba(99,102,241,0.1)', color: '#818cf8', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none', border: '1px solid rgba(99,102,241,0.2)', whiteSpace: 'nowrap' }}>
+                        <FiPieChart /> Wealth Dashboard
+                    </Link>
                 </div>
             </div>
-
-            {/* ── Wealth Hero Section ── */}
-            {portfolio && (
-                <div className="wealth-hero-card" style={{
-                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.05))',
-                    borderRadius: '24px',
-                    padding: '32px',
-                    marginBottom: '24px',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '16px'
-                }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                            <p style={{ margin: 0, opacity: 0.7, fontSize: '0.9rem', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>Total Net Worth</p>
-                            <h2 style={{ margin: '8px 0 0 0', fontSize: '3rem', fontWeight: 900, letterSpacing: '-1px' }}>
-                                ₹{fmt(portfolio.currentValue + balance)}
-                            </h2>
-                            <p style={{ margin: '4px 0 0 0', fontSize: '1rem', color: 'var(--text-muted)' }}>
-                                Invested Assets: ₹{portfolio.currentValue.toLocaleString('en-IN')} <span style={{ opacity: 0.5 }}>•</span> Cash/Bank: ₹{balance.toLocaleString('en-IN')}
-                            </p>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                            <div style={{
-                                display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '12px',
-                                background: portfolio.overallPnL >= 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-                                color: portfolio.overallPnL >= 0 ? '#10b981' : '#ef4444',
-                                fontWeight: 700, fontSize: '1.2rem'
-                            }}>
-                                {portfolio.overallPnL >= 0 ? <FiArrowUpRight /> : <FiArrowDownRight />}
-                                ₹{Math.abs(portfolio.overallPnL).toLocaleString('en-IN')} ({portfolio.overallPnLPct.toFixed(2)}%)
-                            </div>
-                            <p style={{ margin: '8px 0 0 0', fontSize: '0.85rem', opacity: 0.6 }}>Overall Return</p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ── Net Worth Growth Chart ── */}
-            {snapshots.length > 0 && (
-                <div className="dash-panel" style={{ marginBottom: '24px', padding: '24px' }}>
-                    <div className="dash-panel-header" style={{ marginBottom: '20px' }}>
-                        <span className="dash-panel-title"><FiTrendingUp /> Net Worth Portfolio Growth</span>
-                    </div>
-                    <div style={{ height: '300px' }}>
-                        <Line 
-                            data={{
-                                labels: snapshots.map(s => new Date(s.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })),
-                                datasets: [{
-                                    label: 'Portfolio Value',
-                                    data: snapshots.map(s => s.totalValue),
-                                    borderColor: '#6366f1',
-                                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                                    borderWidth: 3,
-                                    pointRadius: 4,
-                                    pointBackgroundColor: '#6366f1',
-                                    fill: true,
-                                    tension: 0.4
-                                }]
-                            }}
-                            options={{
-                                responsive: true, maintainAspectRatio: false,
-                                plugins: { legend: { display: false }, tooltip: baseTooltip },
-                                scales: {
-                                    x: { grid: { display: false }, ticks: { color: tickColor, font: { size: 10, family: 'Inter' } } },
-                                    y: { 
-                                        grid: { color: gridColor }, 
-                                        ticks: { 
-                                            color: tickColor, 
-                                            font: { size: 10, family: 'Inter' },
-                                            callback: (value) => '₹' + fmt(value)
-                                        } 
-                                    }
-                                }
-                            }}
-                        />
-                    </div>
-                </div>
-            )}
-
-            {/* ── Wealth Distribution & Performance ── */}
-            {portfolio && (
-                <div className="dash-mid-grid" style={{ marginBottom: '24px' }}>
-                    {/* Allocation Donut */}
-                    <div className="dash-panel">
-                        <div className="dash-panel-header">
-                            <span className="dash-panel-title"><FiDollarSign /> Asset Allocation</span>
-                        </div>
-                        <div style={{ height: '220px', marginTop: '10px' }}>
-                            <Doughnut 
-                                data={{
-                                    labels: Object.keys(portfolio.allocation),
-                                    datasets: [{
-                                        data: Object.values(portfolio.allocation),
-                                        backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#ef4444', '#0ea5e9'],
-                                        borderWidth: 0,
-                                        hoverOffset: 8
-                                    }]
-                                }} 
-                                options={{
-                                    responsive: true, maintainAspectRatio: false, cutout: '75%',
-                                    plugins: { legend: { position: 'right', labels: { color: tickColor, font: { family: 'Inter' } } }, tooltip: baseTooltip }
-                                }} 
-                            />
-                        </div>
-                    </div>
-
-                    {/* Top Gainers */}
-                    <div className="dash-panel">
-                        <div className="dash-panel-header">
-                            <span className="dash-panel-title" style={{ color: '#10b981' }}><FiArrowUpRight /> Top Performers</span>
-                        </div>
-                        <div className="dash-tx-list-slim" style={{ marginTop: '10px' }}>
-                            {portfolio.topGainers.map((g, i) => (
-                                <div key={i} className="dash-tx-row-slim">
-                                    <div className="dash-tx-info-slim">
-                                        <p className="dash-tx-title-slim">{g.name}</p>
-                                        <p className="dash-tx-sub-slim">{g.ticker || 'Mutual Fund'}</p>
-                                    </div>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <p className="dash-tx-amount-slim" style={{ color: '#10b981' }}>+₹{g.overallPnL.toLocaleString('en-IN')}</p>
-                                        <p className="dash-tx-sub-slim" style={{ color: '#10b981' }}>+{g.overallPnLPct.toFixed(1)}%</p>
-                                    </div>
-                                </div>
-                            ))}
-                            {portfolio.topGainers.length === 0 && <p style={{ textAlign: 'center', opacity: 0.5, padding: '20px' }}>No gainers found</p>}
-                        </div>
-                    </div>
-
-                    {/* Top Losers */}
-                    <div className="dash-panel">
-                        <div className="dash-panel-header">
-                            <span className="dash-panel-title" style={{ color: '#ef4444' }}><FiArrowDownRight /> Underperformers</span>
-                        </div>
-                        <div className="dash-tx-list-slim" style={{ marginTop: '10px' }}>
-                            {portfolio.topLosers.map((g, i) => (
-                                <div key={i} className="dash-tx-row-slim">
-                                    <div className="dash-tx-info-slim">
-                                        <p className="dash-tx-title-slim">{g.name}</p>
-                                        <p className="dash-tx-sub-slim">{g.ticker || 'Mutual Fund'}</p>
-                                    </div>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <p className="dash-tx-amount-slim" style={{ color: '#ef4444' }}>-₹{Math.abs(g.overallPnL).toLocaleString('en-IN')}</p>
-                                        <p className="dash-tx-sub-slim" style={{ color: '#ef4444' }}>{g.overallPnLPct.toFixed(1)}%</p>
-                                    </div>
-                                </div>
-                            ))}
-                            {portfolio.topLosers.length === 0 && <p style={{ textAlign: 'center', opacity: 0.5, padding: '20px' }}>No underperformers</p>}
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* ── Stat Cards Row ── */}
             <div className="dash-stat-row" style={{ marginBottom: '24px' }}>

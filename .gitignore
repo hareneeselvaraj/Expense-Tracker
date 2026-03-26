@@ -28,3 +28,6 @@ Thumbs.db
 *.db-shm
 *.db-wal
 ExpenseTracker/backups/
+
+# Local Netlify folder
+.netlify

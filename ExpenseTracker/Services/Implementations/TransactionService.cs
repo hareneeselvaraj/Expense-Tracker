@@ -711,8 +711,12 @@ public class TransactionService : ITransactionService
         return newCat.Id;
     }
 
-    public async Task<int> UploadAsync(Guid userId, Guid accountId, Stream fileStream, string fileName)
+    public async Task<IEnumerable<TransactionResponseDto>> UploadPreviewAsync(Guid userId, Guid accountId, Stream fileStream, string fileName)
     {
+        var previewList = new List<TransactionResponseDto>();
+        var account = await _accountRepo.GetByIdAsync(accountId);
+        var accountName = account?.Name ?? "Unknown Account";
+        
         var extension = Path.GetExtension(fileName).ToLower();
         int count = 0;
 
@@ -849,25 +853,29 @@ public class TransactionService : ITransactionService
                         var bankMode = remarks.Contains("UPI", StringComparison.OrdinalIgnoreCase) ? BankMode.GPay : BankMode.Other;
                         var onlineOffline = remarks.Contains("UPI", StringComparison.OrdinalIgnoreCase) ? OnlineOffline.Online : OnlineOffline.Offline;
 
-                        var transaction = new Transaction
+                        var category = await _context.Categories.FindAsync(categoryId);
+
+                        var dto = new TransactionResponseDto
                         {
                             Id = Guid.NewGuid(),
-                            UserId = userId,
                             AccountId = accountId,
+                            AccountName = accountName,
                             CategoryId = categoryId,
+                            CategoryName = category?.Name ?? "Unknown",
+                            CategoryIcon = category?.Icon,
                             Amount = Math.Abs(amount),
-                            Type = txType,
-                            OnlineOffline = onlineOffline,
-                            BankMode = bankMode,
+                            Type = txType.ToString(),
+                            OnlineOffline = onlineOffline.ToString(),
+                            BankMode = bankMode.ToString(),
                             Description = description,
                             Date = date,
                             IsMonitor = false,
                             IsAutoDebit = false
                         };
 
-                        _context.Transactions.Add(transaction);
+                        previewList.Add(dto);
                         count++;
-                        _logger.LogWarning("[UPLOAD DB] Added Rs.{Amount} | {Type}", amount, txType);
+                        _logger.LogWarning("[UPLOAD PREVIEW] Parsed Rs.{Amount} | {Type}", amount, txType);
                     }
                     else
                     {
@@ -880,23 +888,27 @@ public class TransactionService : ITransactionService
                             var type = Enum.TryParse<TransactionType>(typeStr, true, out var t) ? t : TransactionType.Expense;
                             var categoryId = await GetOrCreateCategoryAsync(userId, categoryStr, type);
 
-                            var transaction = new Transaction
+                            var category = await _context.Categories.FindAsync(categoryId);
+
+                            var dto = new TransactionResponseDto
                             {
                                 Id = Guid.NewGuid(),
-                                UserId = userId,
                                 AccountId = accountId,
+                                AccountName = accountName,
                                 CategoryId = categoryId,
+                                CategoryName = category?.Name ?? "Unknown",
+                                CategoryIcon = category?.Icon,
                                 Amount = Math.Abs(amount),
-                                Type = type,
-                                OnlineOffline = OnlineOffline.Online,
-                                BankMode = BankMode.Other,
+                                Type = type.ToString(),
+                                OnlineOffline = OnlineOffline.Online.ToString(),
+                                BankMode = BankMode.Other.ToString(),
                                 Description = remarks,
                                 Date = date,
                                 IsMonitor = false,
                                 IsAutoDebit = false
                             };
 
-                            _context.Transactions.Add(transaction);
+                            previewList.Add(dto);
                             count++;
                         }
                     }
@@ -907,17 +919,44 @@ public class TransactionService : ITransactionService
                 }
             }
 
-            if (count > 0)
-            {
-                await _context.SaveChangesAsync();
-            }
         }
         else
         {
             throw new InvalidOperationException("Unsupported file format. Please upload .xlsx or .csv");
         }
 
+        return previewList;
+    }
+
+    public async Task<int> UploadCommitAsync(Guid userId, IEnumerable<TransactionResponseDto> dtos)
+    {
+        int count = 0;
+        foreach (var dto in dtos)
+        {
+            var createDto = new CreateTransactionDto
+            {
+                AccountId = dto.AccountId,
+                CategoryId = dto.CategoryId,
+                Amount = dto.Amount,
+                Type = Enum.Parse<TransactionType>(dto.Type),
+                OnlineOffline = Enum.Parse<OnlineOffline>(dto.OnlineOffline),
+                BankMode = dto.BankMode == "Unknown" || string.IsNullOrEmpty(dto.BankMode) ? null : Enum.Parse<BankMode>(dto.BankMode),
+                Description = dto.Description,
+                Date = dto.Date,
+                IsMonitor = dto.IsMonitor,
+                IsAutoDebit = dto.IsAutoDebit
+            };
+
+            await CreateAsync(userId, createDto);
+            count++;
+        }
         return count;
+    }
+
+    public async Task<int> UploadAsync(Guid userId, Guid accountId, Stream fileStream, string fileName)
+    {
+        var preview = await UploadPreviewAsync(userId, accountId, fileStream, fileName);
+        return await UploadCommitAsync(userId, preview);
     }
 
     public async Task<TransactionResponseDto> CreateAsync(Guid userId, CreateTransactionDto dto)
