@@ -5,6 +5,7 @@ import { useToast } from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
 import DownloadCenter from '../components/DownloadCenter';
 import { downloadPDF, downloadExcel } from '../utils/downloadUtils';
+import useDeviceDetect from '../hooks/useDeviceDetect';
 
 const CustomFilterDropdown = ({ value, onChange, options, style }) => {
     const [open, setOpen] = useState(false);
@@ -116,6 +117,8 @@ export default function Transactions() {
         onlineOffline: 'Offline', bankMode: '', description: '', date: '',
         isMonitor: false, isAutoDebit: false, transferAccountId: '', tagId: '', investmentId: '',
     });
+
+    const { isMobile } = useDeviceDetect(768);
 
     const toast = useToast();
 
@@ -288,12 +291,12 @@ export default function Transactions() {
                 categories={categories}
             />
 
-            <div className="page-header" style={{ marginBottom: 28, flexWrap: 'wrap', gap: 20 }}>
-                <h1 className="page-title">Transactions</h1>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <div className="page-header" style={{ marginBottom: 20, gap: 12 }}>
+                <h1 className="page-title" style={{ fontSize: isMobile ? '1.5rem' : '1.8rem', margin: 0 }}>Transactions</h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: isMobile ? 'nowrap' : 'wrap', width: isMobile ? '100%' : 'auto' }} className={isMobile ? "m-scroll-row" : ""}>
                     <div className="tx-premium-filters" style={{
                         display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg-card)', padding: '6px 12px',
-                        borderRadius: 16, border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)', flexWrap: 'wrap'
+                        borderRadius: 16, border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)', flexWrap: isMobile ? 'nowrap' : 'wrap'
                     }}>
                         <div style={{ display: 'flex', gap: 4 }}>
                             <CustomFilterDropdown
@@ -338,10 +341,10 @@ export default function Transactions() {
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: 10 }}>
-                        <button className="btn btn-primary" onClick={() => setShowUpload(true)} style={{ height: 42, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text)', boxShadow: 'none' }}>
+                        <button className="btn btn-primary" onClick={() => setShowUpload(true)} style={{ height: 42, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text)', boxShadow: 'none', whiteSpace: 'nowrap' }}>
                             <FiUpload /> Upload
                         </button>
-                        <button className="btn btn-primary" onClick={() => { resetForm(); setShowForm(!showForm); }} style={{ height: 42, borderRadius: 14, padding: '0 24px', fontWeight: 700, boxShadow: '0 8px 16px var(--primary-shadow)' }}>
+                        <button className="btn btn-primary" onClick={() => { resetForm(); setShowForm(!showForm); }} style={{ height: 42, borderRadius: 14, padding: '0 24px', fontWeight: 700, boxShadow: '0 8px 16px var(--primary-shadow)', whiteSpace: 'nowrap' }}>
                             <FiPlus /> New
                         </button>
                     </div>
@@ -417,19 +420,19 @@ export default function Transactions() {
                 </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, padding: '0 4px' }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    Showing <strong>{filtered.length}</strong> transactions {getDateRangeLabel() !== 'All Time' ? `for ${getDateRangeLabel()}` : ''}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, padding: '0 4px', flexWrap: isMobile ? 'wrap' : 'nowrap', gap: 12 }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                    Showing <strong>{filtered.length}</strong> txns {getDateRangeLabel() !== 'All Time' ? `for ${getDateRangeLabel()}` : ''}
                 </span>
-                <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn-ghost" onClick={handleQuickPDF} style={{ padding: '8px 14px', borderRadius: 10, fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <FiFileText /> PDF
+                <div style={{ display: 'flex', gap: 8, maxWidth: '100%' }}>
+                    <button className="btn-ghost m-btn-icon" onClick={handleQuickPDF} title="PDF">
+                        <FiFileText /> <span className="m-hide-text">PDF</span>
                     </button>
-                    <button className="btn-ghost" onClick={handleQuickExcel} style={{ padding: '8px 14px', borderRadius: 10, fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <FiGrid /> Excel
+                    <button className="btn-ghost m-btn-icon" onClick={handleQuickExcel} title="Excel">
+                        <FiGrid /> <span className="m-hide-text">Excel</span>
                     </button>
-                    <button className="btn btn-primary" onClick={() => setDlOpen(true)} style={{ padding: '8px 14px', borderRadius: 10, fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6, opacity: 0.9 }}>
-                        <FiDownload /> Downloads
+                    <button className="btn btn-primary m-btn-icon" onClick={() => setDlOpen(true)} style={{ opacity: 0.9 }} title="Downloads">
+                        <FiDownload /> <span className="m-hide-text">Downloads</span>
                     </button>
                 </div>
             </div>
@@ -538,58 +541,89 @@ export default function Transactions() {
                 </div>
             )}
 
-            <div className="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th style={{ width: 40 }}>
-                                <input type="checkbox" checked={filtered.length > 0 && selectedIds.size === filtered.length} onChange={toggleSelectAll} />
-                            </th>
-                            <th>Date</th><th>Description</th><th>Category</th><th>Account</th>
-                            <th>Type</th><th>Tag</th><th>Channel</th><th className="text-right">Amount</th><th>Actions</th>
-                        </tr>
-                        <tr className="column-search-row">
-                            <th></th>
-                            <th><input type="text" placeholder="Search..." value={columnSearch.date} onChange={e => setColumnSearch({ ...columnSearch, date: e.target.value })} className="col-search-input" /></th>
-                            <th><input type="text" placeholder="Search..." value={columnSearch.description} onChange={e => setColumnSearch({ ...columnSearch, description: e.target.value })} className="col-search-input" /></th>
-                            <th><input type="text" placeholder="Search..." value={columnSearch.category} onChange={e => setColumnSearch({ ...columnSearch, category: e.target.value })} className="col-search-input" /></th>
-                            <th><input type="text" placeholder="Search..." value={columnSearch.account} onChange={e => setColumnSearch({ ...columnSearch, account: e.target.value })} className="col-search-input" /></th>
-                            <th><input type="text" placeholder="Search..." value={columnSearch.type} onChange={e => setColumnSearch({ ...columnSearch, type: e.target.value })} className="col-search-input" /></th>
-                            <th><input type="text" placeholder="Search..." value={columnSearch.tag} onChange={e => setColumnSearch({ ...columnSearch, tag: e.target.value })} className="col-search-input" /></th>
-                            <th></th>
-                            <th><input type="text" placeholder="Search..." value={columnSearch.amount} onChange={e => setColumnSearch({ ...columnSearch, amount: e.target.value })} className="col-search-input" style={{ textAlign: 'right' }} /></th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filtered.length === 0 ? (
-                            <tr><td colSpan="10" className="text-center">No transactions found</td></tr>
-                        ) : (
-                            filtered.map((tx) => (
-                                <tr key={tx.id} className={selectedIds.has(tx.id) ? 'row-selected' : ''}>
-                                    <td>
-                                        <input type="checkbox" checked={selectedIds.has(tx.id)} onChange={() => toggleSelect(tx.id)} />
-                                    </td>
-                                    <td>{new Date(tx.date).toLocaleDateString('en-IN')}</td>
-                                    <td>{tx.description || '—'}</td>
-                                    <td><span className="badge">{tx.categoryName}</span></td>
-                                    <td>{tx.accountName}</td>
-                                    <td><span className={`badge badge-${tx.type?.toLowerCase()}`}>{tx.type}</span></td>
-                                    <td>{tx.tagName ? <span className="badge badge-tag">{tx.tagName}</span> : '—'}</td>
-                                    <td>{tx.onlineOffline}{tx.bankMode ? ` · ${tx.bankMode}` : ''}</td>
-                                    <td className="text-right amount-cell">₹{tx.amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                                    <td>
-                                        <div className="action-btns">
-                                            <button className="btn-icon" onClick={() => handleEdit(tx)}><FiEdit2 /></button>
-                                            <button className="btn-icon btn-danger" onClick={() => setDeleteTarget(tx.id)}><FiTrash2 /></button>
+            {isMobile ? (
+                <div className="m-tx-list">
+                    {filtered.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
+                            No transactions found
+                        </div>
+                    ) : (
+                        filtered.map(tx => (
+                            <div key={tx.id} className="m-tx-card" onClick={() => handleEdit(tx)}>
+                                <div className="m-tx-card-left">
+                                    <div className={`m-tx-icon type-${tx.type.toLowerCase()}`}>
+                                        {tx.type === 'Income' ? '+' : tx.type === 'Transfer' ? '⇄' : '-'}
+                                    </div>
+                                    <div className="m-tx-details">
+                                        <div className="m-tx-title">{tx.description || tx.categoryName || 'Transaction'}</div>
+                                        <div className="m-tx-subtitle">
+                                            {new Date(tx.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} &middot; {tx.accountName}
                                         </div>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                                    </div>
+                                </div>
+                                <div className="m-tx-card-right">
+                                    <div className={`m-tx-amt type-${tx.type.toLowerCase()}`}>
+                                        {tx.type === 'Income' ? '+' : '-'}₹{tx.amount?.toLocaleString('en-IN', { minimumFractionDigits: 0 })}
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            ) : (
+                <div className="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style={{ width: 40 }}>
+                                    <input type="checkbox" checked={filtered.length > 0 && selectedIds.size === filtered.length} onChange={toggleSelectAll} />
+                                </th>
+                                <th>Date</th><th>Description</th><th>Category</th><th>Account</th>
+                                <th>Type</th><th>Tag</th><th>Channel</th><th className="text-right">Amount</th><th>Actions</th>
+                            </tr>
+                            <tr className="column-search-row">
+                                <th></th>
+                                <th><input type="text" placeholder="Search..." value={columnSearch.date} onChange={e => setColumnSearch({ ...columnSearch, date: e.target.value })} className="col-search-input" /></th>
+                                <th><input type="text" placeholder="Search..." value={columnSearch.description} onChange={e => setColumnSearch({ ...columnSearch, description: e.target.value })} className="col-search-input" /></th>
+                                <th><input type="text" placeholder="Search..." value={columnSearch.category} onChange={e => setColumnSearch({ ...columnSearch, category: e.target.value })} className="col-search-input" /></th>
+                                <th><input type="text" placeholder="Search..." value={columnSearch.account} onChange={e => setColumnSearch({ ...columnSearch, account: e.target.value })} className="col-search-input" /></th>
+                                <th><input type="text" placeholder="Search..." value={columnSearch.type} onChange={e => setColumnSearch({ ...columnSearch, type: e.target.value })} className="col-search-input" /></th>
+                                <th><input type="text" placeholder="Search..." value={columnSearch.tag} onChange={e => setColumnSearch({ ...columnSearch, tag: e.target.value })} className="col-search-input" /></th>
+                                <th></th>
+                                <th><input type="text" placeholder="Search..." value={columnSearch.amount} onChange={e => setColumnSearch({ ...columnSearch, amount: e.target.value })} className="col-search-input" style={{ textAlign: 'right' }} /></th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filtered.length === 0 ? (
+                                <tr><td colSpan="10" className="text-center">No transactions found</td></tr>
+                            ) : (
+                                filtered.map((tx) => (
+                                    <tr key={tx.id} className={selectedIds.has(tx.id) ? 'row-selected' : ''}>
+                                        <td>
+                                            <input type="checkbox" checked={selectedIds.has(tx.id)} onChange={() => toggleSelect(tx.id)} />
+                                        </td>
+                                        <td>{new Date(tx.date).toLocaleDateString('en-IN')}</td>
+                                        <td>{tx.description || '—'}</td>
+                                        <td><span className="badge">{tx.categoryName}</span></td>
+                                        <td>{tx.accountName}</td>
+                                        <td><span className={`badge badge-${tx.type?.toLowerCase()}`}>{tx.type}</span></td>
+                                        <td>{tx.tagName ? <span className="badge badge-tag">{tx.tagName}</span> : '—'}</td>
+                                        <td>{tx.onlineOffline}{tx.bankMode ? ` · ${tx.bankMode}` : ''}</td>
+                                        <td className="text-right amount-cell">₹{tx.amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                                        <td>
+                                            <div className="action-btns">
+                                                <button className="btn-icon" onClick={() => handleEdit(tx)}><FiEdit2 /></button>
+                                                <button className="btn-icon btn-danger" onClick={() => setDeleteTarget(tx.id)}><FiTrash2 /></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 }

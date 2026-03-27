@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { FiPlus, FiTrash2, FiTag, FiTrendingUp, FiDollarSign, FiBarChart2, FiEdit2, FiCheck, FiX } from 'react-icons/fi';
 import { useToast } from '../components/Toast';
+import useDeviceDetect from '../hooks/useDeviceDetect';
+
 import ConfirmModal from '../components/ConfirmModal';
 
 const TYPE_CONFIG = {
@@ -33,7 +35,9 @@ export default function Categories() {
     const [editForm, setEditForm]       = useState({ name: '', type: '', icon: null });
     const [savingId, setSavingId]       = useState(null);
     const toast = useToast();
+    const { isMobile } = useDeviceDetect(768);
     const [form, setForm] = useState({ name: '', type: 'Expense', icon: null });
+
 
     const load = () => api.get('/category').then(res => { setCategories(res.data); setLoading(false); });
     useEffect(() => { load(); }, []);
@@ -147,7 +151,8 @@ export default function Categories() {
             {/* ── Header ── */}
             <div className="page-header">
                 <div>
-                    <h1 className="page-title"><FiTag /> Categories</h1>
+                    <h1 className="page-title" style={{ fontSize: isMobile ? '1.5rem' : '1.8rem' }}><FiTag /> Categories</h1>
+
                     <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 2 }}>
                         Manage your expense, income and investment categories
                     </p>

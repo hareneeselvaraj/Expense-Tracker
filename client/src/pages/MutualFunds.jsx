@@ -2,8 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import api from '../services/api';
 import { useToast } from '../components/Toast';
-import { FiSearch, FiTrendingUp, FiActivity, FiBriefcase, FiClock, FiPlus, FiX, FiCheck, FiPlay, FiPause, FiTrash2, FiInfo, FiChevronRight, FiChevronDown } from 'react-icons/fi';
+import { FiSearch, FiTrendingUp, FiActivity, FiBriefcase, FiClock, FiPlus, FiX, FiCheck, FiPlay, FiPause, FiTrash2, FiInfo, FiChevronRight, FiChevronDown, FiArrowRight } from 'react-icons/fi';
 import { Doughnut } from 'react-chartjs-2';
+import useDeviceDetect from '../hooks/useDeviceDetect';
+
 
 // ── ADD FUND MODAL ──
 function AddFundModal({ scheme, onClose, onSaved }) {
@@ -141,6 +143,16 @@ export default function MutualFunds() {
     // SIP Form states
     const [showSipForm, setShowSipForm] = useState(false);
     const [sipForm, setSipForm] = useState({ investmentId: '', monthlyAmount: '', executionDay: 1 });
+    const { isMobile } = useDeviceDetect(768);
+
+    const simplifyName = (name) => {
+        if (!isMobile) return name;
+        return name
+            .replace(/ - (Regular|Direct) Plan - Growth/gi, '')
+            .replace(/ - Growth/gi, '')
+            .replace(/ Mutual Fund/gi, '');
+    };
+
 
     // Fetch core data
     const fetchPortfolioData = async () => {
@@ -270,8 +282,9 @@ export default function MutualFunds() {
         <div className="page" style={{ maxWidth: '1200px', margin: '0 auto' }}>
             
             <div className="mf-page-header">
-                <h1 style={{ fontSize: '1.75rem', fontWeight: 700, margin: 0 }}>Discover</h1>
+                <h1 style={{ fontSize: '1.75rem', fontWeight: 700, margin: 0 }}>{isMobile ? 'Funds' : 'Mutual Funds'}</h1>
             </div>
+
 
             {/* TAB NAVIGATION */}
             <div className="mf-tabs">
@@ -285,8 +298,9 @@ export default function MutualFunds() {
             {activeTab === 'discover' && (
                 <div>
                     <div className="mf-discover-hero">
-                        <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Start your investment journey</h2>
-                        <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Search from over 3,000+ mutual funds</p>
+                        <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>{isMobile ? 'Start Investing' : 'Start your investment journey'}</h2>
+                        {!isMobile && <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Search from over 3,000+ mutual funds</p>}
+
                         
                         <div className="mf-search-container">
                             <FiSearch className="mf-search-icon" />
@@ -370,16 +384,17 @@ export default function MutualFunds() {
                 <div>
                     <div className="mf-dash-hero">
                         <div className="mf-hero-stat">
-                            <span className="mf-hero-label">Current Value</span>
+                            <span className="mf-hero-label">{isMobile ? 'Value' : 'Current Value'}</span>
                             <span className="mf-hero-val">₹{metrics.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                         </div>
                         <div className="mf-hero-stat">
-                            <span className="mf-hero-label">Invested Amount</span>
+                            <span className="mf-hero-label">{isMobile ? 'Invested' : 'Invested Amount'}</span>
                             <span className="mf-hero-val">₹{metrics.totalInvested.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                         </div>
                         <div className="mf-hero-stat">
-                            <span className="mf-hero-label">Total returns</span>
+                            <span className="mf-hero-label">{isMobile ? 'Returns' : 'Total returns'}</span>
                             <span className={`mf-hero-val ${metrics.overallPnL >= 0 ? 'text-green' : 'text-red'}`} style={{ color: metrics.overallPnL >= 0 ? '#10b981' : '#ef4444'}}>
+
                                 {metrics.overallPnL > 0 ? '+' : ''}₹{metrics.overallPnL.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                             </span>
                             <span className={`mf-hero-sub ${metrics.overallPnL >= 0 ? 'green' : 'red'}`}>
@@ -403,44 +418,82 @@ export default function MutualFunds() {
                             <button className="btn primary" onClick={() => setActiveTab('discover')} style={{ marginTop: '1rem' }}>Start Investing</button>
                         </div>
                     ) : (
-                        <div style={{ overflowX: 'auto', background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                            <table className="mf-holdings-table">
-                                <thead>
-                                    <tr>
-                                        <th>Fund Name</th>
-                                        <th className="text-right">Units</th>
-                                        <th className="text-right">Avg. NAV</th>
-                                        <th className="text-right">Cur. NAV</th>
-                                        <th className="text-right">Invested</th>
-                                        <th className="text-right">Current Value</th>
-                                        <th className="text-right">P&L</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {holdings.map((f, i) => (
-                                        <tr key={i}>
-                                            <td>
-                                                <div className="mf-td-name">{f.name}</div>
-                                                <div className="mf-td-sub">Scheme: {f.ticker || 'N/A'}</div>
-                                            </td>
-                                            <td className="text-right">{f.units.toFixed(3)}</td>
-                                            <td className="text-right">₹{f.avgCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                            <td className="text-right" style={{ color: 'var(--text)' }}>₹{(f.currentPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                            <td className="text-right">₹{f.investedAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
-                                            <td className="text-right" style={{ fontWeight: 600 }}>₹{f.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
-                                            <td className="text-right">
-                                                <div style={{ color: f.overallPnL >= 0 ? '#10b981' : '#ef4444', fontWeight: 600 }}>
-                                                    {f.overallPnL >= 0 ? '+' : ''}₹{Math.abs(f.overallPnL).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                        <div className="mf-holdings-container">
+                            {isMobile ? (
+                                <div className="mf-mobile-list">
+                                    {holdings.map((f, i) => {
+                                        const isPos = f.overallPnL >= 0;
+                                        return (
+                                            <div key={i} className="mf-mobile-card">
+                                                <div className="mmc-header">
+                                                    <div>
+                                                        <div className="mmc-name">{simplifyName(f.name)}</div>
+                                                        <div className="mmc-meta">Units: {f.units.toFixed(2)} • NAV: ₹{f.currentPrice?.toFixed(1)}</div>
+                                                    </div>
+
+                                                    <div className={`mmc-roi ${isPos ? 'pos' : 'neg'}`}>
+                                                        {isPos ? '+' : ''}{f.overallPnLPct.toFixed(1)}%
+                                                    </div>
                                                 </div>
-                                                <div style={{ fontSize: '0.75rem', color: f.overallPnL >= 0 ? '#10b981' : '#ef4444' }}>
-                                                    {f.overallPnLPct.toFixed(2)}%
+                                                <div className="mmc-stats">
+                                                    <div className="mmc-stat">
+                                                        <span className="mmc-label">Invested</span>
+                                                        <span className="mmc-value">₹{f.investedAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                                                    </div>
+                                                    <div className="mmc-stat">
+                                                        <span className="mmc-label">Current</span>
+                                                        <span className="mmc-value" style={{ fontWeight: 700 }}>₹{f.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                                                    </div>
                                                 </div>
-                                            </td>
+                                                <div className="mmc-footer">
+                                                    <div className={`mmc-pnl ${isPos ? 'pos' : 'neg'}`}>
+                                                        Returns: {isPos ? '+' : '-'}₹{Math.abs(f.overallPnL).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <table className="mf-holdings-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Fund Name</th>
+                                            <th className="text-right">Units</th>
+                                            <th className="text-right">Avg. NAV</th>
+                                            <th className="text-right">Cur. NAV</th>
+                                            <th className="text-right">Invested</th>
+                                            <th className="text-right">Current Value</th>
+                                            <th className="text-right">P&L</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {holdings.map((f, i) => (
+                                            <tr key={i}>
+                                                <td>
+                                                    <div className="mf-td-name">{f.name}</div>
+                                                    <div className="mf-td-sub">Scheme: {f.ticker || 'N/A'}</div>
+                                                </td>
+                                                <td className="text-right">{f.units.toFixed(3)}</td>
+                                                <td className="text-right">₹{f.avgCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                <td className="text-right" style={{ color: 'var(--text)' }}>₹{(f.currentPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                <td className="text-right">₹{f.investedAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                                                <td className="text-right" style={{ fontWeight: 600 }}>₹{f.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                                                <td className="text-right">
+                                                    <div style={{ color: f.overallPnL >= 0 ? '#10b981' : '#ef4444', fontWeight: 600 }}>
+                                                        {f.overallPnL >= 0 ? '+' : ''}₹{Math.abs(f.overallPnL).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.75rem', color: f.overallPnL >= 0 ? '#10b981' : '#ef4444' }}>
+                                                        {f.overallPnLPct.toFixed(2)}%
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
                         </div>
+
                     )}
                 </div>
             )}
@@ -450,16 +503,17 @@ export default function MutualFunds() {
                 <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                         <div>
-                            <h2 style={{ margin: 0 }}>Systematic Investment Plans</h2>
-                            <p style={{ color: 'var(--text-muted)' }}>Automate your wealth creation</p>
+                            <h2 style={{ margin: 0 }}>{isMobile ? 'SIPs' : 'Systematic Investment Plans'}</h2>
+                            {!isMobile && <p style={{ color: 'var(--text-muted)' }}>Automate your wealth creation</p>}
                         </div>
                         <div style={{ display: 'flex', gap: '1rem' }}>
-                            <button className="btn ghost" onClick={runSipsManual}>Simulate Execution</button>
+                            <button className="btn ghost" onClick={runSipsManual}>{isMobile ? 'Simulate' : 'Simulate Execution'}</button>
                             <button className="btn primary" onClick={() => setShowSipForm(!showSipForm)}>
-                                {showSipForm ? 'Cancel' : 'New SIP'}
+                                {isMobile ? <FiPlus /> : (showSipForm ? 'Cancel' : 'New SIP')}
                             </button>
                         </div>
                     </div>
+
 
                     {showSipForm && (
                         <div className="form-card" style={{ marginBottom: '2rem', padding: '2rem', background: 'var(--bg)', border: '1px solid var(--border)' }}>
@@ -516,17 +570,18 @@ export default function MutualFunds() {
                                     
                                     <div className="mf-sip-meta">
                                         <div className="mf-sip-meta-item">
-                                            <span className="mf-sip-meta-label">Frequency</span>
-                                            <span className="mf-sip-meta-val">Monthly</span>
+                                            <span className="mf-sip-meta-label">Freq</span>
+                                            <span className="mf-sip-meta-val">{isMobile ? 'Mnth' : 'Monthly'}</span>
                                         </div>
                                         <div className="mf-sip-meta-item">
-                                            <span className="mf-sip-meta-label">Installment</span>
+                                            <span className="mf-sip-meta-label">{isMobile ? 'Amt' : 'Installment'}</span>
                                             <span className="mf-sip-meta-val" style={{ fontWeight: 700 }}>₹{sip.monthlyAmount?.toLocaleString()}</span>
                                         </div>
                                         <div className="mf-sip-meta-item">
-                                            <span className="mf-sip-meta-label">Next execution</span>
-                                            <span className="mf-sip-meta-val">Day {sip.executionDay}</span>
+                                            <span className="mf-sip-meta-label">{isMobile ? 'Date' : 'Next execution'}</span>
+                                            <span className="mf-sip-meta-val">{isMobile ? '' : 'Day '}{sip.executionDay}</span>
                                         </div>
+
                                         
                                         <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
                                             <button onClick={() => toggleSipStatus(sip)} className="btn-icon" style={{ background: 'var(--bg)', color: sip.status === 'Active' ? '#f59e0b' : '#10b981' }} title={sip.status === 'Active' ? 'Pause' : 'Resume'}>
@@ -548,38 +603,74 @@ export default function MutualFunds() {
             {activeTab === 'orders' && (
                 <div>
                     <h2 style={{ marginBottom: '2rem' }}>Order History</h2>
-                    <div style={{ background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--border)', overflow: 'hidden' }}>
-                        <table className="mf-holdings-table">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Fund Name</th>
-                                    <th>Type</th>
-                                    <th className="text-right">Amount</th>
-                                    <th className="text-right">NAV Applied</th>
-                                    <th className="text-center">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                    <div className="mf-orders-container">
+                        {isMobile ? (
+                            <div className="mf-mobile-list">
                                 {orders.length === 0 ? (
-                                    <tr><td colSpan="6" className="text-center" style={{ padding: '3rem' }}>No orders found.</td></tr>
+                                    <div className="inv-empty">No orders found.</div>
                                 ) : (
                                     orders.map(o => (
-                                        <tr key={o.id}>
-                                            <td>{new Date(o.executedAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                                            <td style={{ fontWeight: 500 }}>{o.fundName || 'Mutual Fund SIP'}</td>
-                                            <td>SIP executed</td>
-                                            <td className="text-right font-mono">₹{o.amount?.toLocaleString() || o.sipAmount?.toLocaleString()}</td>
-                                            <td className="text-right font-mono">{o.navAtExecution ? `₹${o.navAtExecution}` : '—'}</td>
-                                            <td className="text-center">
-                                                <span className={`mf-order-status ${o.status === 'Success' ? 'mf-order-success' : 'mf-order-failed'}`}>{o.status}</span>
-                                            </td>
-                                        </tr>
+                                        <div key={o.id} className="mf-mobile-card mf-order-card">
+                                            <div className="mmc-header">
+                                                <div>
+                                                    <div className="mmc-name">{simplifyName(o.fundName || 'SIP Installment')}</div>
+                                                    <div className="mmc-meta">
+                                                        {new Date(o.executedAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })} • SIP
+                                                    </div>
+                                                </div>
+
+                                                <span className={`mmc-status-pill ${o.status === 'Success' ? 'success' : 'failed'}`}>
+                                                    {o.status}
+                                                </span>
+                                            </div>
+                                            <div className="mmc-stats">
+                                                <div className="mmc-stat">
+                                                    <span className="mmc-label">Amount</span>
+                                                    <span className="mmc-value">₹{o.amount?.toLocaleString() || o.sipAmount?.toLocaleString()}</span>
+                                                </div>
+                                                <div className="mmc-stat">
+                                                    <span className="mmc-label">NAV Applied</span>
+                                                    <span className="mmc-value">{o.navAtExecution ? `₹${o.navAtExecution}` : '—'}</span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     ))
                                 )}
-                            </tbody>
-                        </table>
+                            </div>
+                        ) : (
+                            <table className="mf-holdings-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Fund Name</th>
+                                        <th>Type</th>
+                                        <th className="text-right">Amount</th>
+                                        <th className="text-right">NAV Applied</th>
+                                        <th className="text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {orders.length === 0 ? (
+                                        <tr><td colSpan="6" className="text-center" style={{ padding: '3rem' }}>No orders found.</td></tr>
+                                    ) : (
+                                        orders.map(o => (
+                                            <tr key={o.id}>
+                                                <td>{new Date(o.executedAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                                                <td style={{ fontWeight: 500 }}>{o.fundName || 'Mutual Fund SIP'}</td>
+                                                <td>SIP executed</td>
+                                                <td className="text-right font-mono">₹{o.amount?.toLocaleString() || o.sipAmount?.toLocaleString()}</td>
+                                                <td className="text-right font-mono">{o.navAtExecution ? `₹${o.navAtExecution}` : '—'}</td>
+                                                <td className="text-center">
+                                                    <span className={`mf-order-status ${o.status === 'Success' ? 'mf-order-success' : 'mf-order-failed'}`}>{o.status}</span>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
+
                 </div>
             )}
 

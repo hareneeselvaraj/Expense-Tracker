@@ -86,6 +86,7 @@
   --chart-tooltip-border: rgba(0, 0, 0, 0.08);
   --chart-tick: #7c8298;
   --chart-legend: #5a6078;
+  background: #f5f6fa;
 }
 
 /* Lavender Theme */
@@ -121,6 +122,7 @@
   --chart-tooltip-border: rgba(216, 180, 254, 0.4);
   --chart-tick: #6b21a8;
   --chart-legend: #6b21a8;
+  background: #f5eeff;
 }
 
 /* Hide native number input arrows */
@@ -10270,6 +10272,99 @@ tr:hover td {
   transition: 0.3s;
 }
 
+.mobile-mode .dash-new {
+  padding: 16px 12px !important;
+}
+
+.mobile-mode .dash-panel {
+  padding: 16px 12px !important;
+  border-radius: 16px !important;
+  margin-bottom: 16px !important;
+}
+
+.mobile-mode .dash-panel-title {
+  font-size: 0.95rem !important;
+}
+
+.mobile-mode .dash-top-bar {
+  padding: 0 4px !important;
+  margin-bottom: 20px !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+}
+
+.mobile-mode .dash-title {
+  font-size: 1.6rem !important;
+}
+
+/* ── Stocks Page Mobile ── */
+.mobile-mode .inv-summary-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 12px !important;
+  margin-bottom: 20px !important;
+}
+
+.mobile-mode .inv-summary-card {
+  padding: 16px 14px !important;
+  gap: 12px !important;
+}
+
+.mobile-mode .inv-sum-value {
+  font-size: 1.15rem !important;
+}
+
+.mobile-mode .inv-chart-wrap {
+  height: 200px !important;
+}
+
+.mobile-mode .inv-mobile-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.mobile-mode .inv-mobile-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.mobile-mode .inv-mobile-card-title {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.mobile-mode .inv-mobile-card-subtitle {
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
+.mobile-mode .inv-mobile-card-body {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mobile-mode .inv-mobile-card-stat {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.mobile-mode .inv-mobile-card-stat .label {
+  opacity: 0.6;
+}
+
+.mobile-mode .inv-mobile-card-actions {
+  margin-top: 14px;
+}
+
 .premium-tx-card.income::before {
   background: #10b981;
 }
@@ -12432,4 +12527,1547 @@ tr:hover td {
     min-width: 56px;
     min-height: 48px;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   MOBILE APP DEDICATED LAYOUT CLASSES (.mobile-mode)
+   These apply ONLY to the new <MobileLayout /> when isMobile === true
+   ══════════════════════════════════════════════════════════════════════ */
+
+.mobile-mode {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* ── Sticky Top Header ── */
+.m-header {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 1000;
+  backdrop-filter: blur(12px);
+}
+
+.m-header-btn {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  margin: 0 -10px; /* offset inner padding */
+}
+
+.m-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.m-brand-icon {
+  font-size: 1.2rem;
+}
+
+.m-brand-text {
+  font-size: 1.15rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #818cf8, #c084fc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
+}
+
+/* ── Fullscreen Drawer Sidebar ── */
+.m-drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  animation: fadeIn 0.2s ease forwards;
+}
+
+.m-drawer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  max-width: 85vw;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  animation: slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overflow-y: auto;
+}
+
+.m-drawer-close-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.m-drawer-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.m-drawer-close {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* Force hiding of desktop elements inside the drawer's Sidebar instance */
+.m-drawer .sidebar-brand { display: none; }
+.m-drawer .sidebar { 
+  position: static !important; 
+  width: 100% !important; 
+  left: 0 !important;
+  border-right: none !important;
+  box-shadow: none !important;
+}
+.m-drawer .main-content { margin-left: 0 !important; }
+
+/* ── Main Content Area ── */
+.m-main {
+  flex: 1;
+  padding: 16px;
+  padding-bottom: calc(85px + env(safe-area-inset-bottom)); /* Leave space for bottom nav */
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* ── Bottom Tab Navigation ── */
+.m-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 8px calc(10px + env(safe-area-inset-bottom)) 8px;
+  z-index: 1000;
+  backdrop-filter: blur(12px);
+}
+
+.m-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  min-width: 60px;
+  min-height: 48px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.m-tab-icon {
+  font-size: 1.35rem;
+  margin-bottom: 2px;
+}
+
+.m-tab-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.m-tab-active {
+  color: var(--primary);
+}
+
+.m-tab-active .m-tab-icon {
+  transform: translateY(-2px);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+/* ── Transactions List (Mobile Native View) ── */
+.m-scroll-row {
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 8px;
+  margin-bottom: -8px; /* Offset padding */
+}
+.m-scroll-row::-webkit-scrollbar { display: none; }
+
+.m-tx-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 24px;
+}
+
+.m-tx-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.m-tx-card:active {
+  transform: scale(0.98);
+  background: var(--bg-card-hover);
+}
+
+.m-tx-card-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.m-tx-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.m-tx-icon.type-expense { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.m-tx-icon.type-income { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.m-tx-icon.type-transfer, .m-tx-icon.type-investment { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+
+.m-tx-details {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.m-tx-title {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+.m-tx-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+.m-tx-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.m-tx-amt {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.m-tx-amt.type-expense { color: var(--text); }
+.m-tx-amt.type-income { color: #10b981; }
+.m-tx-amt.type-transfer { color: #3b82f6; }
+
+/* ── Dashboard Bottom Row Mobile Fix ── */
+@media (max-width: 1024px) {
+  .dash-bottom-row-3col,
+  .premium-bottom-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 20px !important;
+  }
+  .dash-balance-center-panel, 
+  .dash-transactions-panel, 
+  .dash-budgets-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
+
+/* ── Mobile UI Helpers ── */
+.mobile-mode .m-hide-text {
+  display: none !important;
+}
+
+.mobile-mode .page-header {
+  padding: 0 4px;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 16px !important;
+}
+
+/* ── Budgets Page Mobile ── */
+.mobile-mode .budget-stat-row {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 12px !important;
+  margin-bottom: 20px !important;
+}
+
+.mobile-mode .budget-stat-card {
+  padding: 16px 12px !important;
+  border-radius: 16px !important;
+}
+
+.mobile-mode .bsc-bg-icon {
+  font-size: 2.2rem !important;
+  right: 8px !important;
+}
+
+.mobile-mode .bsc-label {
+  font-size: 0.65rem !important;
+}
+
+.mobile-mode .bsc-value {
+  font-size: 1.15rem !important;
+}
+
+.mobile-mode .budget-health-pill {
+  padding: 4px 10px !important;
+  font-size: 0.75rem !important;
+}
+
+.mobile-mode .budget-month-selector {
+  width: 100% !important;
+  justify-content: space-between !important;
+  box-sizing: border-box !important;
+}
+
+.mobile-mode .bms-label {
+  min-width: 0 !important;
+  flex: 1 !important;
+}
+
+.mobile-mode .budget-main-layout {
+  grid-template-columns: 1fr !important;
+  gap: 20px !important;
+}
+
+.mobile-mode .budget-cards-grid {
+  grid-template-columns: 1fr !important;
+  gap: 14px !important;
+}
+
+.mobile-mode .budget-premium-card {
+  padding: 16px !important;
+}
+
+.mobile-mode .bpc-header {
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+}
+
+.mobile-mode .bpc-header > div:last-child {
+  width: 100% !important;
+  justify-content: space-between !important;
+}
+
+.mobile-mode .budget-donut-card {
+  padding: 16px !important;
+}
+
+.mobile-mode .budget-donut-wrap {
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+/* ── Categories Page Mobile ── */
+.mobile-mode .cat-stats-row {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 12px !important;
+  margin-bottom: 20px !important;
+}
+
+.mobile-mode .cat-stat-card {
+  padding: 16px 14px !important;
+  border-radius: 14px !important;
+  gap: 12px !important;
+}
+
+.mobile-mode .cat-stat-icon {
+  width: 36px !important;
+  height: 36px !important;
+  font-size: 1rem !important;
+}
+
+.mobile-mode .cat-stat-count {
+  font-size: 1.25rem !important;
+}
+
+.mobile-mode .cat-stat-label {
+  font-size: 0.65rem !important;
+}
+
+.mobile-mode .cat-cards-grid {
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+}
+
+.mobile-mode .cat-card {
+  padding: 12px 14px !important;
+  border-radius: 12px !important;
+}
+
+.mobile-mode .cat-section-header {
+  margin-bottom: 12px !important;
+}
+
+.mobile-mode .cat-section-heading {
+  font-size: 0.9rem !important;
+}
+
+.mobile-mode .cat-section-badge {
+  width: 30px !important;
+  height: 30px !important;
+}
+
+.mobile-mode .cat-card-name {
+  font-size: 0.9rem !important;
+}
+
+/* ── Wealth Dashboard Base ── */
+.wealth-hero {
+  border-radius: 24px;
+  padding: 32px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.wealth-hero-main-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.dash-growth-chart-container {
+  height: 300px;
+}
+
+.wealth-donut-container {
+  height: 220px;
+  margin-top: 10px;
+  position: relative;
+}
+
+/* ── Investment Dashboards Mobile Overrides ── */
+.mobile-mode .wealth-hero {
+  padding: 24px 20px !important;
+  border-radius: 20px !important;
+  gap: 20px !important;
+}
+
+.mobile-mode .wealth-hero-main-row {
+  flex-direction: column !important;
+  gap: 16px !important;
+}
+
+.mobile-mode .wealth-hero-pnl {
+  text-align: left !important;
+}
+
+.mobile-mode .wealth-hero-value {
+  font-size: 2rem !important;
+}
+
+.mobile-mode .wealth-hero-stats {
+  justify-content: center !important;
+  gap: 8px !important;
+}
+
+.mobile-mode .wealth-hero-stats > div {
+  padding: 8px 10px !important;
+  flex: 1 1 40% !important;
+}
+
+.mobile-mode .dash-growth-chart-container {
+  height: 200px !important;
+}
+
+.mobile-mode .wealth-donut-container {
+  max-width: 200px !important;
+  height: 160px !important;
+  margin: 0 auto !important;
+}
+
+.mobile-mode .wealth-quick-links {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 10px !important;
+}
+
+.mobile-mode .wealth-quick-link {
+  width: 100% !important;
+  text-align: center !important;
+  padding: 12px 10px !important;
+  font-size: 0.82rem !important;
+  box-sizing: border-box !important;
+}
+
+.mobile-mode .m-btn-icon {
+  padding: 8px !important;
+  border-radius: 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  flex-shrink: 0 !important;
+  font-size: 1.1rem !important;
+}
+
+.mobile-mode .m-btn-icon span,
+.mobile-mode .m-btn-icon .m-hide-text {
+  display: none !important;
+}
+/* ── Tax Reports Page Mobile ── */
+.tax-recommend-banner {
+  background: linear-gradient(135deg, rgba(99,102,241,0.08), transparent);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 20px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.tax-recommend-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.tax-recommend-icon {
+  color: #fff;
+  padding: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tax-recommend-title {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.tax-recommend-subtitle {
+  margin: 6px 0 0 0;
+  opacity: 0.8;
+  font-size: 0.9rem;
+}
+
+.tax-recommend-value-box {
+  text-align: right;
+}
+
+.tax-recommend-label {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.7;
+  text-transform: uppercase;
+}
+
+.tax-recommend-value {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 900;
+}
+
+.tax-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) 400px;
+  gap: 24px;
+  align-items: start;
+}
+
+.tax-income-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.tax-deductions-row {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 32px;
+}
+
+.tax-deductions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+}
+
+.tax-cg-summary-row {
+  display: grid;
+  grid-template-columns: minmax(250px, 1fr) minmax(250px, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.mobile-mode .tax-recommend-banner {
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 20px !important;
+  padding: 20px !important;
+}
+
+.mobile-mode .tax-recommend-content {
+  gap: 16px !important;
+}
+
+.mobile-mode .tax-recommend-icon {
+  padding: 12px !important;
+}
+
+.mobile-mode .tax-recommend-title {
+  font-size: 1.15rem !important;
+}
+
+.mobile-mode .tax-recommend-value-box {
+  text-align: left !important;
+  width: 100% !important;
+  padding-top: 20px !important;
+  border-top: 1px solid rgba(255,255,255,0.05) !important;
+}
+
+.mobile-mode .tax-recommend-value {
+  font-size: 2.2rem !important;
+}
+
+.mobile-mode .tax-overview-grid,
+.mobile-mode .tax-income-grid,
+.mobile-mode .tax-deductions-grid,
+.mobile-mode .tax-cg-summary-row {
+  grid-template-columns: 1fr !important;
+  gap: 16px !important;
+}
+
+.mobile-mode .tax-deductions-row {
+  flex-direction: column !important;
+  gap: 20px !important;
+}
+
+/* ── Investments Page Mobile ── */
+.mobile-mode .inv-stat-row {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 12px !important;
+  margin-bottom: 24px !important;
+}
+
+.mobile-mode .inv-stat-card {
+  padding: 16px 14px !important;
+  border-radius: 16px !important;
+  min-height: 100px !important;
+}
+
+.mobile-mode .isc-bg-icon {
+  font-size: 2.5rem !important;
+  right: 8px !important;
+  bottom: 8px !important;
+}
+
+.mobile-mode .isc-label {
+  font-size: 0.75rem !important;
+}
+
+.mobile-mode .isc-value {
+  font-size: 1.25rem !important;
+}
+
+.mobile-mode .inv-tabs {
+  overflow-x: auto !important;
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+  padding-bottom: 8px !important;
+  margin-bottom: 16px !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-mode .inv-tab {
+  flex: 0 0 auto !important;
+  padding: 8px 12px !important;
+  font-size: 0.85rem !important;
+}
+
+.mobile-mode .inv-tab-desc {
+  font-size: 0.8rem !important;
+  margin-bottom: 12px !important;
+}
+
+.mobile-mode .dash-filters {
+  flex-direction: column !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+
+.mobile-mode .dash-filter-select {
+  width: 100% !important;
+}
+
+/* Asset Cards for Mobile */
+.inv-mobile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inv-mobile-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.imc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.imc-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.imc-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.imc-roi {
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.imc-roi.pos { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.imc-roi.neg { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+
+.imc-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.imc-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.imc-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.imc-value {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.imc-progress-pill {
+  font-size: 0.7rem;
+  background: rgba(99, 102, 241, 0.1);
+  color: #818cf8;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.imc-footer {
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.imc-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.imc-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.imc-btn-danger {
+  color: #ef4444;
+}
+
+/* ── Mutual Funds Page Mobile ── */
+.mobile-mode .mf-dash-hero {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 10px !important;
+  margin-bottom: 20px !important;
+}
+
+.mobile-mode .mf-hero-stat {
+  padding: 14px 12px !important;
+  border-radius: 12px !important;
+  background: var(--panel-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+.mobile-mode .mf-hero-label {
+  font-size: 0.65rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.mobile-mode .mf-hero-val {
+  font-size: 1.15rem !important;
+}
+
+.mobile-mode .mf-tabs {
+  overflow-x: auto !important;
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+  padding-bottom: 8px !important;
+  margin-bottom: 24px !important;
+  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-mode .mf-tab {
+  flex: 0 0 auto !important;
+  padding: 8px 16px !important;
+  white-space: nowrap !important;
+}
+
+.mobile-mode .mf-category-pills {
+  overflow-x: auto !important;
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+  padding-bottom: 4px !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-mode .mf-pill {
+  flex: 0 0 auto !important;
+}
+
+.mobile-mode .mf-discover-hero h2 {
+  font-size: 1.5rem !important;
+}
+
+.mobile-mode .mf-search-container {
+  margin-bottom: 16px !important;
+}
+
+.mobile-mode .mf-sip-row {
+  flex-direction: column !important;
+  gap: 16px !important;
+  padding: 16px !important;
+}
+
+.mobile-mode .mf-sip-meta {
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
+  border-top: 1px solid rgba(255,255,255,0.05) !important;
+  padding-top: 16px !important;
+}
+
+.mobile-mode .mf-sip-meta-item {
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 2px !important;
+}
+
+/* Mutual Fund Asset Cards */
+.mf-mobile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mf-mobile-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mmc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.mmc-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #fff;
+  margin-bottom: 3px;
+  line-height: 1.3;
+}
+
+.mmc-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.mmc-roi {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.mmc-roi.pos { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.mmc-roi.neg { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+
+.mmc-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.mmc-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mmc-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.4px;
+}
+
+.mmc-value {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.mmc-footer {
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.mmc-pnl {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.mmc-pnl.pos { color: #10b981; }
+.mmc-pnl.neg { color: #ef4444; }
+
+.mmc-status-pill {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.mmc-status-pill.success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.mmc-status-pill.failed { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+
+/* ── Goals Page Mobile ── */
+.mobile-mode .goals-summary-cards {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 10px !important;
+  margin-bottom: 20px !important;
+}
+
+.mobile-mode .goals-summary-cards .goal-stat-card:first-child {
+  grid-column: 1 / -1 !important;
+}
+
+.mobile-mode .goal-stat-card {
+  padding: 12px 14px !important;
+  border-radius: 12px !important;
+  min-height: unset !important;
+}
+
+.mobile-mode .goal-stat-label {
+  font-size: 0.70rem !important;
+  margin-bottom: 2px !important;
+}
+
+.mobile-mode .goal-stat-value {
+  font-size: 1.3rem !important;
+}
+
+.mobile-mode .goal-stat-bg-icon {
+  font-size: 3.5rem !important;
+  right: -5px !important;
+  bottom: -5px !important;
+  opacity: 0.15 !important;
+}
+
+.mobile-mode .goals-grid {
+  grid-template-columns: 1fr !important;
+  gap: 16px !important;
+}
+
+.mobile-mode .goal-premium-card {
+  /* Override any rogue padding so hero touches edges */
+  padding: 0 !important;
+}
+
+.mobile-mode .goal-card-hero {
+  height: 44px !important;
+}
+
+.mobile-mode .goal-hero-icon {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 1.1rem !important;
+  border-width: 1.5px !important;
+  border-radius: 8px !important;
+}
+
+.mobile-mode .goal-card-body {
+  padding: 24px 14px 12px 14px !important;
+}
+
+.mobile-mode .goal-title {
+  font-size: 0.95rem !important;
+  margin-bottom: 2px !important;
+}
+
+.mobile-mode .goal-desc {
+  font-size: 0.70rem !important;
+  margin-bottom: 12px !important;
+}
+
+.mobile-mode .goal-ring-container {
+  width: 70px !important;
+  height: 70px !important;
+  margin: 0 auto 10px auto !important;
+}
+
+.mobile-mode .goal-ring-pct {
+  font-size: 1rem !important;
+}
+
+.mobile-mode .goal-ring-label {
+  font-size: 0.55rem !important;
+  margin-top: -2px !important;
+}
+
+.mobile-mode .goal-card-footer {
+  padding-top: 12px !important;
+}
+
+.mobile-mode .goal-saved {
+  font-size: 0.90rem !important;
+}
+
+.mobile-mode .goal-target {
+  font-size: 0.65rem !important;
+}
+
+.mobile-mode .goal-deadline-pill {
+  padding: 4px 8px !important;
+  font-size: 0.60rem !important;
+  gap: 4px !important;
+}
+
+.mobile-mode .goal-edit-btn {
+  top: 8px !important;
+  right: 8px !important;
+  width: 26px !important;
+  height: 26px !important;
+}
+
+/* ── Mobile Layout Widget Toggles ── */
+.mobile-mode .floating-calc-btn {
+  position: fixed !important;
+  left: 16px !important;
+  bottom: 80px !important;
+  top: auto !important;
+  transform: scale(0.9) !important;
+  z-index: 100 !important;
+  margin: 0 !important;
+}
+
+.mobile-mode .floating-calc-panel {
+  position: fixed !important;
+  left: 10px !important;
+  bottom: 80px !important;
+  top: auto !important;
+  width: calc(100vw - 20px) !important;
+  transform: none !important;
+  z-index: 100 !important;
+}
+
+.mobile-mode .aic-widget-container {
+  bottom: 0 !important;
+  right: 0 !important;
+  width: 20% !important; /* 1/5th for 5 items */
+  height: calc(68px + env(safe-area-inset-bottom)) !important;
+  z-index: 1100 !important;
+  pointer-events: none !important;
+}
+
+.mobile-mode .aic-fab-round {
+  pointer-events: auto !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  color: var(--text-muted) !important;
+  padding: 10px 0 calc(10px + env(safe-area-inset-bottom)) 0 !important;
+}
+
+.mobile-mode .aic-fab-round svg {
+  width: 1.35rem !important;
+  height: 1.35rem !important;
+}
+
+.mobile-mode .aic-fab-round::after {
+  content: 'AI';
+  font-size: 0.65rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+}
+
+/* Re-adjust window to be full width relative to screen, not its 20% parent */
+.mobile-mode .aic-window {
+  bottom: calc(68px + env(safe-area-inset-bottom)) !important;
+  right: 0 !important;
+  width: 100vw !important;
+  height: calc(100vh - 100px) !important;
+  max-width: none !important;
+  border-radius: 20px 20px 0 0 !important;
+}
+
+/* ── Mobile Overrides for Transaction History (History.jsx) ── */
+.mobile-mode .premium-header-section {
+  padding: 16px !important;
+}
+
+.mobile-mode .header-top {
+  flex-direction: column !important;
+  gap: 12px !important;
+  margin-bottom: 16px !important;
+}
+
+.mobile-mode .premium-filter-bar {
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+
+.mobile-mode .quick-ranges {
+  width: 100% !important;
+  justify-content: space-between !important;
+}
+
+.mobile-mode .range-btn {
+  flex: 1 !important;
+  text-align: center !important;
+  padding: 6px 12px !important;
+}
+
+.mobile-mode .custom-range {
+  width: 100% !important;
+  justify-content: space-between !important;
+}
+
+/* Convert the big 3-card stack into a compact side-by-side row */
+.mobile-mode .global-history-stats {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 8px !important;
+  overflow-x: auto !important;
+  padding-bottom: 4px !important;
+  scrollbar-width: none !important;
+}
+
+.mobile-mode .global-history-stats::-webkit-scrollbar {
+  display: none !important;
+}
+
+.mobile-mode .history-stat-card {
+  padding: 12px 10px !important;
+  gap: 6px !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  min-width: 0 !important; /* allow strict crushing */
+}
+
+.mobile-mode .h-stat-icon {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 1rem !important;
+  border-radius: 8px !important;
+}
+
+.mobile-mode .h-stat-label {
+  font-size: 0.65rem !important;
+  letter-spacing: 0.5px !important;
+}
+
+.mobile-mode .h-stat-value {
+  font-size: 0.95rem !important;
+  margin-top: 0 !important;
+}
+
+/* Condense month headers */
+.mobile-mode .month-header-premium {
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+}
+
+.mobile-mode .month-quick-summary {
+  width: 100% !important;
+  justify-content: space-between !important;
+  padding: 8px 12px !important;
+}
+
+.mobile-mode .ms-item {
+  font-size: 0.85rem !important;
+}
+
+/* ── AI Insights Mobile Overrides ── */
+.mobile-mode .ai-stat-grid {
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
+  padding: 0 4px !important;
+  margin-bottom: 20px !important;
+}
+
+.mobile-mode .ai-stat-card {
+  padding: 14px !important;
+  min-height: 90px !important;
+  border-radius: 16px !important;
+}
+
+.mobile-mode .ai-stat-label {
+  font-size: 0.65rem !important;
+  margin-bottom: 2px !important;
+}
+
+.mobile-mode .ai-stat-value {
+  font-size: 1rem !important;
+}
+
+.mobile-mode .ai-stat-sub {
+  font-size: 0.6rem !important;
+}
+
+.mobile-mode .ai-health-badge {
+  padding: 4px 8px !important;
+  font-size: 0.75rem !important;
+}
+
+.mobile-mode .ai-section-title {
+  font-size: 1rem !important;
+  margin: 20px 0 12px 0 !important;
+  padding: 0 4px !important;
+}
+
+.mobile-mode .ai-alert-premium {
+  padding: 14px !important;
+}
+
+.mobile-mode .ai-alert-cat {
+  font-size: 0.85rem !important;
+}
+
+.mobile-mode .ai-alert-msg {
+  font-size: 0.8rem !important;
+}
+
+.mobile-mode .ai-budget-cards-grid {
+  grid-template-columns: 1fr !important;
+  gap: 12px !important;
+}
+
+.mobile-mode .ai-budget-premium {
+  padding: 14px !important;
+}
+
+.mobile-mode .aibp-cat-name {
+  font-size: 0.9rem !important;
+}
+
+.mobile-mode .aibp-spent {
+  font-size: 1.1rem !important;
+}
+
+.mobile-mode .ai-cat-cards-grid {
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
+}
+
+.mobile-mode .aicp-name {
+  font-size: 0.8rem !important;
+}
+
+.mobile-mode .aicp-total {
+  font-size: 0.9rem !important;
+}
+
+.mobile-mode .aicp-label {
+  font-size: 0.65rem !important;
+}
+
+/* ── Mileage Tracker Mobile Overrides ── */
+.mobile-mode .mil-page .page-header {
+  margin-bottom: 1.5rem !important;
+}
+
+.mobile-mode .budget-stat-row {
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
+  margin-bottom: 24px !important;
+}
+
+.mobile-mode .budget-stat-card {
+  padding: 16px 12px !important;
+  min-height: 100px !important;
+}
+
+.mobile-mode .mil-panel-header {
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  margin-bottom: 16px !important;
+}
+
+.mobile-mode .mil-panel-header h3 {
+  font-size: 0.95rem !important;
+}
+
+.mobile-mode .mil-alert {
+  padding: 12px 14px !important;
+  gap: 10px !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+}
+
+.mobile-mode .mil-alert-vehicle {
+  border-right: none !important;
+  border-bottom: 1px solid currentColor !important;
+  margin-right: 0 !important;
+  padding-right: 0 !important;
+  padding-bottom: 4px !important;
+  width: 100% !important;
+}
+
+.mobile-mode .mil-vehicle-card {
+  padding: 12px !important;
+  gap: 10px !important;
+}
+
+.mobile-mode .mil-vehicle-stats {
+  font-size: 0.75rem !important;
+  flex-direction: row !important;
+  gap: 12px !important;
+}
+
+.mobile-mode .mil-table th, 
+.mobile-mode .mil-table td {
+  font-size: 0.8rem !important;
+  padding: 10px 8px !important;
+  white-space: nowrap !important;
+}
+
+.mobile-mode .mil-vehicle-summary-grid {
+  grid-template-columns: 1fr !important;
+  gap: 16px !important;
+}
+
+.mobile-mode .mil-vsummary-stats {
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+}
+
+/* Fuel Coach Mobile */
+.mobile-mode .fc-header {
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  padding: 14px 16px !important;
+  gap: 14px !important;
+}
+
+.mobile-mode .fc-header-right {
+  width: 100% !important;
+  justify-content: space-between !important;
+}
+
+.mobile-mode .fc-btn {
+  flex: 1 !important;
+  justify-content: center !important;
+}
+
+.mobile-mode .fc-vehicles {
+  grid-template-columns: 1fr !important;
+}
+
+.mobile-mode .fc-summary {
+  font-size: 0.78rem !important;
+  padding: 10px !important;
+}
+
+/* ── Dashboard & AI Investment Mobile Overrides ── */
+.mobile-mode .dash-stat-row {
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
+  margin-bottom: 20px !important;
+}
+
+.mobile-mode .dash-stat-balance {
+  grid-column: 1 / -1 !important; /* Full width for main balance */
+}
+
+.mobile-mode .dash-stat-card {
+  padding: 14px 16px !important;
+  min-height: 100px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+}
+
+.mobile-mode .dash-stat-amount {
+  font-size: 1.2rem !important;
+}
+
+.mobile-mode .dash-stat-card .circle-ring {
+  transform: scale(0.8) !important;
+  transform-origin: right center !important;
+}
+
+.mobile-mode .ai-inv-stat-grid {
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
+  margin-bottom: 20px !important;
+}
+
+.mobile-mode .ai-inv-stat-card {
+  padding: 12px !important;
+  min-height: 90px !important;
+}
+
+.mobile-mode .ai-inv-stat-value {
+  font-size: 1.1rem !important;
+}
+
+.mobile-mode .ai-inv-premium-row {
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+.mobile-mode .ai-inv-premium-card {
+  width: 100% !important;
+}
+
+/* Floating Calculator Fix */
+.mobile-mode .floating-calc-btn {
+  left: 12px !important;
+  bottom: 120px !important;
+  width: 44px !important;
+  height: 44px !important;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4) !important;
 }

@@ -9,6 +9,8 @@ import {
     FiArrowUpRight, FiArrowDownRight, FiDollarSign, FiRefreshCw,
     FiTrendingUp, FiChevronRight
 } from 'react-icons/fi';
+import useDeviceDetect from '../hooks/useDeviceDetect';
+
 import {
     Chart as ChartJS,
     CategoryScale, LinearScale, BarElement, PointElement, LineElement,
@@ -38,7 +40,9 @@ export default function WealthDashboard() {
     const { user } = useAuth();
     const { isCouple } = useContext(CoupleContext);
     const { isDark } = useTheme();
+    const { isMobile } = useDeviceDetect(768);
     const [scope, setScope] = useState('Combined');
+
 
     useEffect(() => {
         setLoading(true);
@@ -67,6 +71,8 @@ export default function WealthDashboard() {
 
     return (
         <div className="dash-new">
+            <div style={{ display: 'none' }}>v5-FIXED-JS</div>
+
             {/* ── Top Header ── */}
             <div className="dash-top-bar">
                 <h1 className="dash-title">Wealth Dashboard</h1>
@@ -86,26 +92,25 @@ export default function WealthDashboard() {
 
             {/* ── Net Worth Hero ── */}
             {portfolio ? (
-                <div style={{
-                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.05))',
-                    borderRadius: '24px', padding: '32px', marginBottom: '24px',
-                    border: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '16px'
+                <div className="wealth-hero" style={{
+                    background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(99, 102, 241, 0.05))',
+                    border: '1px solid rgba(255,255,255,0.05)'
                 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
+                    <div className="wealth-hero-main-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div className="wealth-hero-main">
                             <p style={{ margin: 0, opacity: 0.7, fontSize: '0.9rem', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>Total Net Worth</p>
-                            <h2 style={{ margin: '8px 0 0 0', fontSize: '3rem', fontWeight: 900, letterSpacing: '-1px' }}>
+                            <h2 className="wealth-hero-value" style={{ margin: '8px 0 0 0', fontSize: isMobile ? '2rem' : '3rem', fontWeight: 900, letterSpacing: '-1px' }}>
                                 ₹{fmt(portfolio.currentValue + balance)}
                             </h2>
-                            <p style={{ margin: '4px 0 0 0', fontSize: '1rem', color: 'var(--text-muted)' }}>
-                                Invested: ₹{portfolio.currentValue.toLocaleString('en-IN')} <span style={{ opacity: 0.5 }}>•</span> Cash/Bank: ₹{balance.toLocaleString('en-IN')}
+                            <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                Inv: ₹{fmt(portfolio.currentValue)} <span style={{ opacity: 0.5 }}>•</span> Cash: ₹{fmt(balance)}
                             </p>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
+                        <div className="wealth-hero-pnl">
                             <div style={{
                                 display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '12px',
                                 background: portfolio.overallPnL >= 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-                                color: portfolio.overallPnL >= 0 ? '#10b981' : '#ef4444', fontWeight: 700, fontSize: '1.2rem'
+                                color: portfolio.overallPnL >= 0 ? '#10b981' : '#ef4444', fontWeight: 700, fontSize: isMobile ? '1rem' : '1.2rem'
                             }}>
                                 {portfolio.overallPnL >= 0 ? <FiArrowUpRight /> : <FiArrowDownRight />}
                                 ₹{Math.abs(portfolio.overallPnL).toLocaleString('en-IN')} ({portfolio.overallPnLPct.toFixed(2)}%)
@@ -115,7 +120,7 @@ export default function WealthDashboard() {
                     </div>
 
                     {/* Invested / Cost / PnL Stat Row */}
-                    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div className="wealth-hero-stats" style={{ display: 'flex', gap: 16, flexWrap: 'wrap', paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                         {[
                             { label: 'Invested', value: `₹${portfolio.totalInvested.toLocaleString('en-IN')}`, color: '#818cf8' },
                             { label: 'Current Value', value: `₹${portfolio.currentValue.toLocaleString('en-IN')}`, color: '#c084fc' },
@@ -141,7 +146,7 @@ export default function WealthDashboard() {
                     <div className="dash-panel-header" style={{ marginBottom: '20px' }}>
                         <span className="dash-panel-title"><FiTrendingUp /> Net Worth Portfolio Growth</span>
                     </div>
-                    <div style={{ height: '300px' }}>
+                    <div className="dash-growth-chart-container">
                         <Line
                             data={{
                                 labels: snapshots.map(s => new Date(s.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })),
@@ -181,7 +186,7 @@ export default function WealthDashboard() {
                         <div className="dash-panel-header">
                             <span className="dash-panel-title"><FiDollarSign /> Asset Allocation</span>
                         </div>
-                        <div style={{ height: '220px', marginTop: '10px' }}>
+                        <div className="wealth-donut-container">
                             <Doughnut
                                 data={{
                                     labels: Object.keys(portfolio.allocation),
@@ -195,12 +200,26 @@ export default function WealthDashboard() {
                                 options={{
                                     responsive: true, maintainAspectRatio: false, cutout: '75%',
                                     plugins: {
-                                        legend: { position: 'right', labels: { color: tickColor, font: { family: 'Inter' } } },
+                                        legend: {
+                                            display: false // FORCED OFF IN V5
+                                        },
                                         tooltip: baseTooltip
                                     }
+
                                 }}
                             />
                         </div>
+
+                        {isMobile && (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginTop: '16px' }}>
+                                {Object.keys(portfolio.allocation).map((label, i) => (
+                                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: tickColor }}>
+                                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#ef4444', '#0ea5e9'][i % 7] }} />
+                                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Top Gainers */}
@@ -254,7 +273,7 @@ export default function WealthDashboard() {
                 <div className="dash-panel-header">
                     <span className="dash-panel-title">Manage Investments</span>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '16px' }}>
+                <div className="wealth-quick-links" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '16px' }}>
                     {[
                         { to: '/portfolio', label: '📊 Portfolio', color: '#6366f1' },
                         { to: '/mutual-funds', label: '💹 Mutual Funds', color: '#10b981' },
@@ -262,7 +281,7 @@ export default function WealthDashboard() {
                         { to: '/other-assets', label: '🏠 Other Assets', color: '#ec4899' },
                         { to: '/tax-reports', label: '🧾 Tax Reports', color: '#8b5cf6' },
                     ].map(({ to, label, color }) => (
-                        <Link key={to} to={to} style={{
+                        <Link key={to} to={to} className="wealth-quick-link" style={{
                             padding: '10px 18px', borderRadius: 10, fontWeight: 600, fontSize: '0.9rem',
                             background: `${color}15`, border: `1px solid ${color}30`, color,
                             textDecoration: 'none', transition: 'all 0.2s ease'

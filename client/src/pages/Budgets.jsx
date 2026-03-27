@@ -6,6 +6,8 @@ import {
     FiChevronLeft, FiChevronRight, FiX, FiShield
 } from 'react-icons/fi';
 import { useToast } from '../components/Toast';
+import useDeviceDetect from '../hooks/useDeviceDetect';
+
 import ConfirmModal from '../components/ConfirmModal';
 import AIBudgetSetup from '../components/AIBudgetSetup';
 import { CoupleContext } from '../context/CoupleContext';
@@ -112,7 +114,9 @@ export default function Budgets() {
     const [form, setForm] = useState({
         categoryId: '', amount: '', year: now.getFullYear(), month: now.getMonth() + 1,
     });
+    const { isMobile } = useDeviceDetect(768);
     const toast = useToast();
+
 
     const load = useCallback(async () => {
         try {
@@ -197,7 +201,8 @@ export default function Budgets() {
             {/* Header */}
             <div className="page-header">
                 <div>
-                    <h1 className="page-title"><FiShield /> Budgets</h1>
+                    <h1 className="page-title" style={{ fontSize: isMobile ? '1.5rem' : '1.8rem' }}><FiShield /> Budgets</h1>
+
                     <p className="page-subtitle">Track and manage your monthly spending limits</p>
                 </div>
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>

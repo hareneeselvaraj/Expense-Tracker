@@ -615,16 +615,9 @@
 
 /* Responsive adjustments */
 @media (max-width: 600px) {
-  .aic-widget-container {
-    bottom: 70px;
-    right: 20px;
-  }
-
   .aic-fab-round {
     width: 56px;
     height: 56px;
-    bottom: 0;
-    right: 0;
   }
 
   .aic-window {

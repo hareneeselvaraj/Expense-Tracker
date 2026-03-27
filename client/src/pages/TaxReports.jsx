@@ -11,6 +11,8 @@ import {
     Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip, Legend, Title
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+import useDeviceDetect from '../hooks/useDeviceDetect';
+
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend, Title);
 
@@ -81,6 +83,8 @@ export default function TaxReports() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
     const [isExporting, setIsExporting] = useState(false);
+    const { isMobile } = useDeviceDetect(768);
+
 
     // Data State
     const [assets, setAssets] = useState([]);
@@ -261,44 +265,42 @@ export default function TaxReports() {
             <div className="dash-top-bar">
                 <div>
                     <h1 className="dash-title">Indian Tax Assistant</h1>
-                    <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)' }}>Financial Year 2024-25 (AY 2025-26)</p>
+                    <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)' }}>FY 2024-25 (AY 2025-26)</p>
                 </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                    <button className="btn outline" onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <FiDownloadCloud /> {isExporting ? 'Preparing...' : 'Export ITR Summary'}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button className="btn outline m-btn-icon" onClick={handleExport}>
+                        <FiDownloadCloud /> <span className="m-hide-text">{isExporting ? 'Preparing...' : 'Export ITR'}</span>
                     </button>
-                    <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#10b981' }}>
-                        <FiCheckCircle /> E-File via Cleartax (Simulated)
+                    <button className="btn btn-primary m-btn-icon" style={{ background: '#10b981' }}>
+                        <FiCheckCircle /> <span className="m-hide-text">E-File</span>
                     </button>
                 </div>
             </div>
 
+
             {/* Smart Recommendation Banner */}
-            <div style={{
-                background: `linear-gradient(135deg, ${taxData.bestRegime === 'New' ? 'rgba(99,102,241,0.1)' : 'rgba(16,185,129,0.1)'}, transparent)`,
-                border: `1px solid ${taxData.bestRegime === 'New' ? '#6366f1' : '#10b981'}`,
-                borderRadius: '16px', padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                    <div style={{ background: taxData.bestRegime === 'New' ? '#6366f1' : '#10b981', color: '#fff', padding: '16px', borderRadius: '50%' }}>
-                        <FiShield size={28} />
+            <div className="tax-recommend-banner">
+                <div className="tax-recommend-content">
+                    <div className="tax-recommend-icon" style={{ background: taxData.bestRegime === 'New' ? '#6366f1' : '#10b981' }}>
+                        <FiShield size={isMobile ? 22 : 28} />
                     </div>
                     <div>
-                        <h2 style={{ margin: 0, fontSize: '1.4rem' }}>
-                            The <strong style={{ color: taxData.bestRegime === 'New' ? '#818cf8' : '#10b981' }}>{taxData.bestRegime} Tax Regime</strong> is better for you!
+                        <h2 className="tax-recommend-title">
+                            {isMobile ? 'Use ' : 'The '} <strong style={{ color: taxData.bestRegime === 'New' ? '#818cf8' : '#10b981' }}>{taxData.bestRegime} Regime</strong>
                         </h2>
-                        <p style={{ margin: '6px 0 0 0', opacity: 0.8 }}>
-                            You save <strong>₹{fmt(taxData.savings)}</strong> by opting for the {taxData.bestRegime} Regime.
+                        <p className="tax-recommend-subtitle">
+                            You save <strong>₹{fmt(taxData.savings)}</strong>
                         </p>
                     </div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                    <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.7, textTransform: 'uppercase' }}>Total Tax Payable</p>
-                    <h1 style={{ margin: 0, fontSize: '2.5rem', color: taxData.bestRegime === 'New' ? '#818cf8' : '#10b981', fontWeight: 900 }}>
+                <div className="tax-recommend-value-box">
+                    <p className="tax-recommend-label">Tax Payable</p>
+                    <h1 className="tax-recommend-value" style={{ color: taxData.bestRegime === 'New' ? '#818cf8' : '#10b981' }}>
                         ₹{fmt(Math.min(taxData.newRegime.totalTax, taxData.oldRegime.totalTax))}
                     </h1>
                 </div>
             </div>
+
 
             {/* Custom Tabs */}
             <div style={{ display: 'flex', gap: '32px', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '2rem' }}>
@@ -319,7 +321,8 @@ export default function TaxReports() {
 
             {/* TAB CONTENT: OVERVIEW */}
             {activeTab === 'overview' && (
-                <div className="tax-report-cards dash-bottom-row-3col" style={{ gridTemplateColumns: 'minmax(300px, 1fr) 400px', alignItems: 'start' }}>
+                <div className="tax-overview-grid">
+
                     
                     {/* Regimes Comparison Cards */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -434,7 +437,8 @@ export default function TaxReports() {
                         <span className="dash-panel-title">Income Sources</span>
                     </div>
                     
-                    <div className="input-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                    <div className="tax-income-grid">
+
                         <div className="form-group">
                             <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>
                                 Gross Salary / Freelance Income (Annual)
@@ -477,7 +481,8 @@ export default function TaxReports() {
                         <span className="dash-panel-title">Section 80C & Others (Max ₹1,50,000)</span>
                     </div>
                     
-                    <div style={{ display: 'flex', gap: '32px', marginBottom: '32px' }}>
+                    <div className="tax-deductions-row">
+
                         {/* Auto Detected Column */}
                         <div style={{ flex: 1, background: 'rgba(0,0,0,0.15)', padding: '24px', borderRadius: '12px' }}>
                             <h4 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}><FiActivity color="#10b981" /> Auto-Detected from Portfolio</h4>
@@ -512,7 +517,8 @@ export default function TaxReports() {
                     <div className="dash-panel-header" style={{ marginBottom: '24px', marginTop: '16px' }}>
                         <span className="dash-panel-title">Health, NPS & Housing</span>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }}>
+                    <div className="tax-deductions-grid">
+
                         <div className="form-group">
                             <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>80D: Health Insurance</label>
                             <input type="text" name="other80D" className="form-input" value={manualInputs.other80D.toLocaleString()} onChange={handleChange} />
@@ -540,7 +546,8 @@ export default function TaxReports() {
             {activeTab === 'capital_gains' && (
                 <div>
                      {/* Summary Row */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(250px, 1fr) minmax(250px, 1fr)', gap: '20px', marginBottom: '24px' }}>
+                    <div className="tax-cg-summary-row">
+
                         <div className="dash-panel" style={{ border: '1px solid rgba(16,185,129,0.3)' }}>
                             <div className="dash-panel-header" style={{ marginBottom: '16px' }}>
                                 <span className="dash-panel-title">Long Term Capital Gains (LTCG)</span>

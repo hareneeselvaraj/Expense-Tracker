@@ -5,6 +5,8 @@ import { FiTrendingUp, FiTrendingDown, FiDollarSign, FiActivity, FiPieChart, FiP
 import { Doughnut } from 'react-chartjs-2';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../components/Toast';
+import useDeviceDetect from '../hooks/useDeviceDetect';
+
 
 function AddAssetModal({ onClose, onSaved }) {
     const toast = useToast();
@@ -176,6 +178,8 @@ export default function Stocks() {
     const [sellAsset, setSellAsset] = useState(null);
     const [activeTab, setActiveTab] = useState('holdings'); // 'holdings' | 'history'
     const { theme } = useTheme();
+    const { isMobile } = useDeviceDetect(768);
+
 
     const fetchStocks = () => {
         setLoading(true);
@@ -330,14 +334,24 @@ export default function Stocks() {
                     <div className="inv-mid-row">
                         <div className="inv-chart-card">
                             <div className="inv-chart-title"><FiPieChart /> Portfolio Allocation</div>
-                            <div className="inv-chart-wrap">
+                            <div className="inv-chart-wrap" style={{ height: isMobile ? '200px' : '300px' }}>
                                 <Doughnut
                                     data={chartData}
                                     options={{
                                         cutout: '70%',
                                         plugins: {
-                                            legend: { display: false },
+                                            legend: { 
+                                                display: isMobile, 
+                                                position: 'bottom',
+                                                labels: { 
+                                                    color: 'var(--text-muted)', 
+                                                    font: { size: 10 },
+                                                    usePointStyle: true,
+                                                    padding: 10
+                                                }
+                                            },
                                             centerText: {
+                                                display: !isMobile,
                                                 label: 'TOTAL',
                                                 text: `₹${metrics.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0, notation: 'compact' })}`,
                                                 color: '#fff'
@@ -350,54 +364,88 @@ export default function Stocks() {
                         </div>
 
                         <div className="inv-table-card">
-                            <div className="table-wrapper">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Stock / Ticker</th>
-                                            <th className="text-right">Qty</th>
-                                            <th className="text-right">Avg Cost</th>
-                                            <th className="text-right">Current Price</th>
-                                            <th className="text-right">Current Value</th>
-                                            <th className="text-right">P&L</th>
-                                            <th className="text-center">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {stocks.length === 0 ? (
+                            {!isMobile ? (
+                                <div className="table-wrapper">
+                                    <table>
+                                        <thead>
                                             <tr>
-                                                <td colSpan="7" className="text-center" style={{ padding: '3rem', opacity: 0.5 }}>
-                                                    No stock holdings found.
-                                                </td>
+                                                <th>Stock / Ticker</th>
+                                                <th className="text-right">Qty</th>
+                                                <th className="text-right">Avg Cost</th>
+                                                <th className="text-right">Current Price</th>
+                                                <th className="text-right">Current Value</th>
+                                                <th className="text-right">P&L</th>
+                                                <th className="text-center">Action</th>
                                             </tr>
-                                        ) : (
-                                            stocks.map((s, i) => (
-                                                <tr key={i}>
-                                                    <td>
-                                                        <div style={{ fontWeight: 600 }}>{s.name}</div>
-                                                        <div style={{ fontSize: '0.75rem', opacity: 0.6 }}>{s.ticker}</div>
-                                                    </td>
-                                                    <td className="text-right">{s.units.toLocaleString('en-IN', { maximumFractionDigits: 4 })}</td>
-                                                    <td className="text-right">₹{s.avgCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                                    <td className="text-right" style={{ color: '#10b981', fontWeight: 500 }}>₹{(s.currentPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                                    <td className="text-right" style={{ fontWeight: 600 }}>₹{s.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
-                                                    <td className="text-right">
-                                                        <div style={{ color: s.overallPnL >= 0 ? '#10b981' : '#ef4444', fontWeight: 600 }}>
-                                                            {s.overallPnL >= 0 ? '+' : '-'}₹{Math.abs(s.overallPnL).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                                                        </div>
-                                                        <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{s.overallPnLPct.toFixed(2)}%</div>
-                                                    </td>
-                                                    <td className="text-center">
-                                                        <button className="btn outline" style={{ padding: '4px 12px', fontSize: '0.8rem', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }} onClick={() => setSellAsset(s)}>
-                                                            Sell
-                                                        </button>
+                                        </thead>
+                                        <tbody>
+                                            {stocks.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan="7" className="text-center" style={{ padding: '3rem', opacity: 0.5 }}>
+                                                        No stock holdings found.
                                                     </td>
                                                 </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
+                                            ) : (
+                                                stocks.map((s, i) => (
+                                                    <tr key={i}>
+                                                        <td>
+                                                            <div style={{ fontWeight: 600 }}>{s.name}</div>
+                                                            <div style={{ fontSize: '0.75rem', opacity: 0.6 }}>{s.ticker}</div>
+                                                        </td>
+                                                        <td className="text-right">{s.units.toLocaleString('en-IN', { maximumFractionDigits: 4 })}</td>
+                                                        <td className="text-right">₹{s.avgCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                        <td className="text-right" style={{ color: '#10b981', fontWeight: 500 }}>₹{(s.currentPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                        <td className="text-right" style={{ fontWeight: 600 }}>₹{s.currentValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                                                        <td className="text-right">
+                                                            <div style={{ color: s.overallPnL >= 0 ? '#10b981' : '#ef4444', fontWeight: 600 }}>
+                                                                {s.overallPnL >= 0 ? '+' : '-'}₹{Math.abs(s.overallPnL).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                                                            </div>
+                                                            <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{s.overallPnLPct.toFixed(2)}%</div>
+                                                        </td>
+                                                        <td className="text-center">
+                                                            <button className="btn outline" style={{ padding: '4px 12px', fontSize: '0.8rem', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }} onClick={() => setSellAsset(s)}>
+                                                                Sell
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <div className="inv-card-list">
+                                    {stocks.map((s, i) => (
+                                        <div key={i} className="inv-mobile-card">
+                                            <div className="inv-mobile-card-header">
+                                                <div>
+                                                    <div className="inv-mobile-card-title">{s.name}</div>
+                                                    <div className="inv-mobile-card-subtitle">{s.ticker} • {s.units.toLocaleString('en-IN', { maximumFractionDigits: 2 })} Units</div>
+                                                </div>
+                                                <div className="inv-mobile-card-pnl" style={{ color: s.overallPnL >= 0 ? '#10b981' : '#ef4444' }}>
+                                                    {s.overallPnL >= 0 ? '+' : '-'}₹{Math.abs(s.overallPnL).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                                                </div>
+                                            </div>
+                                            <div className="inv-mobile-card-body">
+                                                <div className="inv-mobile-card-stat">
+                                                    <span className="label">Avg/Cur</span>
+                                                    <span className="val">₹{fmt(s.avgCost)} / <span style={{ color: '#10b981' }}>₹{fmt(s.currentPrice)}</span></span>
+                                                </div>
+                                                <div className="inv-mobile-card-stat">
+                                                    <span className="label">Value</span>
+                                                    <span className="val" style={{ fontWeight: 700 }}>₹{fmt(s.currentValue)}</span>
+                                                </div>
+                                            </div>
+                                            <div className="inv-mobile-card-actions">
+                                                <button className="btn outline" style={{ width: '100%', padding: '8px', fontSize: '0.85rem', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }} onClick={() => setSellAsset(s)}>
+                                                    Sell Holdings
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {stocks.length === 0 && <p style={{ textAlign: 'center', opacity: 0.5, padding: '2rem' }}>No stocks found</p>}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </>

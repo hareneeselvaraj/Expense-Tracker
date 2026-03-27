@@ -4,6 +4,8 @@ import api from '../services/api';
 import { FiPlus, FiTrash2, FiEdit2, FiTrendingUp, FiX, FiZap, FiRefreshCw } from 'react-icons/fi';
 import { useToast } from '../components/Toast';
 import ConfirmModal from '../components/ConfirmModal';
+import useDeviceDetect from '../hooks/useDeviceDetect';
+
 
 // ── Category → AssetType Mapping ──
 const CATEGORY_TYPES = {
@@ -359,10 +361,54 @@ function InvestmentForm({ editing, onClose, onSaved, investments, defaultCategor
 // ══════════════════════════════════════════════════════════
 
 // ── MARKET TABLE ──
-function MarketTable({ items, onEdit, onDelete }) {
+function MarketTable({ items, onEdit, onDelete, isMobile }) {
     if (items.length === 0) return <div className="inv-empty">No market investments yet — add stocks, mutual funds, or crypto!</div>;
+
+    if (isMobile) {
+        return (
+            <div className="inv-mobile-list">
+                {items.map(inv => {
+                    const isPos = inv.roi >= 0;
+                    return (
+                        <div key={inv.id} className="inv-mobile-card">
+                            <div className="imc-header">
+                                <div>
+                                    <div className="imc-name">{inv.name}</div>
+                                    <div className="imc-meta">{inv.assetType} • {inv.platform || 'Direct'}</div>
+                                </div>
+                                <div className={`imc-roi ${isPos ? 'pos' : 'neg'}`}>
+                                    {isPos ? '↑' : '↓'} {Math.abs(inv.roi || 0).toFixed(1)}%
+                                </div>
+                            </div>
+                            <div className="imc-stats">
+                                <div className="imc-stat">
+                                    <span className="imc-label">Invested</span>
+                                    <span className="imc-value">{fmt(inv.investedAmount)}</span>
+                                </div>
+                                <div className="imc-stat">
+                                    <span className="imc-label">Current</span>
+                                    <span className="imc-value">{fmt(inv.currentValue)}</span>
+                                </div>
+                            </div>
+                            {inv.quantity && (
+                                <div className="imc-footer">
+                                    <span>{inv.quantity} units @ {fmt(inv.buyPrice)}</span>
+                                </div>
+                            )}
+                            <div className="imc-actions">
+                                <button className="imc-btn" onClick={() => onEdit(inv)}><FiEdit2 /> Edit</button>
+                                <button className="imc-btn imc-btn-danger" onClick={() => onDelete(inv.id)}><FiTrash2 /> Delete</button>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    }
+
     return (
         <div className="inv-table-card">
+
             <div className="table-wrapper">
                 <table>
                     <thead>
@@ -408,10 +454,53 @@ function MarketTable({ items, onEdit, onDelete }) {
 }
 
 // ── DEPOSITS TABLE ──
-function DepositsTable({ items, onEdit, onDelete }) {
+function DepositsTable({ items, onEdit, onDelete, isMobile }) {
     if (items.length === 0) return <div className="inv-empty">No deposits yet — add FD, RD, PPF or SSY!</div>;
+
+    if (isMobile) {
+        return (
+            <div className="inv-mobile-list">
+                {items.map(inv => {
+                    const completed = inv.monthsCompleted || 0;
+                    const total = inv.tenureMonths || 0;
+                    const progressPct = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : null;
+                    const maturityVal = inv.projectedMaturityValue || inv.currentValue;
+
+                    return (
+                        <div key={inv.id} className="inv-mobile-card">
+                            <div className="imc-header">
+                                <div>
+                                    <div className="imc-name">{inv.name}</div>
+                                    <div className="imc-meta">{inv.assetType} • {inv.platform || 'Bank'}</div>
+                                </div>
+                                {progressPct !== null && (
+                                    <div className="imc-progress-pill">{progressPct}% Done</div>
+                                )}
+                            </div>
+                            <div className="imc-stats">
+                                <div className="imc-stat">
+                                    <span className="imc-label">Invested</span>
+                                    <span className="imc-value">{fmt(inv.investedAmount)}</span>
+                                </div>
+                                <div className="imc-stat">
+                                    <span className="imc-label">Maturity</span>
+                                    <span className="imc-value">{fmt(maturityVal)}</span>
+                                </div>
+                            </div>
+                            <div className="imc-actions">
+                                <button className="imc-btn" onClick={() => onEdit(inv)}><FiEdit2 /> Edit</button>
+                                <button className="imc-btn imc-btn-danger" onClick={() => onDelete(inv.id)}><FiTrash2 /> Delete</button>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    }
+
     return (
         <div className="inv-table-card">
+
             <div className="table-wrapper">
                 <table>
                     <thead>
@@ -482,10 +571,49 @@ function DepositsTable({ items, onEdit, onDelete }) {
 }
 
 // ── PHYSICAL ASSETS TABLE ──
-function PhysicalTable({ items, onEdit, onDelete }) {
+function PhysicalTable({ items, onEdit, onDelete, isMobile }) {
     if (items.length === 0) return <div className="inv-empty">No physical assets yet — add gold or silver!</div>;
+
+    if (isMobile) {
+        return (
+            <div className="inv-mobile-list">
+                {items.map(inv => {
+                    const isPos = inv.roi >= 0;
+                    return (
+                        <div key={inv.id} className="inv-mobile-card">
+                            <div className="imc-header">
+                                <div>
+                                    <div className="imc-name">{inv.name}</div>
+                                    <div className="imc-meta">{inv.assetType} {inv.quantity ? `• ${inv.quantity}g` : ''}</div>
+                                </div>
+                                <div className={`imc-roi ${isPos ? 'pos' : 'neg'}`}>
+                                    {isPos ? '↑' : '↓'} {Math.abs(inv.roi || 0).toFixed(1)}%
+                                </div>
+                            </div>
+                            <div className="imc-stats">
+                                <div className="imc-stat">
+                                    <span className="imc-label">Purchase</span>
+                                    <span className="imc-value">{fmt(inv.investedAmount)}</span>
+                                </div>
+                                <div className="imc-stat">
+                                    <span className="imc-label">Current</span>
+                                    <span className="imc-value">{fmt(inv.currentValue)}</span>
+                                </div>
+                            </div>
+                            <div className="imc-actions">
+                                <button className="imc-btn" onClick={() => onEdit(inv)}><FiEdit2 /> Edit</button>
+                                <button className="imc-btn imc-btn-danger" onClick={() => onDelete(inv.id)}><FiTrash2 /> Delete</button>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    }
+
     return (
         <div className="inv-table-card">
+
             <div className="table-wrapper">
                 <table>
                     <thead>
@@ -548,6 +676,8 @@ export default function Investments() {
     const [loading, setLoading] = useState(true);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const toast = useToast();
+    const { isMobile } = useDeviceDetect(768);
+
 
     const [filterMonth, setFilterMonth] = useState('All Months');
     const [filterYear, setFilterYear] = useState('All Years');
@@ -726,9 +856,10 @@ export default function Investments() {
             )}
 
             {/* ── Category-specific Table ── */}
-            {tab === 'Market' && <MarketTable items={currentItems} onEdit={handleEdit} onDelete={setDeleteTarget} />}
-            {tab === 'Deposit' && <DepositsTable items={currentItems} onEdit={handleEdit} onDelete={setDeleteTarget} />}
-            {tab === 'Physical' && <PhysicalTable items={currentItems} onEdit={handleEdit} onDelete={setDeleteTarget} />}
+            {tab === 'Market' && <MarketTable items={currentItems} onEdit={handleEdit} onDelete={setDeleteTarget} isMobile={isMobile} />}
+            {tab === 'Deposit' && <DepositsTable items={currentItems} onEdit={handleEdit} onDelete={setDeleteTarget} isMobile={isMobile} />}
+            {tab === 'Physical' && <PhysicalTable items={currentItems} onEdit={handleEdit} onDelete={setDeleteTarget} isMobile={isMobile} />}
+
         </div>
     );
 }

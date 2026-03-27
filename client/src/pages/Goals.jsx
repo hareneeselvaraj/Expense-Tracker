@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FiTarget, FiPlus, FiHome, FiShoppingBag, FiAirplay, FiCheckCircle, FiClock, FiList, FiAlertCircle, FiEdit2, FiX, FiDollarSign, FiHeart, FiBriefcase, FiGift, FiCoffee, FiTruck, FiSmile, FiStar, FiUmbrella, FiMusic, FiArrowRight, FiBook, FiCamera, FiGlobe, FiAward, FiTrendingUp, FiZap, FiCheck, FiBox, FiVideo, FiMapPin, FiFeather, FiPlay, FiFilm, FiBarChart2 } from 'react-icons/fi';
+import useDeviceDetect from '../hooks/useDeviceDetect';
 
 const ICON_CHOICES = [
     { name: 'Target', icon: <FiTarget /> },
@@ -90,6 +91,7 @@ const initialGoals = [
 ];
 
 export default function Goals() {
+    const { isMobile } = useDeviceDetect(768);
     const [goals, setGoals] = useState(initialGoals);
     const [loaded, setLoaded] = useState(false);
 
@@ -182,20 +184,23 @@ export default function Goals() {
             <div className="goals-summary-cards">
                 <div className="goal-stat-card variant-indigo" style={{ animationDelay: '0s' }}>
                     <FiList className="goal-stat-bg-icon" />
-                    <p className="goal-stat-label">Active Goals</p>
+                    <p className="goal-stat-label">{isMobile ? 'Active' : 'Active Goals'}</p>
                     <p className="goal-stat-value">{goals.length}</p>
+
                 </div>
 
                 <div className="goal-stat-card variant-amber" style={{ animationDelay: '0.1s' }}>
                     <FiTarget className="goal-stat-bg-icon" />
-                    <p className="goal-stat-label">Total Target</p>
+                    <p className="goal-stat-label">{isMobile ? 'Target' : 'Total Target'}</p>
                     <p className="goal-stat-value">₹{(totalTarget / 1000).toFixed(0)}k</p>
+
                 </div>
 
                 <div className="goal-stat-card variant-emerald" style={{ animationDelay: '0.2s' }}>
                     <FiCheckCircle className="goal-stat-bg-icon" />
-                    <p className="goal-stat-label">Total Saved</p>
+                    <p className="goal-stat-label">{isMobile ? 'Saved' : 'Total Saved'}</p>
                     <p className="goal-stat-value">₹{(totalCurrent / 1000).toFixed(0)}k</p>
+
                 </div>
 
                 <div className="goal-stat-card variant-rose" style={{ animationDelay: '0.3s' }}>
@@ -206,8 +211,9 @@ export default function Goals() {
 
                 <div className="goal-stat-card variant-cyan" style={{ animationDelay: '0.4s' }}>
                     <FiAward className="goal-stat-bg-icon" />
-                    <p className="goal-stat-label">Goals Completed</p>
+                    <p className="goal-stat-label">{isMobile ? 'Done' : 'Goals Completed'}</p>
                     <p className="goal-stat-value">{completedGoalsNum}</p>
+
                 </div>
             </div>
 
