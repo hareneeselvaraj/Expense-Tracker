@@ -3,7 +3,7 @@ bin/
 obj/
 *.user
 *.suo
-appsettings.json
+# appsettings.json
 appsettings.Development.json
 
 # Node
@@ -31,3 +31,17 @@ ExpenseTracker/backups/
 
 # Local Netlify folder
 .netlify
+
+# Local Build Artifacts
+LocalHost/
+ExpenseTracker/wwwroot/
+ExpenseTracker/publish/
+ExpenseTracker/MonsterAspDeploy/
+ExpenseTracker/MonsterAspDeploy.zip
+publish.zip
+/bin/
+/obj/
+**/bin/
+**/obj/
+**/publish/
+**/wwwroot/

@@ -18,19 +18,9 @@ var builder = WebApplication.CreateBuilder(args);
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
 // ───────────────────── Database ─────────────────────
-var dbProvider = builder.Configuration["DatabaseProvider"] ?? "Sqlite";
-if (dbProvider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
-{
-    var sqlServerConn = builder.Configuration.GetConnectionString("SqlServerConnection")!;
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlServer(sqlServerConn));
-}
-else
-{
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlite(connectionString));
-}
+var sqlServerConn = builder.Configuration.GetConnectionString("SqlServerConnection")!;
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(sqlServerConn));
 
 // ───────────────────── JWT Authentication ─────────────────────
 var jwtKey = builder.Configuration["Jwt:Key"]!;
@@ -120,28 +110,8 @@ try
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         
         // ── Create DB & tables from current model ──
-        // EnsureCreatedAsync won't create tables if DB already exists (e.g. MonsterASP pre-creates it).
-        // So we also try CreateTables() explicitly for that scenario.
+        // Startup Migrations (SQL Server handles this via EnsureCreated/Migrations)
         var created = await db.Database.EnsureCreatedAsync();
-        if (!created)
-        {
-            try
-            {
-                var dbCreator = db.Database.GetService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>();
-                await dbCreator.CreateTablesAsync();
-            }
-            catch { /* Tables already exist — safe to ignore */ }
-        }
-        
-        // ── SQLite-only: add columns that may be missing on older existing DBs ──
-        var isSqlite = db.Database.ProviderName?.Contains("Sqlite") == true;
-        if (isSqlite)
-        {
-            try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Categories ADD COLUMN Icon TEXT"); } catch { }
-            try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Investments ADD COLUMN Ticker TEXT"); } catch { }
-            try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Investments ADD COLUMN PriceSource TEXT"); } catch { }
-            try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Investments ADD COLUMN LastPriceUpdate TEXT"); } catch { }
-        }
         
         // RD Catch-up Logic
         var today = DateTime.UtcNow;
@@ -165,21 +135,21 @@ try
         if (rds.Count > 0) await db.SaveChangesAsync();
     }
 }
-catch (Exception ex) { Console.WriteLine($"Startup Migration Error: {ex.Message}"); }
-
-
-app.UseDeveloperExceptionPage();
-
-app.UseSwagger();
-app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "v1"));
-
-// Only redirect to HTTPS in development (MonsterASP free plan is HTTP-only)
-if (app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
+catch (Exception ex) 
+{ 
+    var logMsg = $"[{DateTime.UtcNow}] Startup Migration Error: {ex.Message}{Environment.NewLine}{ex.StackTrace}{Environment.NewLine}{Environment.NewLine}";
+    try { System.IO.File.AppendAllText("startup_error.log", logMsg); } catch { }
+    Console.WriteLine($"Startup Migration Error: {ex.Message}"); 
 }
+
+
+app.UseHttpsRedirection();
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapFallbackToFile("index.html");
 app.Run();
